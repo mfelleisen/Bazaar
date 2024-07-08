@@ -3,15 +3,31 @@
 (provide
  #; {type Card}
 
+ ;; examples 
+ CARD1 CARD2
+
+ #; {Card N -> N}
+ calculate-points
+
+ #; {Card -> Pict}
  render)
 
 ;; -----------------------------------------------------------------------------
+(require "../scribblings/spec.rkt")
+
 (require (prefix-in p: "pebbles.rkt"))
 (require pict)
 (require pict/face)
 
+(module+ test
+  (require rackunit))
+
 ;; -----------------------------------------------------------------------------
 (struct card [pebbles face?] #:prefab)
+
+(define (calculate-points card pebbles#)
+    (for/first ([p POINTS] #:when (>= pebbles# (first p)))
+      (if (card-face? card) (third p) (second p))))
 
 (define (render c)
   (define pebbles (map p:render (card-pebbles c)))
@@ -38,10 +54,17 @@
          [s (cc-superimpose s (colorize f "silver"))])
     s))
 
+(define CARD1 (card [list p:RED p:RED p:BLUE p:RED p:RED] #false))
+(define CARD2 (card [list p:RED p:RED p:BLUE p:RED p:RED] #true))
+
 ;; -----------------------------------------------------------------------------
 (module+ pict
-  (render (card [list p:RED p:RED p:BLUE p:RED p:RED] #false))
-  (render (card [list p:RED p:RED p:BLUE p:RED p:RED] #true)))
+  (render CARD1)
+  (render CARD2))
+
+(module+ test
+  (check-equal? (calculate-points CARD1 0) (second (last POINTS)))
+  (check-equal? (calculate-points CARD2 0) (third (last POINTS))))
           
   
   
