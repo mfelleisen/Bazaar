@@ -26,6 +26,10 @@
   (define CARDS# 20)
   (define (cards#? x) (and (natural? x) (<= x PEBBLES#)))
 
+  (define TRADES# 3)
+  (define TRADES#-as-str "three")
+  
+
   (define POINTS
     (list
      (list 3 1 2)

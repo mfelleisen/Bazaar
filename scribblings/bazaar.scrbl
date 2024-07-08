@@ -115,9 +115,9 @@ When granted a turn, a player must take two actions:
 
   @item{Alternatively, the player may trade pebbles with the bank using any of
   the @(~a EQUATIONS#) equations in any direction. (That's what ``equation''
-  means.) If the bank does not own enough pebbles to trade, the trade cannot
-  take place during this turn.}
-  ]
+  means.) The player must perform at least one trade and at most @(~a
+  TRADES#-as-str).  If the bank does not own enough pebbles to trade, the trade
+  cannot take place during this turn.}  ]
 
   Obviously, the player must roll the die on its first turn because it does not
   own any pebbles that it can trade.}
