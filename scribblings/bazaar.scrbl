@@ -82,7 +82,7 @@ pebbles.
 @(e:render (e:1eq (list p:RED) (list p:GREEN p:BLUE p:WHITE)) p:render)
 @nl
 @nl
-@(e:render (e:1eq (list p:GREEN p:BLUE) (list p:RED p:BLUE p:WHITE p:YELLOW)) p:render) |
+@(e:render (e:1eq (list p:GREEN p:BLUE) (list p:RED p:YELLOW p:WHITE p:YELLOW)) p:render) |
 @; ----------------------
 There are @(~a EQUATIONS#) equations overall. & |
 @; ----------------------
@@ -100,39 +100,32 @@ pebbles. That's it.
 @; -----------------------------------------------------------------------------
 @bold{Playing a Turn}
 
-When granted a turn, a player must take two actions: 
+A player's turn consists of two phases: 
 @; -----------------------------------------------------------------------------
 @itemlist[
 
-  @item{First, it must roll a color die or trade some of its pebbles according
-  to the available equations:
+  @item{During the first one, the player decides whether to ask the
+  referee for one of the bank's pebbles, randomly chosen. (The
+  physical game comes with a @(~a (length COLORS))-sided die that
+  displays the @(~a (length COLORS)) colors.)
 
-  @itemlist[
-
-  @item{The die has @(~a (length COLORS)) sides, displaying one pebble of each
-  kind. After rolling the die, the player receives the color that the die
-  displays.}
-
-  @item{Alternatively, the player may trade pebbles with the bank using any of
-  the @(~a EQUATIONS#) equations in any direction. (That's what ``equation''
-  means.) The player must perform at least one trade and at most @(~a
-  TRADES#-as-str).  If the bank does not own enough pebbles to trade, the trade
-  cannot take place during this turn.}  ]
-
-  Obviously, the player must roll the die on its first turn because it does not
-  own any pebbles that it can trade.}
+  Alternatively, the player may trade pebbles with the bank up to @(~a
+  TRADES#-as-str) times, one at a time, according to any of the @(~a EQUATIONS#)
+  equations in any direction. (That's what ``equation'' means.) If the bank does
+  not own enough pebbles to trade according to some equation, the corresponding
+  trade cannot take place.}
  
-  @item{Second it may buy one or more of the four visible cards with matching
-  pebbles, which are returned to the bank.
-
-  When the player signals that it is done buying, the referee replaces the cards
-  that the player bought.}
+  @item{During the second phase, the player may buy cards by
+  exchanging a matching bunch of pebbles with the bank.}
 
 ]
 @; -----------------------------------------------------------------------------
 The referee eliminates any player that violates any rules during a turn.  It
-returns the eliminated player's pebbles to the bank. 
+returns the eliminated player's pebbles to the bank.  After a player's turn is
+over, the referee replaces the acquired cards and grants the next player a
+turn. 
 
+@; -----------------------------------------------------------------------------
 @bold{Scoring a Turn} A player receives points after buying a card.
 
 @(define points-table (map (lambda (row) (map ~a row)) POINTS))
@@ -142,9 +135,9 @@ returns the eliminated player's pebbles to the bank.
    (cdr points-table)))
 
 @tabular[#:row-properties '(bottom-border) #:sep @hspace[5] #:style 'boxed
-@cons[
-@list[@t{ pebbles left } @t{ points per plain card } @t{ ... card with face } ]
-@points-table
+ @cons[
+  @list[@t{ pebbles left } @t{ points per plain card } @t{ ... card with face } ]
+    @points-table
 ]]
 
 The referee keeps track of the scores on a per turn basis. The scores of all
@@ -157,12 +150,15 @@ The game ends if
 @; -----------------------------------------------------------------------------
 @itemlist[
 
+ @item{the bank has no more pebbles at the end of a player's turn;}
+
  @item{a player has @(~a PLAYER-WINS) points at the end of its turn; or}
 
- @item{all cards have been bought.}
+ @item{all cards have been bought up.}
 
 ]
 @; -----------------------------------------------------------------------------
-Technically, this means that a game may never end if the players don't buy a
-sufficient number of cards. If this ever happens, we will modify these
-instructions to avoid this problem in the future. 
+Technically, this means that a game may never end if the players pursue
+strategies of not trading pebbles or not buying a sufficient number of cards. If
+this ever happens, we will modify these instructions to avoid this problem in
+the future.
