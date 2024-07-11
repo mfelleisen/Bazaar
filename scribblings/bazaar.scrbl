@@ -6,15 +6,14 @@
 @(require "shared.rkt")
 @(require "ll-style.rkt")
 
-@(require (prefix-in p: "../Common/pebbles.rkt"))
-@(require (prefix-in c: "../Common/cards.rkt"))
-@(require (prefix-in e: "../Common/equations.rkt"))
+@(require (prefix-in p: Bazaar/Common/pebbles))
+@(require (prefix-in c: Bazaar/Common/cards))
+@(require (prefix-in e: Bazaar/Common/equations))
 
 @(define bazaar-rules "https://boardgamegeek.com/boardgame/287/bazaar")
 @(define-runtime-path bazaar.png "ist-bazaar.png")
 
 @(require "spec.rkt")
-
 
 @; -----------------------------------------------------------------------------
 @author{Matthias Felleisen}
