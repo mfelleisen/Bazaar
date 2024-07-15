@@ -23,7 +23,7 @@ This opens the game description (and works as is on macOS only).
 7. Clean Up
 8. Observer
 9. Remote
-10. Revise!
+10. Configure 
 
 ### Milestones
 
@@ -143,7 +143,7 @@ At this point, students should be able to run complete games using their sw.
 
 - we cross-test running games with players that behave, raise exns, loop 
 
-#### Revised!
+#### Configure
 
 - students revise the code
   - change constants (3 -> 4)
