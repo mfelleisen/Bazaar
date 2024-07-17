@@ -8,11 +8,11 @@
  #; {type [1Equation X]}
 
 
- #; {[Listof [1Equation X]] [Bag X] [Bag X] -> [Listof [1Equation X]]}
- #; (useful equation* my-wallet bank) 
- ;; return those equations `e` in `equation*` for which `my-wallet` has enough Xs to swap
- ;; one side and `bank`has enough Xs for the other; orient the resulting equations
- ;; so that the left's side is below `my-wallet` 
+ #; {[Equations X] [Bag X] [Bag X] -> [Equations X]}
+ #; (useful left-to-right my-wallet bank)
+ ;; return those equations `e` in `left-to-right` for which `my-wallet` has
+ ;; enough Xs to swap one side and `bank`has enough Xs for the other;
+ ;; orient the resulting equations so that `my-wallet` covers the left
  useful
  
  #; {[1Equation X] [X -> Pict] -> Pict}
@@ -33,6 +33,9 @@
 (require Bazaar/Common/bags)
 (require pict)
 
+(module+ examples
+  (require (prefix-in p: Bazaar/Common/pebbles)))
+
 (module+ test (require rackunit))
 (module+ test (require (submod ".." examples)))
 
@@ -48,22 +51,42 @@
   (define EQ1 [1eq '[1 1 2] '[3]])
   (define EQ1-rev [1eq '[3] '[1 1 2]])
 
-
   #; [Listof 1Equatin]
   (define EQ1* [list EQ1])
-  (define EQ1-rev*  [list EQ1-rev]))
+  (define EQ1-rev*  [list EQ1-rev])
+
+  (provide WALLET2 BANK2 EQ2) 
+
+  (define WALLET2` [,p:RED ,p:GREEN])
+  (define BANK2   `[,p:BLUE ,p:BLUE ,p:BLUE ,p:BLUE])
+  (define EQ2      (1eq  WALLET2 BANK2))
+
+  (render EQ2 p:render))
+
+(module+ examples
+  #; {[Listof [List ActualArguments ExpectedResult Message]]}
+  (provide ForStudents/ Tests/)
+
+  (define-syntax-rule (scenario+ kind actual expected msg)
+    (set! kind (append kind (list [list actual expected msg]))))
+  
+  (define ForStudents/ '[])
+  (scenario+ ForStudents/ `[,(list EQ2) ,WALLET2 ,BANK2] (list EQ2) "left to right, not vv")
+  
+  (define Tests/ '[]))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; functionality 
 
-(define (useful equation* my-wallet bank)
-  (define sym (map 1eq-flip equation*))
-  (for/fold ([result '()]) ([e (append equation* sym)] #:when (can-swap e my-wallet bank))
+(define (useful left-to-right my-wallet bank)
+  (define right-to-left (map 1eq-flip left-to-right))
+  (for/fold ([result '()]) ([e (append left-to-right right-to-left)]
+                            #:when (can-swap? e my-wallet bank))
     (cons e result)))
 
 #; {1Equation Bag Bad -> Boolean}
 ;; can `my-wallet` swap with `bank` according to `e`? 
-(define (can-swap e my-wallet bank)
+(define (can-swap? e my-wallet bank)
   (and (subbag? (1eq-left e) my-wallet) (subbag? (1eq-right e) bank)))
 
 #; {1Equation -> 1Equation}
@@ -88,5 +111,13 @@
 
   (check-equal? (useful [list [1eq '[1 1 2] '[3]]] my-wallet bank) (append EQ1-rev* EQ1*))
   
-  (check-true (can-swap EQ1 my-wallet low-bank))
+  (check-true (can-swap? EQ1 my-wallet low-bank))
   (check-equal? (useful [list [1eq '[1 1 2] '[3]]] my-wallet low-bank) EQ1*))
+
+(module+ test
+  (define (equation-tests scenario*)
+    (for ([s scenario*])
+      (match-define `[,actual ,expected ,msg] s)
+      (check-equal? (apply useful actual) expected msg)))
+
+  (equation-tests ForStudents/))
