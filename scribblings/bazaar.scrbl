@@ -76,7 +76,7 @@ There are @(~a CARDS#) cards overall, pairwise distinct. & |
 @; ----------------------
 An equation shows two collections of pebbles on the sides of
 an @tt{=} sign; each side has at least one and at most @(~a EQ-PEBBLES)
-pebbles.
+pebbles. The two sides must not contain pebbles of the same color. 
 &
 @(e:render (e:1eq (list p:RED) (list p:GREEN p:BLUE p:WHITE)) p:render)
 @nl

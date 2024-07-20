@@ -55,13 +55,13 @@
   (define EQ1* [list EQ1])
   (define EQ1-rev*  [list EQ1-rev])
 
-  (provide WALLET2 BANK2 EQ2) 
+  (provide W-R-G W-4x-b r-g=4xb) 
 
-  (define WALLET2` [,p:RED ,p:GREEN])
-  (define BANK2   `[,p:BLUE ,p:BLUE ,p:BLUE ,p:BLUE])
-  (define EQ2      (1eq  WALLET2 BANK2))
+  (define W-R-G   `[,p:RED ,p:GREEN])
+  (define W-4x-b  `[,p:BLUE ,p:BLUE ,p:BLUE ,p:BLUE])
+  (define r-g=4xb (1eq W-R-G W-4x-b))
 
-  (render EQ2 p:render))
+  (render r-g=4xb p:render))
 
 (module+ examples
   #; {[Listof [List ActualArguments ExpectedResult Message]]}
@@ -71,7 +71,7 @@
     (set! kind (append kind (list [list actual expected msg]))))
   
   (define ForStudents/ '[])
-  (scenario+ ForStudents/ `[,(list EQ2) ,WALLET2 ,BANK2] (list EQ2) "left to right, not vv")
+  (scenario+ ForStudents/ `[,(list r-g=4xb) ,W-R-G ,W-4x-b] (list r-g=4xb) "left to right, not vv")
   
   (define Tests/ '[]))
 
@@ -102,6 +102,7 @@
   (hc-append 5 left (text "=") right))
 
 ;; ---------------------------------------------------------------------------------------------------
+;; simple tests to gets started 
 (module+ test
   (render EQ1 (λ (x) (text (~a x))))
 
@@ -114,6 +115,7 @@
   (check-true (can-swap? EQ1 my-wallet low-bank))
   (check-equal? (useful [list [1eq '[1 1 2] '[3]]] my-wallet low-bank) EQ1*))
 
+;; scenario testing 
 (module+ test
   (define (equation-tests scenario*)
     (for ([s scenario*])

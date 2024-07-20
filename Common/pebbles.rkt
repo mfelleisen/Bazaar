@@ -9,8 +9,18 @@
  RADIUS
  RED GREEN YELLOW WHITE BLUE)
 
+(module+ json
+  (provide
+   pebble->jsexpr
+   jsexpr->pebble))
+
 ; -----------------------------------------------------------------------------
+(require Bazaar/scribblings/spec)
 (require pict)
+
+(module+ test
+  (require (submod ".." json))
+  (require rackunit))
 
 ;; -----------------------------------------------------------------------------
 (struct pebble [color] #:prefab)
@@ -23,9 +33,23 @@
 (define WHITE  (pebble "white"))
 (define BLUE   (pebble "blue"))
 
+(define (pebble-color? x)
+  (cons? (member x COLORS)))
+
 (define (render p)
   (filled-ellipse RADIUS RADIUS #:color (pebble-color p)))
+
+(module+ json
+  (define pebble->jsexpr pebble-color)
+  (define (jsexpr->pebble j)
+    (match j
+      [(? pebble-color?) (pebble j)]
+      [_  (eprintf "jsexpr->pebble: pebble JSExpr expected, given ~a" j) #false])))
 
 ;; -----------------------------------------------------------------------------
 (module+ pict
   (render (pebble "red")))
+
+;; -----------------------------------------------------------------------------
+(module+ test
+  (check-equal? (jsexpr->pebble (pebble->jsexpr RED)) RED))
