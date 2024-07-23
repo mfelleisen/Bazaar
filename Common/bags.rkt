@@ -1,7 +1,8 @@
 #lang racket
 
-;; a generic bad (multi-set) representation 
+;; a generic bad (multi-set) representation
 
+;; ---------------------------------------------------------------------------------------------------
 (provide
  #; {type [Bag X] = [Listof X]}
  ;; X is what the bag contains 
@@ -19,7 +20,7 @@
    #;{[Bag X] [X -> JSexpr] -> JSExpr}
    bag->jsexpr
 
-   #; {[JSExpr [Y -> Boolean] [JSexpr -> Natural] [JSExpr -> X] -> (U False [Bag X])]}
+   #; {[JSExpr [Y -> Boolean : X] [JSExpr -> X] -> (U False [Bag X])]}
    jsexpr->bag))
 
 ;                                                                                      
@@ -109,15 +110,10 @@
 
 (module+ json
   (define (bag->jsexpr b e->jsexpr)
-    (for/fold ([h (hasheq)]) ([x b])
-      (hash-update h (e->jsexpr x) add1 0)))
+    (map e->jsexpr b))
 
   (define (jsexpr->bag j domain? jsexpr->e)
-    (def/jsexpr-> bag
-      #:hash {[domain? #:parse natural (? natural? n)]}
-      (for/fold ([r '()]) ([(k v) j][n n])
-        (define x (make-list n (jsexpr->e k)))
-        (append x r)))
+    (def/jsexpr-> bag #:array [(list (? domain? x) ...) (map jsexpr->e x)])
     (jsexpr->bag j)))
 
 ;                                     
@@ -143,6 +139,6 @@
   (check-equal? (bag-minus '[1 2] '[1 1 2]) '[])
   (check-equal? (bag-minus '[1 1 2] '[1]) '[1 2])
 
-  (define b1 '[a a b c])
+  (define b1 '[1 1 2 3])
   (check-true (jsexpr? (bag->jsexpr b1 values)))
-  (check bag-equal? (jsexpr->bag (bag->jsexpr b1 values) symbol? values) b1))
+  (check bag-equal? (jsexpr->bag (bag->jsexpr b1 values) natural? values) b1 "basic bag test"))

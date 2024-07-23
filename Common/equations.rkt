@@ -50,8 +50,11 @@
 (require Bazaar/Common/bags)
 (require pict)
 
-(module+ examples
+(module+ pict
   (require (prefix-in p: Bazaar/Common/pebbles)))
+
+(module+ examples
+  (require (prefix-in p: (submod Bazaar/Common/pebbles examples))))
 
 (module+ json
   (require (submod Bazaar/Common/bags json))
@@ -114,8 +117,9 @@
 
   (define W-R-G   `[,p:RED ,p:GREEN])
   (define W-4x-b  `[,p:BLUE ,p:BLUE ,p:BLUE ,p:BLUE])
-  (define r-g=4xb (1eq W-R-G W-4x-b))
+  (define r-g=4xb (1eq W-R-G W-4x-b)))
 
+(module+ pict
   (render r-g=4xb p:render))
 
 (module+ examples
@@ -190,7 +194,7 @@
 
   (define (jsexpr->1eq j domain? jsexpr->e)
     (define (jsexpr->cbag j)
-      (jsexpr->bag j (λ (j) (domain? (~a j))) (λ (j) (jsexpr->e (~a j)))))
+      (jsexpr->bag j (λ (j) (domain? j)) (λ (j) (jsexpr->e j))))
 
     (def/jsexpr-> 1eq
       #:array [[list (app jsexpr->cbag (? bag? left)) (app jsexpr->cbag (? bag? right))]
@@ -237,5 +241,5 @@
 
 ;; json testing 
 (module+ test
-  (check-equal? (jsexpr->1eq (1eq->jsexpr EQ1 values) string? string->symbol) EQ1))
+  (check-equal? (jsexpr->1eq (1eq->jsexpr EQ1 ~a) string? string->symbol) EQ1))
   

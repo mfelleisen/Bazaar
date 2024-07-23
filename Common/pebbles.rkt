@@ -1,22 +1,40 @@
 #lang racket
 
+;; a data representationn for pebbles 
+
+;; -----------------------------------------------------------------------------
 (provide
  #; {type Pebble}
 
  pebble-color?
 
  #; {Pebble -> Pict}
- render 
+ render )
 
- RADIUS
- RED GREEN YELLOW WHITE BLUE)
+(module+ examples
+  (provide
+   RED GREEN YELLOW WHITE BLUE))
 
 (module+ json
   (provide
    pebble->jsexpr
    jsexpr->pebble))
 
-; -----------------------------------------------------------------------------
+;                                                                                      
+;       ;                                  ;                                           
+;       ;                                  ;                          ;                
+;       ;                                  ;                                           
+;    ;;;;   ;;;   ;;;;    ;;;   ; ;;    ;;;;   ;;;   ; ;;    ;;;    ;;;    ;;;    ;;;  
+;   ;; ;;  ;;  ;  ;; ;;  ;;  ;  ;;  ;  ;; ;;  ;;  ;  ;;  ;  ;;  ;     ;   ;;  ;  ;   ; 
+;   ;   ;  ;   ;; ;   ;  ;   ;; ;   ;  ;   ;  ;   ;; ;   ;  ;         ;   ;   ;; ;     
+;   ;   ;  ;;;;;; ;   ;  ;;;;;; ;   ;  ;   ;  ;;;;;; ;   ;  ;         ;   ;;;;;;  ;;;  
+;   ;   ;  ;      ;   ;  ;      ;   ;  ;   ;  ;      ;   ;  ;         ;   ;          ; 
+;   ;; ;;  ;      ;; ;;  ;      ;   ;  ;; ;;  ;      ;   ;  ;;        ;   ;      ;   ; 
+;    ;;;;   ;;;;  ;;;;    ;;;;  ;   ;   ;;;;   ;;;;  ;   ;   ;;;;   ;;;;;  ;;;;   ;;;  
+;                 ;                                                                    
+;                 ;                                                                    
+;                 ;                                                                    
+
 (require Bazaar/scribblings/spec)
 (require pict)
 
@@ -24,16 +42,31 @@
   (require (submod ".." json))
   (require rackunit))
 
-;; -----------------------------------------------------------------------------
+;                                                          
+;       ;                                  ;            ;; 
+;       ;           ;                      ;           ;   
+;       ;           ;                      ;           ;   
+;    ;;;;  ;;;;   ;;;;;  ;;;;           ;;;;   ;;;   ;;;;; 
+;   ;; ;;      ;    ;        ;         ;; ;;  ;;  ;    ;   
+;   ;   ;      ;    ;        ;         ;   ;  ;   ;;   ;   
+;   ;   ;   ;;;;    ;     ;;;;         ;   ;  ;;;;;;   ;   
+;   ;   ;  ;   ;    ;    ;   ;         ;   ;  ;        ;   
+;   ;; ;;  ;   ;    ;    ;   ;         ;; ;;  ;        ;   
+;    ;;;;   ;;;;    ;;;   ;;;;          ;;;;   ;;;;    ;   
+;                                                          
+;                                                          
+;                                                          
+
 (struct pebble [color] #:prefab)
 
 (define RADIUS 15)
 
-(define RED    (pebble "red"))
-(define GREEN  (pebble "green"))
-(define YELLOW (pebble "yellow"))
-(define WHITE  (pebble "white"))
-(define BLUE   (pebble "blue"))
+(module+ examples
+  (define RED    (pebble "red"))
+  (define GREEN  (pebble "green"))
+  (define YELLOW (pebble "yellow"))
+  (define WHITE  (pebble "white"))
+  (define BLUE   (pebble "blue")))
 
 (define (pebble-color? x)
   (cons? (member x COLORS)))
@@ -41,7 +74,21 @@
 (define (render p)
   (filled-ellipse RADIUS RADIUS #:color (pebble-color p)))
 
-;; -----------------------------------------------------------------------------
+;                              
+;      ;                       
+;                              
+;                              
+;    ;;;    ;;;    ;;;   ; ;;  
+;      ;   ;   ;  ;; ;;  ;;  ; 
+;      ;   ;      ;   ;  ;   ; 
+;      ;    ;;;   ;   ;  ;   ; 
+;      ;       ;  ;   ;  ;   ; 
+;      ;   ;   ;  ;; ;;  ;   ; 
+;      ;    ;;;    ;;;   ;   ; 
+;      ;                       
+;      ;                       
+;    ;;                        
+
 (module+ json
   (define (pebble->jsexpr p)
     (pebble-color p))
@@ -51,7 +98,21 @@
       [(? pebble-color?) (pebble j)]
       [_  (eprintf "jsexpr->pebble: pebble JSExpr expected, given ~a\n" j) #false])))
 
-;; -----------------------------------------------------------------------------
+;                                     
+;                                     
+;     ;                    ;          
+;     ;                    ;          
+;   ;;;;;   ;;;    ;;;   ;;;;;   ;;;  
+;     ;    ;;  ;  ;   ;    ;    ;   ; 
+;     ;    ;   ;; ;        ;    ;     
+;     ;    ;;;;;;  ;;;     ;     ;;;  
+;     ;    ;          ;    ;        ; 
+;     ;    ;      ;   ;    ;    ;   ; 
+;     ;;;   ;;;;   ;;;     ;;;   ;;;  
+;                                     
+;                                     
+;                                     
+
 (module+ pict
   (render (pebble "red")))
 

@@ -2,6 +2,7 @@
 
 ;; a generic data representation of cards 
 
+;; ---------------------------------------------------------------------------------------------------
 (provide
  #; {type [Card X]}
  ;; X is the "currency" displayed on cards 
@@ -46,6 +47,9 @@
 (require Bazaar/Common/bags)
 (require pict)
 (require pict/face)
+
+(module+ examples
+  (require (prefix-in p: (submod Bazaar/Common/pebbles examples))))
 
 (module+ json
   (require (submod Bazaar/Common/bags json))
@@ -162,13 +166,11 @@
 
   (define (card->jsexpr c e->jsexpr)
     (match-define [card pebbles face?] c)
-    (define j-pebbles (bag->jsexpr pebbles (compose string->symbol e->jsexpr)))
-    (define j-face?   (boolean->jsexpr face?))
-    (hasheq PEBBLES j-pebbles FACE j-face?))
+    (hasheq PEBBLES (bag->jsexpr pebbles e->jsexpr) FACE (boolean->jsexpr face?)))
   
   (define (jsexpr->card j domain? jsexpr->e)
     (define (jsexpr->cbag j)
-      (jsexpr->bag j (λ (j) (domain? (~a j))) (λ (j) (jsexpr->e (~a j)))))
+      (jsexpr->bag j domain? jsexpr->e))
     
     (def/jsexpr-> card
       #:object {[PEBBLES cbag (? bag? b)] [FACE boolean f]}
