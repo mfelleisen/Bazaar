@@ -3,17 +3,28 @@
 ;; a data representation of (generic) equations
 
 ;; ---------------------------------------------------------------------------------------------------
-(provide
- #; {type [Equation* X] = [Listof [1Equation X]]}
- #; {type [1Equation X]}
 
+(define (distinct-equations eq*)
+  (distinct? (append eq* (map 1eq-flip eq*))))
+
+
+(provide
+ #; {type [Equation* X] = [Setof [1Equation X]]}
+ 
+ #; {type [1Equation X] = [List [Setof X] [Setof X]]}
+ ;; the intersection of thetwo sets must be empty 
+ 
+ #; {[Equations X] [Equations X] -> Boolean}
+ ;; are the two sets of equations equal? -- each side is considered a set, too
+ equations-equal?
 
  #; {[Equations X] [Bag X] [Bag X] -> [Equations X]}
  #; (useful left-to-right my-wallet bank)
  ;; return those equations `e` in `left-to-right` for which `my-wallet` has
  ;; enough Xs to swap one side and `bank`has enough Xs for the other;
  ;; orient the resulting equations so that `my-wallet` covers the left
- useful
+ (contract-out 
+  [useful (-> (and/c (listof 1eq?) distinct-equations) bag? bag? (and/c (listof 1eq?) distinct?))])
  
  #; {[1Equation X] [X -> Pict] -> Pict}
  #; (render e render-x)
@@ -24,13 +35,27 @@
  1eq)
 
 (module+ examples
-  (provide EQ1 EQ1-rev)
-  (provide EQ1* EQ1-rev*))
+
+  (provide
+   #; {type UsefulScenarios =
+            [Listof [List [List [Listof [1Equation Pebble]] [Bag Pebble] [Bag Pebble]]
+                          [Listof [1Equation Pebble]]
+                          String]]}
+
+   #; UsefulScenarios
+   ForStudents/
+
+   #; UsefulScenarios
+   Tests/))
 
 (module+ json
-  (provide 
-   1eq->jsexpr
-   jsexpr->1eq))
+  (provide
+   
+   #;{[1Equation X] [X -> JSexpr] -> JSExpr}
+   equations->jsexpr
+
+   #; {[JSExpr [Y -> Boolean : X] [JSExpr -> X] -> (U False [1Equation X])]}
+   jsexpr->equations))
 
 ;                                                                                      
 ;       ;                                  ;                                           
@@ -48,6 +73,7 @@
 ;                 ;                                                                    
 
 (require Bazaar/Common/bags)
+(require SwDev/Contracts/unique)
 (require pict)
 
 (module+ pict
@@ -63,8 +89,10 @@
   (require Bazaar/Lib/parse-json))
   
 (module+ test
+  (require (submod ".."))
   (require (submod ".." examples))
   (require (submod ".." json))
+  (require (prefix-in p: Bazaar/Common/pebbles))
   (require Bazaar/Lib/parse-json)
   (require rackunit))
 
@@ -104,23 +132,23 @@
 #; {type Equation = (1eq Side Side)}
 #; {type Side     = b:Bag || (<= 1 (bag-size b) 4)}
 
-(module+ examples 
+(module+ examples
+  ;; local only
+  (provide W-R-G W-4x-b r-g=4xb)
+  (provide EQ1 EQ1-rev EQ1* EQ1-rev*)
+
   #; 1Equation 
   (define EQ1 [1eq '[a a b] '[c]])
   (define EQ1-rev [1eq '[c] '[a a b]])
 
-  #; [Listof 1Equatin]
+  #; [Listof 1Equation]
   (define EQ1* [list EQ1])
   (define EQ1-rev*  [list EQ1-rev])
-
-  (provide W-R-G W-4x-b r-g=4xb) 
-
+  
   (define W-R-G   `[,p:RED ,p:GREEN])
   (define W-4x-b  `[,p:BLUE ,p:BLUE ,p:BLUE ,p:BLUE])
-  (define r-g=4xb (1eq W-R-G W-4x-b)))
-
-(module+ pict
-  (render r-g=4xb p:render))
+  (define r-g=4xb (1eq W-R-G W-4x-b))
+  (define 4xb=r-g (1eq W-4x-b W-R-G)))
 
 (module+ examples
   #; {[Listof [List ActualArguments ExpectedResult Message]]}
@@ -130,7 +158,8 @@
     (set! kind (append kind (list [list actual expected msg]))))
   
   (define ForStudents/ '[])
-  (scenario+ ForStudents/ `[,(list r-g=4xb) ,W-R-G ,W-4x-b] (list r-g=4xb) "left to right, not vv")
+  (scenario+ ForStudents/ `[,(list r-g=4xb) ,W-R-G ,W-4x-b] (list r-g=4xb) "left2right, not vv")
+  (scenario+ ForStudents/ `[,(list r-g=4xb 4xb=r-g) ,W-R-G ,W-4x-b] (list r-g=4xb) "left2right & vv")
   
   (define Tests/ '[]))
 
@@ -149,6 +178,10 @@
 ;                                                                                        ;    
 ;                                                                                       ;;    
 
+(define (equations-equal? eq* fq*)
+  (and (subset? eq* fq*) (subset? fq* eq*)))
+  
+;; ---------------------------------------------------------------------------------------------------
 (define (useful left-to-right my-wallet bank)
   (define right-to-left (map 1eq-flip left-to-right))
   (for/fold ([result '()]) ([e (append left-to-right right-to-left)]
@@ -188,6 +221,18 @@
 ;    ;;                        
 
 (module+ json
+  (define (equations->jsexpr eq* e->jsexpr)
+    (map (λ (1eq) (1eq->jsexpr 1eq e->jsexpr)) eq*))
+
+  (define (jsexpr->equations j domain? jsexpr->e)
+    (def/jsexpr-> equations
+      #:array [(list (app (λ (j) (jsexpr->1eq j domain? jsexpr->e)) (? 1eq? 1eq)) ...) 1eq])
+    (define eq* (jsexpr->equations j))
+
+    (cond
+      [(and eq* (distinct? eq*)) eq*]
+      [else (eprintf "distinct set of equations expected, given ~a" j) #false]))
+  
   (define (1eq->jsexpr eq e->jsexpr)
     (match-define [1eq left right] eq)
     (list (bag->jsexpr left e->jsexpr) (bag->jsexpr right e->jsexpr)))
@@ -218,28 +263,41 @@
 ;                                     
 
 (module+ pict
-  (render EQ1 (λ (x) (text (~a x)))))
+  (render EQ1 (λ (x) (text (~a x))))
+  (render r-g=4xb p:render))
 
-(module+ test
+(module+ test ;; basic testing 
   (define my-wallet '[a a b c])
   (define bank      '[a a b c])
   (define low-bank  '[c])
-
-  (check-equal? (useful [list [1eq '[a a b] '[c]]] my-wallet bank) (append EQ1-rev* EQ1*))
+  (define lo-1-equation [list [1eq '[a a b] '[c]]])
   
   (check-true (can-swap? EQ1 my-wallet low-bank))
-  (check-equal? (useful [list [1eq '[a a b] '[c]]] my-wallet low-bank) EQ1*))
 
-;; scenario testing 
-(module+ test
+  (check-equal? (useful lo-1-equation my-wallet bank) (append EQ1-rev* EQ1*))
+  (check-equal? (useful lo-1-equation my-wallet low-bank) EQ1*)
+
+  (check-true (equations-equal? lo-1-equation lo-1-equation))
+
+  (define lo-1-equation& [list [1eq '[a b a] '[c]]])
+  (check-true (equations-equal? lo-1-equation& lo-1-equation))
+
+  (define lo-1-equation-swapped [list [1eq '[c] '[a b a]]])
+  (check-false (equations-equal? lo-1-equation& lo-1-equation-swapped)))
+  
+
+(module+ test ;; scenario testing 
   (define (equation-tests scenario*)
-    (for ([s scenario*])
-      (match-define `[,actual ,expected ,msg] s)
-      (check-equal? (apply useful actual) expected msg)))
+    (for ([s scenario*] [i (in-naturals)])
+      (match-define (list actual expected msg) s)
+      (match-define (list equations wallet bank) actual)
+      
+      (eprintf "scenario ~a\n" i)
+      (for-each (λ (1eq) (pretty-print (render 1eq p:render) (current-error-port))) equations)
+      
+      (check equations-equal? (apply useful actual) expected msg)))
 
   (equation-tests ForStudents/))
 
-;; json testing 
-(module+ test
-  (check-equal? (jsexpr->1eq (1eq->jsexpr EQ1 ~a) string? string->symbol) EQ1))
-  
+(module+ test ;; json testing 
+  (check-equal? (jsexpr->equations (equations->jsexpr EQ1* ~a) string? string->symbol) EQ1*))
