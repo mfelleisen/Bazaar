@@ -15,8 +15,7 @@
   (define BLUE   "blue")
 
   (define COLORS (list RED WHITE BLUE GREEN YELLOW))
-  (define (pebble-color? x) (cons? (member x COLORS)))
-
+  
   (define EQ-PEBBLES  3)
   (define EQUATIONS# 10)
 

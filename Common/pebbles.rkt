@@ -3,6 +3,8 @@
 (provide
  #; {type Pebble}
 
+ pebble-color?
+
  #; {Pebble -> Pict}
  render 
 
@@ -39,12 +41,15 @@
 (define (render p)
   (filled-ellipse RADIUS RADIUS #:color (pebble-color p)))
 
+;; -----------------------------------------------------------------------------
 (module+ json
-  (define pebble->jsexpr pebble-color)
+  (define (pebble->jsexpr p)
+    (pebble-color p))
+
   (define (jsexpr->pebble j)
     (match j
       [(? pebble-color?) (pebble j)]
-      [_  (eprintf "jsexpr->pebble: pebble JSExpr expected, given ~a" j) #false])))
+      [_  (eprintf "jsexpr->pebble: pebble JSExpr expected, given ~a\n" j) #false])))
 
 ;; -----------------------------------------------------------------------------
 (module+ pict

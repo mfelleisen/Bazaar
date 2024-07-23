@@ -8,6 +8,7 @@
 
 @(require (prefix-in p: Bazaar/Common/pebbles))
 @(require (prefix-in c: Bazaar/Common/cards))
+@(require (prefix-in c: (submod Bazaar/Common/cards examples)))
 @(require (prefix-in e: Bazaar/Common/equations))
 
 @(define bazaar-rules "https://boardgamegeek.com/boardgame/287/bazaar")
