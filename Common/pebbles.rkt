@@ -39,6 +39,7 @@
 (require pict)
 
 (module+ test
+  (require (submod ".." examples))
   (require (submod ".." json))
   (require rackunit))
 
