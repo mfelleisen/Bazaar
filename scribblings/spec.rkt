@@ -16,7 +16,7 @@
 
   (define COLORS (list RED WHITE BLUE GREEN YELLOW))
   
-  (define EQ-PEBBLES  3)
+  (define MAX-EQ-SIDE (make-parameter 4))
   (define EQUATIONS# 10)
 
   (require (only-in racket/math natural?))
