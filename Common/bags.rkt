@@ -15,6 +15,8 @@
 
  bag-minus
 
+ bag-intersect
+
  bag-equal?
 
  render)
@@ -100,6 +102,9 @@
 
 (define (bag-equal? b c)
   (and (subbag? b c) (subbag? c b)))
+
+(define (bag-intersect b c)
+  (for/list ([x b] #:when (member x c)) x))
 
 (define (render b render-element)
   (apply hc-append 2 (map render-element b)))

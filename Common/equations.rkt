@@ -7,6 +7,8 @@
 (define (distinct-equations eq*)
   (distinct? (append eq* (map 1eq-flip eq*))))
 
+(define (good-equations eq*)
+  (for/and ([1eq eq*]) (b:bag-empty? (b:bag-intersect (1eq-left 1eq) (1eq-right 1eq)))))
 
 (provide
  #; {type [Equation* X] = [Setof [1Equation X]]}
@@ -24,7 +26,8 @@
  ;; enough Xs to swap one side and `bank`has enough Xs for the other;
  ;; orient the resulting equations so that `my-wallet` covers the left
  (contract-out 
-  [useful (-> (and/c (listof 1eq?) distinct-equations) b:bag? b:bag? (and/c (listof 1eq?) distinct?))])
+  [useful (-> (and/c (listof 1eq?) distinct-equations good-equations) b:bag? b:bag?
+              (and/c (listof 1eq?) distinct?))])
  
  #; {[1Equation X] [X -> Pict] -> Pict}
  #; (render e render-x)
@@ -35,7 +38,6 @@
  1eq)
 
 (module+ examples
-
   (provide
    #; {type UsefulScenarios =
             [Listof [List [List [Listof [1Equation Pebble]] [Bag Pebble] [Bag Pebble]]
@@ -44,9 +46,8 @@
 
    #; UsefulScenarios
    ForStudents/
-
-   #; UsefulScenarios
-   Tests/))
+   Tests/
+   Exns/))
 
 (module+ json
   (provide
@@ -149,24 +150,31 @@
   (define W-4x-b  `[,p:BLUE ,p:BLUE ,p:BLUE ,p:BLUE])
   (define r-g=4xb (1eq W-R-G W-4x-b))
   (define g-r=4xb (1eq (reverse W-R-G) W-4x-b))
-  (define 4xb=r-g (1eq W-4x-b W-R-G)))
+  (define 4xb=r-g (1eq W-4x-b W-R-G))
 
-(module+ examples
-  #; {[Listof [List ActualArguments ExpectedResult Message]]}
-  (provide ForStudents/ Tests/ Exns/)
+  (define W-4xb-3xg  `[,p:BLUE ,p:BLUE ,p:BLUE ,p:BLUE ,p:GREEN ,p:GREEN ,p:GREEN])
+  (define 3xg=r    (1eq `[,p:GREEN ,p:GREEN ,p:GREEN] `[,p:RED]))
+  (define 3xg=r- (1eq-flip 3xg=r))
+  (define 3xg=g    (1eq `[,p:GREEN ,p:GREEN ,p:GREEN] `[,p:GREEN])) ;; bad equation
+  (define ggb=rw    (1eq `[,p:GREEN ,p:GREEN ,p:BLUE] `[,p:RED ,p:WHITE])))
 
+(module+ examples ;; make scenarios 
   (define-syntax-rule (scenario+ kind actual expected msg)
     (set! kind (append kind (list [list actual expected msg]))))
   
   (define ForStudents/ '[])
   (scenario+ ForStudents/ `[,(list r-g=4xb) ,W-R-G ,W-4x-b] (list r-g=4xb) "left2right, not vv")
-  (scenario+ ForStudents/ `[,(list r-g=4xb) [] ,W-4x-b] (list) "no pebbles")
-  (scenario+ ForStudents/ `[,(list r-g=4xb) ,W-R-G ,W-4x-b] (list g-r=4xb) "left2right, not vv")
+  (scenario+ ForStudents/ `[,(list r-g=4xb) ,W-R-G ,W-4x-b] (list g-r=4xb) "left2right, permute")
+  (scenario+ ForStudents/ `[,(list r-g=4xb 3xg=r) ,W-R-G ,W-4x-b] (list g-r=4xb) "left2right/permute")
   
   (define Tests/ '[])
+  (scenario+ Tests/ `[,(list r-g=4xb) [] ,W-4x-b] (list) "emoty wallet")
+  (scenario+ Tests/ `[,(list r-g=4xb) ,W-4x-b []] (list) "emoty bank")
+  (scenario+ Tests/ `[,(list r-g=4xb ggb=rw 3xg=r) ,W-R-G ,W-4xb-3xg] (list 3xg=r- r-g=4xb) "3 -> 2")
 
   (define Exns/ '())
-  (scenario+ Exns/ `[,(list r-g=4xb 4xb=r-g) ,W-R-G ,W-4x-b] #px"distinct-equations" "repeated eq"))
+  (scenario+ Exns/ `[,(list r-g=4xb 4xb=r-g) ,W-R-G ,W-4x-b] #px"distinct-equations" "repeated eq")
+  (scenario+ Exns/ `[,(list 3xg=g 4xb=r-g) ,W-R-G ,W-4x-b]   #px"good-equations" "1 bad eq"))
 
 ;                                                                                             
 ;      ;;                                                                                     
@@ -204,14 +212,6 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; graphical representation 
-
-
-;; TODO
-#; (apply hc-append 2 (map render-element (1eq-left 1eq)))
-;; must be moved to bags
-#;
-(define (render b render-element)
-  (apply hc-append 2 (map render-element b)))
 
 (define (render 1eq render-element)
   (define left  (b:render (1eq-left 1eq) render-element))
@@ -299,35 +299,37 @@
   (check-false (equations-equal? lo-1-equation& lo-1-equation-swapped)))
   
 
-(module+ test ;; scenario testing 
-  (define (equation-tests scenario* #:check (C (λ (equal? act exp msg) (check equal? [act] exp msg))))
-    (eprintf "--------------- ~a\n" (object-name scenario*))
+(module+ test ;; json testing 
+  (check-equal? (jsexpr->equations (equations->jsexpr EQ1* ~a) string? string->symbol) EQ1*))
+
+(module+ test ;; scenario testing
+  #; {Symbol UsefulScenarios {#:check [Equality Thunk Any String -> Void]} -> Void}
+  (define (run-scenario* t scenario* #:check (C (λ (equal? act exp m) (check equal? [act] exp m))))
+    (eprintf "--------------- ~a\n" t)
     (for ([s scenario*] [i (in-naturals)])
       (match-define (list actual expected msg) s)
       (match-define (list equations wallet bank) actual)
       (show i equations wallet bank expected)
       (C equations-equal? (λ () (apply useful actual)) expected msg)))
 
+  #; {Natural Equations Bag Bag (U Regexp Equations) -> Void}
   (define (show i equations wallet bank expected)
     (eprintf "scenario ~a\n" i)
     (define purple   (colorize (rectangle 10 10) "purple"))
     (define p-given  (show/aux equations))
     (define p-wallet (if (b:bag-empty? wallet) purple (b:render wallet p:render)))
-    (define p-bank   (if (b:bag-empty? wallet) purple (b:render bank p:render)))
+    (define p-bank   (if (b:bag-empty? bank) purple (b:render bank p:render)))
     (define p-expect (if (list? expected) (show/aux expected) (text (~a expected) "roman" 12)))
     (define pl (text "+" "roman" 12))
-    (define is (text "=" "roman" 12))
+    (define is (text "---->" "roman" 12))
     (define all (ht-append 5 p-given pl p-wallet pl p-bank is p-expect))
-    (pretty-print all (current-error-port)))
+    (pretty-print (frame (inset all 10) #:line-width 4) (current-error-port)))
 
+  #; {Equations -> Pict}
   (define (show/aux equations)
     (for/fold ([r (blank 1 1)]) ([1eq equations])
       (vl-append r (render 1eq p:render))))
     
-
-  (equation-tests ForStudents/)
-  (equation-tests Tests/)
-  (equation-tests Exns/ #:check (λ (_ act exp msg) (check-exn exp act msg))))
-
-(module+ test ;; json testing 
-  (check-equal? (jsexpr->equations (equations->jsexpr EQ1* ~a) string? string->symbol) EQ1*))
+  (run-scenario* 'for-students ForStudents/)
+  (run-scenario* 'tests Tests/)
+  (run-scenario* 'exns Exns/ #:check (λ (_ act exp msg) (check-exn exp act msg))))
