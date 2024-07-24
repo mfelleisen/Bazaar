@@ -11,6 +11,8 @@
  
  bag-empty?
 
+ bag-size
+
  subbag?
 
  bag-minus
@@ -89,6 +91,8 @@
 ;                                                                                       ;;    
 
 (define bag-empty? empty?)
+
+(define bag-size length)
 
 (define (subbag? b c)
   (and (<= (length b) (length c)) (subset? b c)))

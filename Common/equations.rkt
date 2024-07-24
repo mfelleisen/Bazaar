@@ -8,7 +8,15 @@
   (distinct? (append eq* (map 1eq-flip eq*))))
 
 (define (good-equations eq*)
-  (for/and ([1eq eq*]) (b:bag-empty? (b:bag-intersect (1eq-left 1eq) (1eq-right 1eq)))))
+  (for/and ([e eq*])
+    (match-define [1eq left right] e)
+    (and (good-size left) (good-size right) (no-overlap left right))))
+
+(define (no-overlap left right)
+  (b:bag-empty? (b:bag-intersect left right)))
+
+(define (good-size b)
+  (<= 1 (b:bag-size b) [MAX-EQ-SIDE]))
 
 (provide
  #; {type [Equation* X] = [Setof [1Equation X]]}
@@ -73,6 +81,7 @@
 ;                 ;                                                                    
 ;                 ;                                                                    
 
+(require Bazaar/scribblings/spec)
 (require (prefix-in b: Bazaar/Common/bags))
 (require SwDev/Contracts/unique)
 (require pict)
