@@ -9,11 +9,15 @@
 
  bag?
  
+ bag-empty?
+
  subbag?
 
  bag-minus
 
- bag-equal?)
+ bag-equal?
+
+ render)
 
 (module+ json
   (provide
@@ -37,6 +41,8 @@
 ;                 ;                                                                    
 ;                 ;                                                                    
 ;                 ;                                                                    
+
+(require pict)
 
 (module+ test
   (require (submod ".." json))
@@ -80,6 +86,8 @@
 ;                                                                                        ;    
 ;                                                                                       ;;    
 
+(define bag-empty? empty?)
+
 (define (subbag? b c)
   (and (<= (length b) (length c)) (subset? b c)))
 
@@ -92,6 +100,9 @@
 
 (define (bag-equal? b c)
   (and (subbag? b c) (subbag? c b)))
+
+(define (render b render-element)
+  (apply hc-append 2 (map render-element b)))
 
 ;                              
 ;      ;                       
