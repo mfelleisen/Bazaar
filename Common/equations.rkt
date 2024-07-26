@@ -19,16 +19,16 @@
   (<= 1 (b:bag-size b) [MAX-EQ-SIDE]))
 
 (provide
- #; {type [Equation* X] = [Setof [1Equation X]]}
+ #; {type Equation* = [Setof 1Equation]}
  
- #; {type [1Equation X] = [List [Setof X] [Setof X]]}
+ #; {type 1Equation = [List Bag Bag]}
  ;; the intersection of thetwo sets must be empty 
  
- #; {[Equations X] [Equations X] -> Boolean}
+ #; {Equations Equations -> Boolean}
  ;; are the two sets of equations equal? -- each side is considered a set, too
  equations-equal?
 
- #; {[Equations X] [Bag X] [Bag X] -> [Equations X]}
+ #; {Equations Bag Bag -> Equations}
  #; (useful left-to-right my-wallet bank)
  ;; return those equations `e` in `left-to-right` for which `my-wallet` has
  ;; enough Xs to swap one side and `bank`has enough Xs for the other;
@@ -37,12 +37,12 @@
   [useful (-> (and/c (listof 1eq?) distinct-equations good-equations) b:bag? b:bag?
               (and/c (listof 1eq?) distinct?))])
  
- #; {[1Equation X] [X -> Pict] -> Pict}
- #; (render e render-x)
+ #; {1Equation-> Pict}
+ #; (render e)
  ;; returns an image of `e` where `render-x` is used to render individual Xs
  render
 
- #; {[Bag X] [Bag X] -> 1Equation}
+ #; {Bag Bag -> 1Equation}
  1eq)
 
 (module+ examples
@@ -60,10 +60,10 @@
 (module+ json
   (provide
    
-   #;{[1Equation X] [X -> JSexpr] -> JSExpr}
+   #;{1Equation -> JSExpr}
    equations->jsexpr
 
-   #; {[JSExpr [Y -> Boolean : X] [JSExpr -> X] -> (U False [1Equation X])]}
+   #; {[JSExpr -> (U False 1Equation)]}
    jsexpr->equations))
 
 ;                                                                                      
@@ -90,6 +90,7 @@
   (require (prefix-in p: Bazaar/Common/pebbles)))
 
 (module+ examples
+  (require (submod Bazaar/Common/bags examples))
   (require (prefix-in p: (submod Bazaar/Common/pebbles examples))))
 
 (module+ json
@@ -144,46 +145,34 @@
 
 (module+ examples
   ;; local only
-  (provide W-R-G W-4x-b r-g=4xb)
-  (provide EQ1 EQ1-rev EQ1* EQ1-rev*)
-
-  #; 1Equation 
-  (define EQ1 [1eq '[a a b] '[c]])
-  (define EQ1-rev [1eq '[c] '[a a b]])
-
-  #; [Listof 1Equation]
-  (define EQ1* [list EQ1])
-  (define EQ1-rev*  [list EQ1-rev])
+  (provide b-rg b-bbbb r-g=4xb)
   
-  (define W-R-G   `[,p:RED ,p:GREEN])
-  (define W-4x-b  `[,p:BLUE ,p:BLUE ,p:BLUE ,p:BLUE])
-  (define r-g=4xb (1eq W-R-G W-4x-b))
-  (define g-r=4xb (1eq (reverse W-R-G) W-4x-b))
-  (define 4xb=r-g (1eq W-4x-b W-R-G))
+  (define r-g=4xb (1eq b-rg b-bbbb))
+  (define g-r=4xb (1eq (reverse b-rg) b-bbbb))
+  (define 4xb=r-g (1eq b-bbbb b-rg))
 
-  (define W-4xb-3xg  `[,p:BLUE ,p:BLUE ,p:BLUE ,p:BLUE ,p:GREEN ,p:GREEN ,p:GREEN])
-  (define 3xg=r    (1eq `[,p:GREEN ,p:GREEN ,p:GREEN] `[,p:RED]))
-  (define 3xg=r- (1eq-flip 3xg=r))
-  (define 3xg=g    (1eq `[,p:GREEN ,p:GREEN ,p:GREEN] `[,p:GREEN])) ;; bad equation
-  (define ggb=rw    (1eq `[,p:GREEN ,p:GREEN ,p:BLUE] `[,p:RED ,p:WHITE])))
+  (define 3xg=r    (1eq b-ggg b-r))
+  (define 3xg=r-   (1eq-flip 3xg=r))
+  (define 3xg=g    (1eq b-ggg b-g)) ;; bad equation
+  (define ggb=rw   (1eq b-ggb b-gw)))
 
 (module+ examples ;; make scenarios 
   (define-syntax-rule (scenario+ kind actual expected msg)
     (set! kind (append kind (list [list actual expected msg]))))
   
   (define ForStudents/ '[])
-  (scenario+ ForStudents/ `[,(list r-g=4xb) ,W-R-G ,W-4x-b] (list r-g=4xb) "left2right, not vv")
-  (scenario+ ForStudents/ `[,(list r-g=4xb) ,W-R-G ,W-4x-b] (list g-r=4xb) "left2right, permute")
-  (scenario+ ForStudents/ `[,(list r-g=4xb 3xg=r) ,W-R-G ,W-4x-b] (list g-r=4xb) "left2right/permute")
+  (scenario+ ForStudents/ `[,(list r-g=4xb) ,b-rg ,b-bbbb] (list r-g=4xb) "left2right, not vv")
+  (scenario+ ForStudents/ `[,(list r-g=4xb) ,b-rg ,b-bbbb] (list g-r=4xb) "left2right, permute")
+  (scenario+ ForStudents/ `[,(list r-g=4xb 3xg=r) ,b-rg ,b-bbbb] (list g-r=4xb) "left2right/permute")
   
   (define Tests/ '[])
-  (scenario+ Tests/ `[,(list r-g=4xb) [] ,W-4x-b] (list) "emoty wallet")
-  (scenario+ Tests/ `[,(list r-g=4xb) ,W-4x-b []] (list) "emoty bank")
-  (scenario+ Tests/ `[,(list r-g=4xb ggb=rw 3xg=r) ,W-R-G ,W-4xb-3xg] (list 3xg=r- r-g=4xb) "3 -> 2")
+  (scenario+ Tests/ `[,(list r-g=4xb) [] ,b-bbbb] (list) "emoty wallet")
+  (scenario+ Tests/ `[,(list r-g=4xb) ,b-bbbb []] (list) "emoty bank")
+  (scenario+ Tests/ `[,(list r-g=4xb ggb=rw 3xg=r) ,b-rg ,b-4xb-3xg] (list 3xg=r- r-g=4xb) "3 -> 2")
 
   (define Exns/ '())
-  (scenario+ Exns/ `[,(list r-g=4xb 4xb=r-g) ,W-R-G ,W-4x-b] #px"distinct-equations" "repeated eq")
-  (scenario+ Exns/ `[,(list 3xg=g 4xb=r-g) ,W-R-G ,W-4x-b]   #px"good-equations" "1 bad eq"))
+  (scenario+ Exns/ `[,(list r-g=4xb 4xb=r-g) ,b-rg ,b-bbbb] #px"distinct-equations" "repeated eq")
+  (scenario+ Exns/ `[,(list 3xg=g 4xb=r-g) ,b-rg ,b-bbbb]   #px"good-equations" "1 bad eq"))
 
 ;                                                                                             
 ;      ;;                                                                                     
@@ -222,9 +211,9 @@
 ;; ---------------------------------------------------------------------------------------------------
 ;; graphical representation 
 
-(define (render 1eq render-element)
-  (define left  (b:render (1eq-left 1eq) render-element))
-  (define right (b:render (1eq-right 1eq) render-element))
+(define (render 1eq)
+  (define left  (b:render (1eq-left 1eq)))
+  (define right (b:render (1eq-right 1eq)))
   (hc-append 5 left (text "=") right))
 
 ;                              
@@ -243,28 +232,24 @@
 ;    ;;                        
 
 (module+ json
-  (define (equations->jsexpr eq* e->jsexpr)
-    (map (λ (1eq) (1eq->jsexpr 1eq e->jsexpr)) eq*))
+  (define (equations->jsexpr eq*)
+    (map 1eq->jsexpr eq*))
 
-  (define (jsexpr->equations j domain? jsexpr->e)
+  (define (jsexpr->equations j)
     (def/jsexpr-> equations
-      #:array [(list (app (λ (j) (jsexpr->1eq j domain? jsexpr->e)) (? 1eq? 1eq)) ...) 1eq])
+      #:array [(list (app jsexpr->1eq (? 1eq? 1eq)) ...) 1eq])
     (define eq* (jsexpr->equations j))
-
     (cond
       [(and eq* (distinct? eq*)) eq*]
       [else (eprintf "distinct set of equations expected, given ~a" j) #false]))
   
-  (define (1eq->jsexpr eq e->jsexpr)
+  (define (1eq->jsexpr eq)
     (match-define [1eq left right] eq)
-    (list (bag->jsexpr left e->jsexpr) (bag->jsexpr right e->jsexpr)))
+    (list (bag->jsexpr left) (bag->jsexpr right)))
 
-  (define (jsexpr->1eq j domain? jsexpr->e)
-    (define (jsexpr->cbag j)
-      (jsexpr->bag j (λ (j) (domain? j)) (λ (j) (jsexpr->e j))))
-
+  (define (jsexpr->1eq j)
     (def/jsexpr-> 1eq
-      #:array [[list (app jsexpr->cbag (? b:bag? left)) (app jsexpr->cbag (? b:bag? right))]
+      #:array [[list (app jsexpr->bag (? b:bag? left)) (app jsexpr->bag (? b:bag? right))]
                (1eq left right)])
     (jsexpr->1eq j)))
 
@@ -285,19 +270,13 @@
 ;                                     
 
 (module+ pict
-  (render EQ1 (λ (x) (text (~a x))))
-  (render r-g=4xb p:render))
+  (render r-g=4xb))
 
 (module+ test ;; basic testing 
   (define my-wallet '[a a b c])
   (define bank      '[a a b c])
   (define low-bank  '[c])
   (define lo-1-equation [list [1eq '[a a b] '[c]]])
-  
-  (check-true (can-swap? EQ1 my-wallet low-bank))
-
-  (check-equal? (useful lo-1-equation my-wallet bank) (append EQ1-rev* EQ1*))
-  (check-equal? (useful lo-1-equation my-wallet low-bank) EQ1*)
 
   (check-true (equations-equal? lo-1-equation lo-1-equation))
 
@@ -309,7 +288,7 @@
   
 
 (module+ test ;; json testing 
-  (check-equal? (jsexpr->equations (equations->jsexpr EQ1* ~a) string? string->symbol) EQ1*))
+  (check-equal? (jsexpr->equations (equations->jsexpr (list r-g=4xb))) (list r-g=4xb)))
 
 (module+ test ;; scenario testing
   #; {Symbol UsefulScenarios {#:check [Equality Thunk Any String -> Void]} -> Void}
@@ -326,8 +305,8 @@
     (eprintf "scenario ~a\n" i)
     (define purple   (colorize (rectangle 10 10) "purple"))
     (define p-given  (show/aux equations))
-    (define p-wallet (if (b:bag-empty? wallet) purple (b:render wallet p:render)))
-    (define p-bank   (if (b:bag-empty? bank) purple (b:render bank p:render)))
+    (define p-wallet (if (b:bag-empty? wallet) purple (b:render wallet)))
+    (define p-bank   (if (b:bag-empty? bank) purple (b:render bank)))
     (define p-expect (if (list? expected) (show/aux expected) (text (~a expected) "roman" 12)))
     (define pl (text "+" "roman" 12))
     (define is (text "---->" "roman" 12))
@@ -337,7 +316,7 @@
   #; {Equations -> Pict}
   (define (show/aux equations)
     (for/fold ([r (blank 1 1)]) ([1eq equations])
-      (vl-append r (render 1eq p:render))))
+      (vl-append r (render 1eq))))
     
   (run-scenario* 'for-students ForStudents/)
   (run-scenario* 'tests Tests/)

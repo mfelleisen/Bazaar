@@ -1,30 +1,37 @@
 #lang racket
 
-;; a generic data representation of cards 
+;; a generic bad (multi-set) representation
 
 ;; ---------------------------------------------------------------------------------------------------
 (provide
- #; {type [Card X]}
- ;; X is the "currency" displayed on cards 
+ #; {type [Bag X] = [Listof X]}
+ ;; X is what the bag contains 
 
- ;; examples 
+ bag?
+
+ bag
  
- #; {Card N -> N}
- calculate-points
+ bag-empty?
 
- #; {Card -> Pict}
+ bag-size
+
+ subbag?
+
+ bag-minus
+
+ bag-intersect
+
+ bag-equal?
+
  render)
-
-(module+ examples
-  (provide CARD1 CARD2))
 
 (module+ json
   (provide
-   #;{[Card X] [X -> JSexpr] -> JSExpr}
-   card->jsexpr
+   #;{[Bag X] [X -> JSexpr] -> JSExpr}
+   bag->jsexpr
 
-   #; {[JSExpr [Y -> Boolean] [JSExpr -> X] -> (U False [Bag X])]}
-   jsexpr->card))
+   #; {[JSExpr [Y -> Boolean : X] [JSExpr -> X] -> (U False [Bag X])]}
+   jsexpr->bag))
 
 ;                                                                                      
 ;       ;                                  ;                                           
@@ -41,30 +48,15 @@
 ;                 ;                                                                    
 ;                 ;                                                                    
 
-(require Bazaar/scribblings/spec)
-
-(require (prefix-in p: "pebbles.rkt"))
-(require Bazaar/Common/bags)
 (require pict)
-(require pict/face)
-
-(module+ examples
-  (require (submod Bazaar/Common/bags examples))
-  (require (prefix-in p: (submod Bazaar/Common/pebbles examples))))
-
-(module+ json
-  (require (submod Bazaar/Common/bags json))
-  (require Bazaar/Common/bags)
-  (require Bazaar/Lib/parse-json))
-
-(module+ pict
-  (require (submod ".." examples)))
 
 (module+ test
-  (require (submod ".." examples))
   (require (submod ".." json))
-  (require (submod Bazaar/Common/pebbles json))
+  (require json)
   (require rackunit))
+
+(module+ json
+  (require Bazaar/Lib/parse-json))
 
 ;                                                          
 ;       ;                                  ;            ;; 
@@ -81,26 +73,12 @@
 ;                                                          
 ;                                                          
 
-(struct card [pebbles face?] #:transparent
-  #:methods gen:equal+hash
-  [(define equal-proc
-     (λ (x y recursive-equal?)
-       (and
-        (bag-equal? (card-pebbles x) (card-pebbles y))
-        (equal? (card-face? x) (card-face? y)))))
-   (define (hash-proc x re-hash)
-     (+ (* 1000 (re-hash (card-pebbles x)))
-        (* 10 (re-hash (card-face? x)))))
-   (define (hash2-proc x re-hash2)
-     (+ (* 891 (re-hash2 (card-pebbles x)))
-        (* 999 (re-hash2 (card-face? x)))))])
+;; a bag is just a list that may contain repeated elements 
 
-#; {type Card = (card [Bad X] Boolean)}
+(define bag list)
 
-(module+ examples
-  (define CARD1 (card b-rrbrr #false))
-  (define CARD2 (card b-rrbrr  #true)))
-
+(define bag? list?)
+ 
 ;                                                                                             
 ;      ;;                                                                                     
 ;     ;                           ;       ;                        ;;;       ;     ;          
@@ -116,34 +94,28 @@
 ;                                                                                        ;    
 ;                                                                                       ;;    
 
-(define (calculate-points card pebbles#)
-    (for/first ([p POINTS] #:when (>= pebbles# (first p)))
-      (if (card-face? card) (third p) (second p))))
+(define bag-empty? empty?)
 
-(define (render c)
-  (define pebbles (map p:render (card-pebbles c)))
-  (define angle   (/ (* 2 pi) 5))
-  (let* ([pebbles pebbles]
-         [s (first pebbles)]
-         [pebbles (rest pebbles)]
-         [s (vc-append 20 s (apply hc-append 40 (take pebbles 2)))]
-         [pebbles (drop pebbles 2)]
-         [s (vc-append 20 s (apply hc-append 20 (take pebbles 2)))]
-         [w (+ (pict-width s) 10)]
-         [h (+ (pict-height s) 10)]
-         [r (filled-rectangle w h #:color "turquoise")]
-         [s (cc-superimpose r s)]
-         [r (filled-rectangle w (quotient h 3) #:color "orange")]
-         [s (vc-append r s r)]
-         [s (if (card-face? c) (add-face s) s)])
-    s))
+(define bag-size length)
 
-#; {Pict -> Pict}
-(define (add-face s)
-  (let* ([s s]
-         [f (scale (face* 'normal 'huge #f default-face-color 0 -3) .1)]
-         [s (cc-superimpose s (colorize f "silver"))])
-    s))
+(define (subbag? b c)
+  (and (<= (length b) (length c)) (subset? b c)))
+
+(define (bag-minus b c)
+  (for/fold ([b b]) ([x c])
+    (remove x b)))
+
+(define (bag-remove b x)
+  (remove x b))
+
+(define (bag-equal? b c)
+  (and (subbag? b c) (subbag? c b)))
+
+(define (bag-intersect b c)
+  (for/list ([x b] #:when (member x c)) x))
+
+(define (render b render-element)
+  (apply hc-append 2 (map render-element b)))
 
 ;                              
 ;      ;                       
@@ -161,17 +133,12 @@
 ;    ;;                        
 
 (module+ json
+  (define (bag->jsexpr b e->jsexpr)
+    (map e->jsexpr b))
 
-  (define PEBBLES 'pebbles)
-  (define FACE 'with-face)
-
-  (define (card->jsexpr c)
-    (match-define [card pebbles face?] c)
-    (hasheq PEBBLES (bag->jsexpr pebbles) FACE (boolean->jsexpr face?)))
-
-  (def/jsexpr-> card
-    #:object {[PEBBLES bag (? bag? b)] [FACE boolean f]}
-    (card b f)))
+  (define (jsexpr->bag j domain? jsexpr->e)
+    (def/jsexpr-> bag #:array [(list (? domain? x) ...) (map jsexpr->e x)])
+    (jsexpr->bag j)))
 
 ;                                     
 ;                                     
@@ -188,14 +155,14 @@
 ;                                     
 ;                                     
 
-(module+ pict
-  (render CARD1)
-  (render CARD2))
+(module+ test 
+  (check-false (subbag? '[1 1 1 2] '[1 2]))
+  (check-true (subbag? '[1 2]  '[1 1 1 2]))
 
-(module+ test
-  (check-equal? (calculate-points CARD1 0) (second (last POINTS)))
-  (check-equal? (calculate-points CARD2 0) (third (last POINTS)))
-  
-  (check-equal?
-   (jsexpr->card (card->jsexpr CARD1)) CARD1))
-  
+  (check-equal? (bag-minus '[1 1 2] '[1 2]) '[1])
+  (check-equal? (bag-minus '[1 2] '[1 1 2]) '[])
+  (check-equal? (bag-minus '[1 1 2] '[1]) '[1 2])
+
+  (define b1 '[1 1 2 3])
+  (check-true (jsexpr? (bag->jsexpr b1 values)))
+  (check bag-equal? (jsexpr->bag (bag->jsexpr b1 values) natural? values) b1 "basic bag test"))

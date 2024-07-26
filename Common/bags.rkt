@@ -31,6 +31,9 @@
    #; {[JSExpr [Y -> Boolean : X] [JSExpr -> X] -> (U False [Bag X])]}
    jsexpr->bag))
 
+(module+ examples
+  (provide b-rg b-bbbb b-4xb-3xg b-ggg b-r b-g b-ggb b-gw b-rrbrr))
+
 ;                                                                                      
 ;       ;                                  ;                                           
 ;       ;                                  ;                          ;                
@@ -46,15 +49,25 @@
 ;                 ;                                                                    
 ;                 ;                                                                    
 
-(require pict)
+(require (prefix-in p: Bazaar/Common/pebbles))
+(require (prefix-in lib: (only-in Bazaar/Lib/bags render)))
+(require Bazaar/Lib/bags)
+(require)
 
 (module+ test
+  (require (submod ".." examples))
   (require (submod ".." json))
   (require json)
   (require rackunit))
 
 (module+ json
+  (require (submod Bazaar/Common/pebbles json))
+  (require (prefix-in lib: (submod Bazaar/Lib/bags json)))
   (require Bazaar/Lib/parse-json))
+
+(module+ examples
+  (require (prefix-in p: (submod Bazaar/Common/pebbles examples))))
+
 
 ;                                                          
 ;       ;                                  ;            ;; 
@@ -71,9 +84,21 @@
 ;                                                          
 ;                                                          
 
-;; a bag is just a list that may contain repeated elements 
+;; a bag for this project is
+#;   [Bag Pebble]
 
-(define bag? list?)
+(module+ examples
+  (define b-rrbrr [bag p:RED p:RED p:BLUE p:RED p:RED])
+  (define b-ggg [bag p:GREEN p:GREEN p:GREEN])
+  (define b-r   [bag p:RED])
+  (define b-g   [bag p:GREEN])
+  (define b-ggb [bag p:GREEN p:GREEN p:BLUE])
+  (define b-gw  [bag p:RED p:WHITE])
+  (define b-4xb-3xg [bag p:BLUE p:BLUE p:BLUE p:BLUE p:GREEN p:GREEN p:GREEN])
+  (define b-rg      [bag p:RED p:GREEN])
+  (define b-bbbb    [bag p:BLUE p:BLUE p:BLUE p:BLUE])
+
+)
 
 ;                                                                                             
 ;      ;;                                                                                     
@@ -90,28 +115,7 @@
 ;                                                                                        ;    
 ;                                                                                       ;;    
 
-(define bag-empty? empty?)
-
-(define bag-size length)
-
-(define (subbag? b c)
-  (and (<= (length b) (length c)) (subset? b c)))
-
-(define (bag-minus b c)
-  (for/fold ([b b]) ([x c])
-    (remove x b)))
-
-(define (bag-remove b x)
-  (remove x b))
-
-(define (bag-equal? b c)
-  (and (subbag? b c) (subbag? c b)))
-
-(define (bag-intersect b c)
-  (for/list ([x b] #:when (member x c)) x))
-
-(define (render b render-element)
-  (apply hc-append 2 (map render-element b)))
+(define (render b) (lib:render b p:render))
 
 ;                              
 ;      ;                       
@@ -129,12 +133,9 @@
 ;    ;;                        
 
 (module+ json
-  (define (bag->jsexpr b e->jsexpr)
-    (map e->jsexpr b))
+  (define (bag->jsexpr b) (lib:bag->jsexpr b pebble->jsexpr))
 
-  (define (jsexpr->bag j domain? jsexpr->e)
-    (def/jsexpr-> bag #:array [(list (? domain? x) ...) (map jsexpr->e x)])
-    (jsexpr->bag j)))
+  (define (jsexpr->bag j) (lib:jsexpr->bag j p:pebble-color? jsexpr->pebble)))
 
 ;                                     
 ;                                     
@@ -152,13 +153,5 @@
 ;                                     
 
 (module+ test 
-  (check-false (subbag? '[1 1 1 2] '[1 2]))
-  (check-true (subbag? '[1 2]  '[1 1 1 2]))
-
-  (check-equal? (bag-minus '[1 1 2] '[1 2]) '[1])
-  (check-equal? (bag-minus '[1 2] '[1 1 2]) '[])
-  (check-equal? (bag-minus '[1 1 2] '[1]) '[1 2])
-
-  (define b1 '[1 1 2 3])
-  (check-true (jsexpr? (bag->jsexpr b1 values)))
-  (check bag-equal? (jsexpr->bag (bag->jsexpr b1 values) natural? values) b1 "basic bag test"))
+  (check-true (jsexpr? (bag->jsexpr b-rrbrr)))
+  (check bag-equal? (jsexpr->bag (bag->jsexpr b-rrbrr)) b-rrbrr "basic bag test"))

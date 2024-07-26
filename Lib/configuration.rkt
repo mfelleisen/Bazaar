@@ -1,23 +1,24 @@
 #lang at-exp racket
 
-;; support for defining configurations
+;; support for defining objects
 
 ;; ---------------------------------------------------------------------------------------------------
 
 (provide
  ;; SYNTAX
- #; (define-configuration name [key value] ...)
- ;; creates configurations as dictionaries 
- ;; -- default dict configuration named default-name-config
+ #; (define-object name [key value] ...)
+ ;; creates objects as dictionaries 
+ ;; -- default dict object named default-name-object
  ;; -- a list of availble options named name-options
- ;; -- a domain-contract named name-config/c ensuring that the domain consists of just the keys
- ;; -- a configure-set function named set-name-config
- #;    (set-name-config c KEY VALUE ...)
+ ;; -- a domain-contract named name-object/c ensuring that the domain consists of just the keys
+ ;; -- a objecture-set function named set-name-object
+ #;    (set-name-object c KEY VALUE ...)
  ;; -- to and from JSexpr conversions
- #;    (name-config->jsexpr c)
- #;    (jsexpr->name-config j)
- ;; -- a scribble rendering as a "schema definition" named name->text
- define-configuration
+ #;    (name-object->jsexpr c)
+ #;    (jsexpr->name-object j)
+ ;; -- a scribble rendering as a "schema definition" named
+ #;    [name->text]
+ define-object
 
  is-list-of-key-value-pairs)
 
@@ -27,7 +28,7 @@
 (require (for-syntax racket/syntax))
 
 ;; ---------------------------------------------------------------------------------------------------
-(define-syntax (define-configuration stx)
+(define-syntax (define-object stx)
   (syntax-parse stx
     [(_ name
         [key value0
@@ -38,14 +39,14 @@
      #:do   [(define n (syntax-e #'name))]
      #:with (keyv ...)   (generate-temporaries #'(key ...))
      #:with name-options (format-id stx "~a-options" n #:source #'name #:props stx)
-     #:with name/c       (format-id stx "~a-config/c" n #:source #'name #:props stx)
-     #:with default-name (format-id stx "default-~a-config" n #:source #'name #:props stx)
-     #:with set-name     (format-id stx "set-~a-config" n #:source #'name #:props stx)
-     #:with name->jsexpr (format-id stx "~a-config->jsexpr" n #:source #'name #:props stx)
-     #:with jsexpr->name (format-id stx "jsexpr->~a-config" n #:source #'name #:props stx)
-     #:with name->def    (format-id stx "~a-config->definition" n #:source #'name #:props stx)
-     #'(begin
-         (define key (gensym 'key)) ...
+     #:with name/c       (format-id stx "~a-object/c" n #:source #'name #:props stx)
+     #:with default-name (format-id stx "default-~a-object" n #:source #'name #:props stx)
+     #:with set-name     (format-id stx "set-~a-object" n #:source #'name #:props stx)
+     #:with name->jsexpr (format-id stx "~a-object->jsexpr" n #:source #'name #:props stx)
+     #:with jsexpr->name (format-id stx "jsexpr->~a-object" n #:source #'name #:props stx)
+     #:with name->def    (format-id stx "~a-object->definition" n #:source #'name #:props stx)
+     #`(begin
+         (define key (~a 'key)) ...
          (define name-options [list key ...])
          (define default-name (add-to 'default (hash) [list [list key value0] ...] "" name-options))
 
@@ -53,26 +54,25 @@
          (define name/c [hash-carrier/c name-options])
          
          #; {(set-name c Key1 Value1 ... KeyN ValueN) : Void}
-         (define (set-name config . key-value-pairs0)
+         (define (set-name object . key-value-pairs0)
            (define key-value-pairs (is-list-of-key-value-pairs key-value-pairs0))
-           (add-to 'set-name config key-value-pairs key-value-pairs0 name-options))
+           (add-to 'set-name object key-value-pairs key-value-pairs0 name-options))
            
-         #; {Configuration -> JSexpr}
+         #; {object -> JSexpr}
          (define key*   `[,(normalize 'key) ...])
          (define g-key* `[,key ...])
          (define to*    `[,to ...])
-         (define [name->jsexpr c] (config->jsexpr c key* g-key* to*))
+         (define [name->jsexpr c] (object->jsexpr c key* g-key* to*))
 
-         #; {JSexpr -> [Option Configuration]}
          (define [jsexpr->name j]
            (match j
              [(hash-table
                [(? (curry eq? (normalize 'key))) (app from keyv)] ...)
               (add-to 'jsexpr (hash) [list [list key keyv] ...] "can't happen" name-options)]
              [_ (eprintf "JSON value does not match ~a schema:\n ~a\n" 'name (jsexpr->string/ j))
-                #false]))
-
-         #; {Configuration -> ScribbleTable}
+              #false]))
+         
+         #; {object -> ScribbleTable}
          (define t* 
            (for/list ([k key*] [c `((,is-a ...) ...)])
              (list (~a k) c)))
@@ -90,44 +90,43 @@
       [(list x) #false]
       [(list* k v key-value-pairs) (loop key-value-pairs (cons [list k v] h))])))
 
-#; {Symbol Configuration [Listof [List Symbol Any]] [Listof Any] [Listof Symbol] -> Congiguration}
-(define (add-to tag config key-value-pairs key-value-pairs0 name-options)
+#; {Symbol object [Listof [List Symbol Any]] [Listof Any] [Listof Symbol] -> Congiguration}
+(define (add-to tag object key-value-pairs key-value-pairs0 name-options)
   (cond
     [(false? key-value-pairs)
      (error tag "key-value pair expected; given ~a" key-value-pairs0)]
     [else 
-     (for/fold ([h config]) ([kv-pair key-value-pairs])
+     (for/fold ([h object]) ([kv-pair key-value-pairs])
        (match-define [list k v] kv-pair)
        (unless (member k name-options)
-         (error tag "configuration key expected, given ~a" k))
+         (error tag "object key expected, given ~a" k))
        (dict-set h k v))]))
 
-;; ---------------------------------------------------------------------------------------------------
 ;; dealing with JSON
 
 (module json racket
   (provide
-   #; {Configuration [Listof Symbol] [Listof Symbol] [Listof (Any -> JSexpr)] -> JSexpr}
-   config->jsexpr
+   #; {object [Listof Symbol] [Listof Symbol] [Listof (Any -> JSexpr)] -> JSexpr}
+   object->jsexpr
    
    jsexpr->string/)
 
   (require (prefix-in old: json))
   
-  (define (config->jsexpr c key* g-key* to*)
+  (define (object->jsexpr c key* g-key* to*)
     (for/fold ([h (hash)]) ([k key*] [g-key g-key*] [to to*])
       (dict-set h k (to (dict-ref c g-key)))))
   
   (define (jsexpr->string/ content)
-  (define r (regexp-match #px"8.10\\." (version)))
-  (if r 
-      (old:jsexpr->string content #:indent 4)
-      (old:jsexpr->string content))))
+    (define r (regexp-match #px"8.10\\." (version)))
+    (if r 
+        (old:jsexpr->string content #:indent 4)
+        (old:jsexpr->string content))))
 
 (require 'json)
 
 ;; ---------------------------------------------------------------------------------------------------
-;; rendering a configuration as a scribble documentation
+;; rendering a object as a scribble documentation
 
 (module scribble racket
   (provide
@@ -137,7 +136,7 @@
    
    table? #;"for testing")
 
-  (require Qwirkle/scribblings/shared)
+  (require Bazaar/scribblings/shared)
 
   (define (fields->data-def name t*)
     (define the-defined (deftech (case-name name)))
@@ -148,7 +147,7 @@
   (define (case-name name)
     (define name* (string->list (~a name)))
     (define one (string-titlecase (string (first name*))))
-    (~a one (apply string (rest name*)) 'Config))
+    (~a one (apply string (rest name*)) 'object))
   
   (define (blanks-needed t*)
     (define mx (apply max (map string-length (map first t*))))
@@ -176,13 +175,13 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ test
-  (provide  server-config->definition default-server-config)
+  (provide  server-object->definition default-server-object)
 
-  (require Qwirkle/Lib/check-message)
+  (require Bazaar/Lib/check-message)
   (require rackunit)
   (require json)
 
-  (define-configuration server
+  (define-object server
     (PORT            0 #:is-a "Natural" "between 10000 and 60000")
     (SERVER-TRIES    1 #:is-a "Natural")
     (SERVER-WAIT     2 #:is-a "PositiveReal")
@@ -191,23 +190,23 @@
     (QUIET           5 #:is-a "Boolean" ))
   
   (check-equal? [length server-options] 6)
-  [check-equal? [contract? server-config/c] #true]
-  [check-equal? (dict-ref default-server-config REF-SPEC) 4]
-  [check-equal? (dict-ref (set-server-config default-server-config PORT 1 REF-SPEC 17) REF-SPEC) 17]
+  [check-equal? [contract? server-object/c] #true]
+  [check-equal? (dict-ref default-server-object REF-SPEC) 4]
+  [check-equal? (dict-ref (set-server-object default-server-object PORT 1 REF-SPEC 17) REF-SPEC) 17]
 
   (check-equal?
-   (jsexpr->server-config (server-config->jsexpr default-server-config))
-   default-server-config)
+   (jsexpr->server-object (server-object->jsexpr default-server-object))
+   default-server-object)
 
   (check-false
    (check-message
     "json" current-error-port #px"schema" 
-    (jsexpr->server-config (dict-set (server-config->jsexpr default-server-config) 'A 11))))
+    (jsexpr->server-object (dict-set (server-object->jsexpr default-server-object) 'A 11))))
 
   (check-true
-   (jsexpr? (server-config->jsexpr (set-server-config default-server-config PORT 1 REF-SPEC 17))))
+   (jsexpr? (server-object->jsexpr (set-server-object default-server-object PORT 1 REF-SPEC 17))))
 
-  [check-exn #px"key-value pair" (λ () (set-server-config default-server-config PORT 1 REF-SPEC))]
+  [check-exn #px"key-value pair" (λ () (set-server-object default-server-object PORT 1 REF-SPEC))]
 
-  (check-true (table? (server-config->definition))))
+  (check-true (table? (server-object->definition))))
 
