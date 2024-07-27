@@ -20,10 +20,16 @@
 
 (module+ json
   (provide
-   #;{[Card X] [X -> JSexpr] -> JSExpr}
+   #; {[Listof Card] -> JSexpr}
+   card*->jsexpr
+
+   #; {JSexpr -> (U False [Listof Card])}
+   jsexpr->card*
+
+   #;{Card  -> JSExpr}
    card->jsexpr
 
-   #; {[JSExpr [Y -> Boolean] [JSExpr -> X] -> (U False [Bag X])]}
+   #; {[JSExpr -> (U False Card)]}
    jsexpr->card))
 
 ;                                                                                      
@@ -165,6 +171,12 @@
   (define PEBBLES 'pebbles)
   (define FACE 'with-face)
 
+  (define (card*->jsexpr lo-cards)
+    (map card->jsexpr lo-cards))
+
+  (def/jsexpr-> card*
+    #:array [(list (app jsexpr->card (? card? c)) ...) c])
+  
   (define (card->jsexpr c)
     (match-define [card pebbles face?] c)
     (hasheq PEBBLES (bag->jsexpr pebbles) FACE (boolean->jsexpr face?)))
@@ -196,6 +208,6 @@
   (check-equal? (calculate-points CARD1 0) (second (last POINTS)))
   (check-equal? (calculate-points CARD2 0) (third (last POINTS)))
   
-  (check-equal?
-   (jsexpr->card (card->jsexpr CARD1)) CARD1))
+  (check-equal? (jsexpr->card (card->jsexpr CARD1)) CARD1)
+  (check-equal? (jsexpr->card* (card*->jsexpr (list CARD1))) (list CARD1)))
   

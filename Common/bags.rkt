@@ -8,19 +8,13 @@
  ;; X is what the bag contains 
 
  bag?
- 
+ bag
  bag-empty?
-
  bag-size
-
  subbag?
-
  bag-minus
-
  bag-intersect
-
  bag-equal?
-
  render)
 
 (module+ json

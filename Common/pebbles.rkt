@@ -17,6 +17,8 @@
 
 (module+ json
   (provide
+   pebble*->jsexpr
+   jsexpr->pebble*
    pebble->jsexpr
    jsexpr->pebble))
 
@@ -42,6 +44,9 @@
   (require (submod ".." examples))
   (require (submod ".." json))
   (require rackunit))
+
+(module+ json
+  (require Bazaar/Lib/parse-json))
 
 ;                                                          
 ;       ;                                  ;            ;; 
@@ -91,6 +96,13 @@
 ;    ;;                        
 
 (module+ json
+
+  (define (pebble*->jsexpr lo-cards)
+    (map pebble->jsexpr lo-cards))
+
+  (def/jsexpr-> pebble*
+    #:array [(list (app jsexpr->pebble (? pebble? c)) ...) c])
+
   (define (pebble->jsexpr p)
     (pebble-color p))
 
@@ -119,4 +131,5 @@
 
 ;; -----------------------------------------------------------------------------
 (module+ test
-  (check-equal? (jsexpr->pebble (pebble->jsexpr RED)) RED))
+  (check-equal? (jsexpr->pebble (pebble->jsexpr RED)) RED)
+  (check-equal? (jsexpr->pebble* (pebble*->jsexpr (list RED))) (list RED)))

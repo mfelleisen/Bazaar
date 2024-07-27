@@ -8,9 +8,13 @@
  ;; SYNTAX
  #; (define-object name [key value] ...)
  ;; creates objects as dictionaries 
- ;; -- default dict object named default-name-object
- ;; -- a list of availble options named name-options
- ;; -- a domain-contract named name-object/c ensuring that the domain consists of just the keys
+ ;; -- default dict object named
+ #;    default-name-object
+ ;; -- a list of availble options named
+ #;    name-options
+ ;; -- a domain-contract named
+ #;    name-object/c
+ ;;    ensuring that the domain consists of just the keys
  ;; -- a objecture-set function named set-name-object
  #;    (set-name-object c KEY VALUE ...)
  ;; -- to and from JSexpr conversions
@@ -20,14 +24,60 @@
  #;    [name->text]
  define-object
 
+ struct/description
+
+ struct/jsexpr
+
  is-list-of-key-value-pairs)
 
 ;; ---------------------------------------------------------------------------------------------------
 (require SwDev/Lib/hash-contract)
 (require (for-syntax syntax/parse))
 (require (for-syntax racket/syntax))
+(require (for-syntax racket/struct-info))
+(require (for-syntax racket/format))
+(require json)
 
 ;; ---------------------------------------------------------------------------------------------------
+(define-syntax (struct/description stx)
+  (syntax-parse stx
+    [(_ name
+        [key 
+         (~optional (~seq #:to-jsexpr to #;function) #:defaults ([to #'identity]))
+         (~optional (~seq #:from-jsexpr from #;function) #:defaults ([from #'identity]))
+         (~optional (~seq #:is-a is-a ... #;string) #:defaults ([(is-a 1) (list #'"")]))]
+        ...)
+     #:do   [(define n (syntax-e #'name))]
+     #:with (keyv ...)   (generate-temporaries #'(key ...))
+     #:with name->jsexpr (format-id stx "~a->jsexpr" n #:source #'name #:props stx)
+     #:with jsexpr->name (format-id stx "jsexpr->~a" n #:source #'name #:props stx)
+     #:with name->def    (format-id stx "~a-struct->definition" n #:source #'name #:props stx)
+
+     #:with state->dict (format-id stx "~a->jsexpr" #'name #:source #'name #:props stx)
+     #:with dict->state (format-id stx "jsexpr->~a" #'name #:source #'name #:props stx)
+     #`(begin
+         (struct name [key ...] #:prefab)
+         (define key* [list 'key ...])
+         
+         #; {Struct -> JSexpr}
+         (define to*    `[,to ...])
+         (define [name->jsexpr s-instance] (struct->jsexpr s-instance key* to*))
+
+         #; {JSexpr -> Struct}
+         (define [jsexpr->name j]
+           (match j
+             [(hash-table [(? (curry eq? 'key)) (app from keyv)] ...) (name keyv ...)]
+             [(? jsexpr?)
+              (eprintf "JSON value does not match ~a schema:\n ~a\n" 'name (jsexpr->string j))
+              #false]
+             [_
+              (eprintf "non-JSON value does not match ~a schema:\n ~a\n" 'name j)
+              #false]))
+         
+         #; {Struct -> ScribbleTable}
+         (define t* (map (λ (k c) (list (~a k) c)) key*  `((,is-a ...) ...)))
+         (define [name->def] (fields->data-def 'name t*)))]))
+
 (define-syntax (define-object stx)
   (syntax-parse stx
     [(_ name
@@ -45,7 +95,13 @@
      #:with name->jsexpr (format-id stx "~a-object->jsexpr" n #:source #'name #:props stx)
      #:with jsexpr->name (format-id stx "jsexpr->~a-object" n #:source #'name #:props stx)
      #:with name->def    (format-id stx "~a-object->definition" n #:source #'name #:props stx)
+
+     #:with state->dict (format-id stx "~a->dict" #'name #:source #'name #:props stx)
+     #:with dict->state (format-id stx "dict->~a" #'name #:source #'name #:props stx)
      #`(begin
+         (struct name [key ...] #:prefab)
+         (struct/jsexpr name state->dict dict->state)
+         
          (define key (~a 'key)) ...
          (define name-options [list key ...])
          (define default-name (add-to 'default (hash) [list [list key value0] ...] "" name-options))
@@ -69,7 +125,7 @@
              [(hash-table
                [(? (curry eq? (normalize 'key))) (app from keyv)] ...)
               (add-to 'jsexpr (hash) [list [list key keyv] ...] "can't happen" name-options)]
-             [_ (eprintf "JSON value does not match ~a schema:\n ~a\n" 'name (jsexpr->string/ j))
+             [_ (eprintf "JSON value does not match ~a schema:\n ~a\n" 'name jsexpr->string)
               #false]))
          
          #; {object -> ScribbleTable}
@@ -77,6 +133,21 @@
            (for/list ([k key*] [c `((,is-a ...) ...)])
              (list (~a k) c)))
          (define [name->def] (fields->data-def 'name t*)))]))
+
+(define-syntax (struct/jsexpr x)
+  (syntax-parse x
+    [(_ s state->dict dict->state)
+     #:do [(define sv (syntax-local-value #'s))]
+     #:with (fn ...) (reverse (struct-field-info-list sv))
+     #'(begin
+         (define (dict->state instance)
+           [define xx (list (~a 'fn) ...)]
+           [define vl (for/list ([f xx]) (dict-ref instance f))]
+           (apply s vl))
+         (define (state->dict instance)
+           [define xx (list (~a 'fn) ...)]
+           [define vl (cdr (vector->list (struct->vector instance)))]
+           (make-hash (map cons xx vl))))]))
 
 #; {Symbol -> Symbol}
 (define (normalize key)
@@ -108,20 +179,23 @@
   (provide
    #; {object [Listof Symbol] [Listof Symbol] [Listof (Any -> JSexpr)] -> JSexpr}
    object->jsexpr
-   
-   jsexpr->string/)
 
-  (require (prefix-in old: json))
+   struct->jsexpr 
+
+   jsexpr->string)
+
+  (require json)
+
+  (define (struct->jsexpr s field-names to*)
+    (define values (rest (vector->list (struct->vector s))))
+    (define j
+      (for/fold ([h (hash)]) ([k field-names] [v values] [to to*])
+        (dict-set h k (to v))))
+    j)
   
   (define (object->jsexpr c key* g-key* to*)
-    (for/fold ([h (hash)]) ([k key*] [g-key g-key*] [to to*])
-      (dict-set h k (to (dict-ref c g-key)))))
-  
-  (define (jsexpr->string/ content)
-    (define r (regexp-match #px"8.10\\." (version)))
-    (if r 
-        (old:jsexpr->string content #:indent 4)
-        (old:jsexpr->string content))))
+    (for/fold ([h (hasheq)]) ([k key*] [g-key g-key*] [to to*])
+      (dict-set h k (to (dict-ref c g-key))))))
 
 (require 'json)
 
@@ -147,7 +221,7 @@
   (define (case-name name)
     (define name* (string->list (~a name)))
     (define one (string-titlecase (string (first name*))))
-    (~a one (apply string (rest name*)) 'object))
+    (~a one (apply string (rest name*))))
   
   (define (blanks-needed t*)
     (define mx (apply max (map string-length (map first t*))))
@@ -189,6 +263,8 @@
     (REF-SPEC        4 #:to-jsexpr (λ (x) x) #:from-jsexpr (λ (x) x) #:is-a "RefSpec")
     (QUIET           5 #:is-a "Boolean" ))
   
+  (check-equal? (server-PORT (server 1 2 3 4 5 6)) 1)
+  
   (check-equal? [length server-options] 6)
   [check-equal? [contract? server-object/c] #true]
   [check-equal? (dict-ref default-server-object REF-SPEC) 4]
@@ -209,4 +285,19 @@
   [check-exn #px"key-value pair" (λ () (set-server-object default-server-object PORT 1 REF-SPEC))]
 
   (check-true (table? (server-object->definition))))
+
+
+(module+ test
+
+  (struct/description turn 
+                      {cards #:to-jsexpr values}
+                      {me #:to-jsexpr values}
+                      {scores})
+
+  (define b (turn 1 2 3))
+  
+  (check-true (table? [turn-struct->definition]))
+  (check-true (jsexpr? (turn->jsexpr b)))
+  (check-equal? (jsexpr->turn (turn->jsexpr b)) b))
+
 

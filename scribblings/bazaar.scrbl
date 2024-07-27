@@ -80,10 +80,10 @@ An equation shows two collections of pebbles on the sides of
 an @tt{=} sign; each side has at least one and at most @(~a [MAX-EQ-SIDE])
 pebbles. The two sides must not contain pebbles of the same color. 
 &
-@(e:render (e:1eq (list p:RED) (list p:GREEN p:BLUE p:WHITE)) p:render)
+@(e:render (e:1eq (list p:RED) (list p:GREEN p:BLUE p:WHITE)))
 @nl
 @nl
-@(e:render (e:1eq (list p:GREEN p:BLUE) (list p:RED p:YELLOW p:WHITE p:YELLOW)) p:render) |
+@(e:render (e:1eq (list p:GREEN p:BLUE) (list p:RED p:YELLOW p:WHITE p:YELLOW))) |
 @; ----------------------
 There are @(~a EQUATIONS#) equations overall. & |
 @; ----------------------

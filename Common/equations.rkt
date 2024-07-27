@@ -236,9 +236,9 @@
     (map 1eq->jsexpr eq*))
 
   (define (jsexpr->equations j)
-    (def/jsexpr-> equations
-      #:array [(list (app jsexpr->1eq (? 1eq? 1eq)) ...) 1eq])
+    (def/jsexpr-> equations #:array [(list (app jsexpr->1eq (? 1eq? 1eq)) ...) 1eq])
     (define eq* (jsexpr->equations j))
+    
     (cond
       [(and eq* (distinct? eq*)) eq*]
       [else (eprintf "distinct set of equations expected, given ~a" j) #false]))
