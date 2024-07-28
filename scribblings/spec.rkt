@@ -25,6 +25,9 @@
   (define (pebbles#? x) (and (natural? x) (<= x PEBBLES#)))
 
   (define CARDS# 20)
+  (define VISIBLE# 4)
+  (define VISIBLE#-as-str "four")
+  
   (define (cards#? x) (and (natural? x) (<= x PEBBLES#)))
 
   (define TRADES# 3)
