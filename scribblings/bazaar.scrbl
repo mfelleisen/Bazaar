@@ -72,7 +72,7 @@ There are @(~a PEBBLES#) pebbles overall, an equal number of each kind. & |
 A card displays five images of such pebbles, arranged in a
 circular manner, optionally decorated with a happy face in the center.
 &
-@element-join[(map c:render (list c:CARD1 c:CARD2)) "      "] |
+@element-join[(map c:render (list c:c-rrbrr c:c-rrbrr*)) "      "] |
 @; ----------------------
 There are @(~a CARDS#) cards overall, pairwise distinct. & | 
 @; ----------------------

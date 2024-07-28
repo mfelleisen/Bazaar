@@ -16,7 +16,7 @@
  render)
 
 (module+ examples
-  (provide CARD1 CARD2))
+  (provide c-rrbrr c-rrbrr*))
 
 (module+ json
   (provide
@@ -104,8 +104,10 @@
 #; {type Card = (card [Bad X] Boolean)}
 
 (module+ examples
-  (define CARD1 (card b-rrbrr #false))
-  (define CARD2 (card b-rrbrr  #true)))
+  (define c-rrbrr (card b-rrbrr #false))
+  (define c-rrbrr* (card b-rrbrr #true))
+  (define c-rg  (card b-rg    #false))
+  (define c-rg* (card b-rg    #true)))
 
 ;                                                                                             
 ;      ;;                                                                                     
@@ -201,13 +203,13 @@
 ;                                     
 
 (module+ pict
-  (render CARD1)
-  (render CARD2))
+  (render c-rrbrr)
+  (render c-rrbrr*))
 
 (module+ test
-  (check-equal? (calculate-points CARD1 0) (second (last POINTS)))
-  (check-equal? (calculate-points CARD2 0) (third (last POINTS)))
+  (check-equal? (calculate-points c-rrbrr 0) (second (last POINTS)))
+  (check-equal? (calculate-points c-rrbrr* 0) (third (last POINTS)))
   
-  (check-equal? (jsexpr->card (card->jsexpr CARD1)) CARD1)
-  (check-equal? (jsexpr->card* (card*->jsexpr (list CARD1))) (list CARD1)))
+  (check-equal? (jsexpr->card (card->jsexpr c-rrbrr)) c-rrbrr)
+  (check-equal? (jsexpr->card* (card*->jsexpr (list c-rrbrr))) (list c-rrbrr)))
   
