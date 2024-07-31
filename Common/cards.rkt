@@ -1,6 +1,6 @@
 #lang racket
 
-;; a generic data representation of cards 
+;; a data representation of cards 
 
 ;; ---------------------------------------------------------------------------------------------------
 (provide

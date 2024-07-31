@@ -4,8 +4,14 @@
 
 (provide
  #; {type Player}
+ player?
+ player-score
+
  #; {type Score = Natural}
 
+ #; {[Listof Player] -> Pict}
+ render*
+ 
  #; {Player -> Pict}
  render
 
@@ -21,6 +27,9 @@
 
 (module+ json
   (provide
+   player*->jsexpr
+   jsexpr->player*
+
    player->jsexpr
    jsexpr->player
 
@@ -112,7 +121,12 @@
 ;                                                                                        ;    
 ;                                                                                       ;;    
 
-#; {State -> Pict}
+#; {[Listof Player] -> Pict}
+(define (render* players)
+  (define p-states (map render players))
+  (apply hb-append 5 p-states))
+
+#; {Player -> Pict}
 (define (render ps #:name (name ""))
   (match-define [player wallet score] ps)
   (define p-name   (text name "roman" 12))
@@ -124,7 +138,28 @@
 (define (render-scores scores)
   (apply hb-append 10 (map (λ (score) (text (~a score) "roman" 12)) scores)))
 
+;                              
+;      ;                       
+;                              
+;                              
+;    ;;;    ;;;    ;;;   ; ;;  
+;      ;   ;   ;  ;; ;;  ;;  ; 
+;      ;   ;      ;   ;  ;   ; 
+;      ;    ;;;   ;   ;  ;   ; 
+;      ;       ;  ;   ;  ;   ; 
+;      ;   ;   ;  ;; ;;  ;   ; 
+;      ;    ;;;    ;;;   ;   ; 
+;      ;                       
+;      ;                       
+;    ;;                        
+
 (module+ json
+  (define (player*->jsexpr s)
+    (map player->jsexpr s))
+
+  (def/jsexpr-> player*
+    #:array [(list (app jsexpr->player (? player? p)) ...) p])
+
   (define (score*->jsexpr s)
     (map natural->jsexpr s))
 
@@ -150,6 +185,7 @@
   (render p-r6 #:name "clown"))
 
 (module+ test
+  (check-equal? (jsexpr->player* (player*->jsexpr (list p-r6))) (list p-r6))
   (check-equal? (jsexpr->player (player->jsexpr p-r6)) p-r6)
 
   (define lon '[1 2 3])

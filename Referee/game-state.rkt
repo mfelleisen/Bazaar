@@ -1,33 +1,21 @@
 #lang racket
 
-;; bags filled with pebbles 
+;; the referee's game state representation, including "connections" to the actual players
 
-;; ---------------------------------------------------------------------------------------------------
 (provide
- #; {type [Bag X] = [Listof X]}
- ;; X is what the bag contains 
+ #; {type GameState}
+ game?
 
- bag?
- bag
- bag-empty?
- bag-size
- subbag?
- bag-minus
- bag-intersect
- bag-equal?
- render)
+ #; {GameState -> TurnState}
+ extract-turn)
+
+(module+ examples
+  (provide gs1))
 
 (module+ json
   (provide
-   #;{[Bag X] [X -> JSexpr] -> JSExpr}
-   bag->jsexpr
-
-   #; {[JSExpr [Y -> Boolean : X] [JSExpr -> X] -> (U False [Bag X])]}
-   jsexpr->bag))
-
-(module+ examples
-  (provide b-rg b-bbbb b-4xb-3xg b-ggg b-r b-g b-ggb b-gw
-           b-ggggg b-rgbrg b-wyrbb b-rrbrr))
+   game->jsexpr
+   jsexpr->game))
 
 ;                                                                                      
 ;       ;                                  ;                                           
@@ -44,26 +32,37 @@
 ;                 ;                                                                    
 ;                 ;                                                                    
 
-(require (prefix-in p: Bazaar/Common/pebbles))
-(require (prefix-in lib: (only-in Bazaar/Lib/bags render)))
-(require Bazaar/Lib/bags)
-(require)
+(require (submod Bazaar/Common/cards examples))
+(require (submod Bazaar/Common/bags examples))
+(require (submod Bazaar/Common/player examples))
+
+(require (submod Bazaar/Common/bags json))
+(require (submod Bazaar/Common/cards json))
+(require (submod Bazaar/Common/player json))
+
+(require (prefix-in b: Bazaar/Common/bags))
+(require (prefix-in p: Bazaar/Common/player))
+(require (prefix-in c: Bazaar/Common/cards))
+
+(require Bazaar/Common/turn-state)
+
+(require Bazaar/Lib/configuration)
+(require (prefix-in b: Bazaar/Common/bags))
+(require (prefix-in p: Bazaar/Common/player))
+
+(require Bazaar/Lib/configuration)
+(require Bazaar/Lib/parse-json)
+
+(require pict)
+
+(module+ pict
+  (require (submod ".." examples)))
 
 (module+ test
   (require (submod ".." examples))
-  (require (submod ".." json))
-  (require json)
+  (require (submod Bazaar/Common/turn-state json))
   (require rackunit))
-
-(module+ json
-  (require (submod Bazaar/Common/pebbles json))
-  (require (prefix-in lib: (submod Bazaar/Lib/bags json)))
-  (require Bazaar/Lib/parse-json))
-
-(module+ examples
-  (require (prefix-in p: (submod Bazaar/Common/pebbles examples))))
-
-
+  
 ;                                                          
 ;       ;                                  ;            ;; 
 ;       ;           ;                      ;           ;   
@@ -79,26 +78,27 @@
 ;                                                          
 ;                                                          
 
-;; a bag for this project is
-#;   [Bag Pebble]
+(struct player+ [player connection] #:prefab)
+
+(define (player+*->jsexpr p*)
+  (map (compose player->jsexpr player+-player) p*))
+
+(def/jsexpr-> player+*
+  #:array [(list (app jsexpr->player (? p:player? p)) ...) (map (λ (p) (player+ p 'unknown)) p)])
+
+(struct/description
+ game
+ [bank     #:to-jsexpr bag->jsexpr   #:from-jsexpr jsexpr->bag   #:is-a "*Pebbles"]
+ [visibles #:to-jsexpr card*->jsexpr #:from-jsexpr jsexpr->card* #:is-a "*Cards"]
+ [cards    #:to-jsexpr card*->jsexpr #:from-jsexpr jsexpr->card* #:is-a "*Cards"]
+ [players  #:to-jsexpr player+*->jsexpr #:from-jsexpr jsexpr->player+*
+           #:is-a "*Players"])
+
+#; {type GameState = (game Bag [Listof Card] [Listof Card] [Listof Player+])}
+#; {type Player+   = (player+ Player {Object with name method})}
 
 (module+ examples
-  ;; usable for cards 
-  (define b-rrbrr [bag p:RED p:RED p:BLUE p:RED p:RED])
-  (define b-ggggg (bag p:GREEN p:GREEN p:GREEN p:GREEN p:GREEN))
-  (define b-rgbrg (bag p:RED p:GREEN p:BLUE p:RED p:GREEN))
-  (define b-wyrbb (bag p:WHITE p:YELLOW p:RED p:BLUE p:BLUE))
-  
-  (define b-ggg [bag p:GREEN p:GREEN p:GREEN])
-  (define b-r   [bag p:RED])
-  (define b-g   [bag p:GREEN])
-  (define b-ggb [bag p:GREEN p:GREEN p:BLUE])
-  (define b-gw  [bag p:RED p:WHITE])
-  (define b-4xb-3xg [bag p:BLUE p:BLUE p:BLUE p:BLUE p:GREEN p:GREEN p:GREEN])
-  (define b-rg      [bag p:RED p:GREEN])
-  (define b-bbbb    [bag p:BLUE p:BLUE p:BLUE p:BLUE])
-
-)
+  (define gs1 (game b-ggggg [list c-ggggg c-rrbrr c-rgbrg] (list) (list (player+ p-r6 'unknown)))))
 
 ;                                                                                             
 ;      ;;                                                                                     
@@ -115,27 +115,31 @@
 ;                                                                                        ;    
 ;                                                                                       ;;    
 
-(define (render b) (lib:render b p:render))
+#; {GameState -> TurnState}
+(define (extract-turn rs)
+  (match-define [game bank visibles _cards player-states] rs)
+  (define active (first player-states))
+  (define others (rest player-states))
+  (turn-state bank visibles active (extract-score others)))
 
-;                              
-;      ;                       
-;                              
-;                              
-;    ;;;    ;;;    ;;;   ; ;;  
-;      ;   ;   ;  ;; ;;  ;;  ; 
-;      ;   ;      ;   ;  ;   ; 
-;      ;    ;;;   ;   ;  ;   ; 
-;      ;       ;  ;   ;  ;   ; 
-;      ;   ;   ;  ;; ;;  ;   ; 
-;      ;    ;;;    ;;;   ;   ; 
-;      ;                       
-;      ;                       
-;    ;;                        
+#; {[Listof Player+] -> [Listof Score]}
+(define (extract-score players+)
+  (map (compose p:player-score player+-player) players+))
 
-(module+ json
-  (define (bag->jsexpr b) (lib:bag->jsexpr b pebble->jsexpr))
+;; ---------------------------------------------------------------------------------------------------
+#; {GameState -> Pict}
+(define (render rs)
+  (match-define [game bank visibles cards player+*] rs)
+  (define p-bank     (b:render bank))
+  (define p-visibles (c:render* visibles))
+  (define p-players  (render-players player+*))
+  (frame (inset (hb-append 10 p-bank p-visibles (apply hb-append 5 p-players)) 2)))
 
-  (define (jsexpr->bag j) (lib:jsexpr->bag j p:pebble-color? jsexpr->pebble)))
+#; {[Listof Player+] -> [Listof Pict]}
+(define (render-players player+*)
+  (for/list ([p player+*])
+    (define name (if (is-a? p object%) (send p name) "unknown"))
+    (p:render (player+-player p) #:name name)))
 
 ;                                     
 ;                                     
@@ -152,6 +156,8 @@
 ;                                     
 ;                                     
 
-(module+ test 
-  (check-true (jsexpr? (bag->jsexpr b-rrbrr)))
-  (check bag-equal? (jsexpr->bag (bag->jsexpr b-rrbrr)) b-rrbrr "basic bag test"))
+(module+ pict
+  (render gs1))
+
+(module+ test
+  (check-equal? (jsexpr->game (game->jsexpr gs1)) gs1))

@@ -3,14 +3,17 @@
 ;; a data representation of the information that the referee sends to the active player 
 
 (provide
+ #; {type TurnState}
+ turn-state?
  turn-state)
 
 (provide ;; for milestone definitions 
  turn-state-struct->definition)
 
 (module+ json
-  turn-state->jsexpr
-  jsexpr->turn-state)
+  (provide
+   turn-state->jsexpr
+   jsexpr->turn-state))
 
 (module+ examples
   (provide ts1))
@@ -33,11 +36,14 @@
 (require (submod Bazaar/Common/bags json))
 (require (submod Bazaar/Common/cards json))
 (require (submod Bazaar/Common/player json))
+
 (require (submod Bazaar/Common/cards examples))
 (require (submod Bazaar/Common/bags examples))
 (require (submod Bazaar/Common/player examples))
+
 (require (prefix-in b: Bazaar/Common/bags))
 (require (prefix-in p: Bazaar/Common/player))
+
 (require Bazaar/Lib/configuration)
 (require pict)
 
