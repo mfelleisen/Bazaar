@@ -14,26 +14,39 @@ Here is a rough overview of the layers:
         + ---------------- +
         | player-interface |
         + ---------------- +
-        | - setup          | refers to `states`, `coordinates`
-        | - take-turn      |
-        | - new-tiles      |
-        | - win            |
-        | - name           |
-        + ---------------- +
-        
+        | - setup          |         + ---------------- +        + ---------------- +
+        | - take-turn      | ------> | IAction          | -----> | trade->purchase  | 
+        | - win            |         + ---------------- +        + ---------------- +
+        | - name           |                |        + ---------------- +
+        + ---------------- +                + -----> | want-pebble      |
+                                                     + ---------------- +
         + ---------------- +    *     + ---------------- +          
-        | turn-state       | -------> | players          | 
+        | turn-state       | -------> | player           | 
         + ---------------- + ---+     + ---------------- +         
-        | players          |    |     | score            |
-        | tiles            |    |     | pebbles          |
-        | legal            |    |     + ---------------- +
-        | score            |    |     
-        | active-*         |    |
+        | active           |    |     | score            |
+        | wallet           |    |     | pebbles          |
+        | bank             |    |     + ---------------- +
+        | cards            |    |
+        | scores           |    |     
         + ---------------- +    |
                                 |
         ---------------------------------------------------------------------------------------------------
                                 |
  BASIC CONCEPTS                 |
                                 |
+          +---------------------+---------------------+
+          |                     |                     |
+ + ---------------- +     + ---------------- +   + ---------------- +     
+ | Equations/1Eq    |     | Cards            |   | Pebbles          |
+ + ---------------- +     + ---------------- +   + ---------------- +
+          |                     |
+          + ------------------- +
+                      |
+                + ---------------- +      
+                | Bags             |
+                + ---------------- +
 ```
+### Generic Game State and Interaction Protocol 
+
+@@include(../Common/interacting-with-turn-state.txt)
 
