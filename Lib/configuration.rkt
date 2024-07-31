@@ -25,9 +25,7 @@
  define-object
 
  struct/description
-
- struct/jsexpr
-
+ 
  is-list-of-key-value-pairs)
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -38,7 +36,21 @@
 (require (for-syntax racket/format))
 (require json)
 
-;; ---------------------------------------------------------------------------------------------------
+;                                            
+;                                            
+;            ;                           ;   
+;            ;                           ;   
+;    ;;;   ;;;;;   ;;;;  ;   ;   ;;;   ;;;;; 
+;   ;   ;    ;     ;;  ; ;   ;  ;;  ;    ;   
+;   ;        ;     ;     ;   ;  ;        ;   
+;    ;;;     ;     ;     ;   ;  ;        ;   
+;       ;    ;     ;     ;   ;  ;        ;   
+;   ;   ;    ;     ;     ;   ;  ;;       ;   
+;    ;;;     ;;;   ;      ;;;;   ;;;;    ;;; 
+;                                            
+;                                            
+;                                            
+
 (define-syntax (struct/description stx)
   (syntax-parse stx
     [(_ name
@@ -60,8 +72,9 @@
          (define key* [list 'key ...])
          
          #; {Struct -> JSexpr}
-         (define to*    `[,to ...])
-         (define [name->jsexpr s-instance] (struct->jsexpr s-instance key* to*))
+         (define key+to* (map cons key* `[,to ...]))
+         (define [name->jsexpr s-instance]
+           (struct->jsexpr s-instance key+to*))
 
          #; {JSexpr -> Struct}
          (define [jsexpr->name j]
@@ -77,6 +90,21 @@
          #; {Struct -> ScribbleTable}
          (define t* (map (λ (k c) (list (~a k) c)) key*  `((,is-a ...) ...)))
          (define [name->def] (fields->data-def 'name t*)))]))
+
+;                                     
+;       ;                             
+;       ;     ;            ;          
+;       ;                  ;          
+;    ;;;;   ;;;    ;;;   ;;;;;   ;;;  
+;   ;; ;;     ;   ;;  ;    ;    ;   ; 
+;   ;   ;     ;   ;        ;    ;     
+;   ;   ;     ;   ;        ;     ;;;  
+;   ;   ;     ;   ;        ;        ; 
+;   ;; ;;     ;   ;;       ;    ;   ; 
+;    ;;;;   ;;;;;  ;;;;    ;;;   ;;;  
+;                                     
+;                                     
+;                                     
 
 (define-syntax (define-object stx)
   (syntax-parse stx
@@ -100,7 +128,6 @@
      #:with dict->state (format-id stx "dict->~a" #'name #:source #'name #:props stx)
      #`(begin
          (struct name [key ...] #:prefab)
-         (struct/jsexpr name state->dict dict->state)
          
          (define key (~a 'key)) ...
          (define name-options [list key ...])
@@ -134,21 +161,6 @@
              (list (~a k) c)))
          (define [name->def] (fields->data-def 'name t*)))]))
 
-(define-syntax (struct/jsexpr x)
-  (syntax-parse x
-    [(_ s state->dict dict->state)
-     #:do [(define sv (syntax-local-value #'s))]
-     #:with (fn ...) (reverse (struct-field-info-list sv))
-     #'(begin
-         (define (dict->state instance)
-           [define xx (list (~a 'fn) ...)]
-           [define vl (for/list ([f xx]) (dict-ref instance f))]
-           (apply s vl))
-         (define (state->dict instance)
-           [define xx (list (~a 'fn) ...)]
-           [define vl (cdr (vector->list (struct->vector instance)))]
-           (make-hash (map cons xx vl))))]))
-
 #; {Symbol -> Symbol}
 (define (normalize key)
   (string->symbol (string-downcase (~a key))))
@@ -173,7 +185,20 @@
          (error tag "object key expected, given ~a" k))
        (dict-set h k v))]))
 
-;; dealing with JSON
+;                              
+;      ;                       
+;                              
+;                              
+;    ;;;    ;;;    ;;;   ; ;;  
+;      ;   ;   ;  ;; ;;  ;;  ; 
+;      ;   ;      ;   ;  ;   ; 
+;      ;    ;;;   ;   ;  ;   ; 
+;      ;       ;  ;   ;  ;   ; 
+;      ;   ;   ;  ;; ;;  ;   ; 
+;      ;    ;;;    ;;;   ;   ; 
+;      ;                       
+;      ;                       
+;    ;;                        
 
 (module json racket
   (provide
@@ -185,11 +210,12 @@
    jsexpr->string)
 
   (require json)
-
-  (define (struct->jsexpr s field-names to*)
+  
+  (define (struct->jsexpr s field-names+to*)
     (define values (rest (vector->list (struct->vector s))))
     (define j
-      (for/fold ([h (hash)]) ([k field-names] [v values] [to to*])
+      (for/fold ([h (hash)]) ([k+to field-names+to*] [v values])
+        (match-define (cons k to) k+to)
         (dict-set h k (to v))))
     j)
   
@@ -199,8 +225,20 @@
 
 (require 'json)
 
-;; ---------------------------------------------------------------------------------------------------
-;; rendering a object as a scribble documentation
+;                                                          
+;                               ;      ;                   
+;                           ;   ;      ;      ;;;          
+;                               ;      ;        ;          
+;    ;;;    ;;;    ;;;;   ;;;   ;;;;   ;;;;     ;     ;;;  
+;   ;   ;  ;;  ;   ;;  ;    ;   ;; ;;  ;; ;;    ;    ;;  ; 
+;   ;      ;       ;        ;   ;   ;  ;   ;    ;    ;   ;;
+;    ;;;   ;       ;        ;   ;   ;  ;   ;    ;    ;;;;;;
+;       ;  ;       ;        ;   ;   ;  ;   ;    ;    ;     
+;   ;   ;  ;;      ;        ;   ;; ;;  ;; ;;    ;    ;     
+;    ;;;    ;;;;   ;      ;;;;; ;;;;   ;;;;      ;;   ;;;; 
+;                                                          
+;                                                          
+;                                                          
 
 (module scribble racket
   (provide
@@ -247,7 +285,21 @@
 
 (require 'scribble)
 
-;; ---------------------------------------------------------------------------------------------------
+;                                     
+;                                     
+;     ;                    ;          
+;     ;                    ;          
+;   ;;;;;   ;;;    ;;;   ;;;;;   ;;;  
+;     ;    ;;  ;  ;   ;    ;    ;   ; 
+;     ;    ;   ;; ;        ;    ;     
+;     ;    ;;;;;;  ;;;     ;     ;;;  
+;     ;    ;          ;    ;        ; 
+;     ;    ;      ;   ;    ;    ;   ; 
+;     ;;;   ;;;;   ;;;     ;;;   ;;;  
+;                                     
+;                                     
+;                                     
+
 (module+ test
   (provide  server-object->definition default-server-object)
 
