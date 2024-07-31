@@ -10,6 +10,7 @@ for an explanation of how code files are organized in Racket.
 
 | file | purpose |
 |--------------------- | ------- |
+| [player-interface.rkt](player-interface.rkt) | a player interface that the referee can use to service players | 
 | [turn-state.rkt](turn-state.rkt) | a data representation of the information that the referee sends to the active player | 
 | [player.rkt](player.rkt) | a data representation of the ref's knowledge about the active olayer that it shares during turn | 
 | [README.more](README.more) |  | 
@@ -18,7 +19,6 @@ for an explanation of how code files are organized in Racket.
 | [cards.rkt](cards.rkt) | a data representation of cards | 
 | [equations.rkt](equations.rkt) | a data representation of (generic) equations | 
 | [pebbles.rkt](pebbles.rkt) | a data representationn for pebbles | 
-| [player-interface.rkt](player-interface.rkt) | a player interface that the referee can use to service players | 
 
 
 Here is a rough overview of the layers: 
@@ -149,7 +149,7 @@ referee                         player (p_1) . . . player (p_n)
   |                                |                 |
 ```
 
-#### Turn Step 1 
+#### Turn Case 1: player requests a random pebble
 
 ```
 
@@ -186,7 +186,7 @@ referee                         player (p_1) . . . player (p_n)
   
 ```
 
-#### Turn Step 2
+#### Turn Case 2: player trades and purchases only
 
 ```
 
