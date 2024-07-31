@@ -4,10 +4,9 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 (provide
- #; {type [Card X]}
- ;; X is the "currency" displayed on cards 
-
- ;; examples 
+ #; {type Card}
+ ;; X is the "currency" displayed on cards
+ card?
  
  #; {Card N -> N}
  calculate-points

@@ -22,7 +22,8 @@
  #; {type Equation* = [Setof 1Equation]}
  
  #; {type 1Equation = [List Bag Bag]}
- ;; the intersection of thetwo sets must be empty 
+ ;; the intersection of thetwo sets must be empty
+ 1eq?
  
  #; {Equations Equations -> Boolean}
  ;; are the two sets of equations equal? -- each side is considered a set, too
