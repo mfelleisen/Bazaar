@@ -1,6 +1,7 @@
 #lang racket
 
-;; a data representation of the information that the referee sends to the active player 
+;; a data representation of the information that the referee sends to the active player
+;; ---------------------------------------------------------------------------------------------------
 
 (provide
  #; {type TurnState}
@@ -45,6 +46,7 @@
 (require (prefix-in p: Bazaar/Common/player))
 
 (require Bazaar/Lib/configuration)
+(require Bazaar/Lib/parse-json)
 (require pict)
 
 (module+ pict
@@ -71,7 +73,7 @@
 
 (struct/description
  turn-state
- [bank   #:to-jsexpr bag->jsexpr #:from-jsexpr jsexpr->bag #:is-a "*Pebbles"]
+ [bank   #:to-jsexpr boolean->jsexpr #:from-jsexpr jsexpr->boolean #:is-a "Boolean"]
  [cards  #:to-jsexpr card*->jsexpr #:from-jsexpr jsexpr->card* #:is-a "*Cards"]
  [active #:to-jsexpr player->jsexpr #:from-jsexpr jsexpr->player #:is-a "Player"]
  [scores #:to-jsexpr score*->jsexpr #:from-jsexpr jsexpr->score* #:is-a "Natural"])

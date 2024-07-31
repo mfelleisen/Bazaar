@@ -1,16 +1,20 @@
 #lang racket
 
 ;; the referee's game state representation, including "connections" to the actual players
+;; ---------------------------------------------------------------------------------------------------
 
 (provide
  #; {type GameState}
  game?
 
+ #; {GameState -> Boolean}
+ game-over?
+
  #; {GameState -> TurnState}
  extract-turn)
 
 (module+ examples
-  (provide gs1))
+  (provide gs0 gs1 gs-no-players gs-20))
 
 (module+ json
   (provide
@@ -31,6 +35,8 @@
 ;                 ;                                                                    
 ;                 ;                                                                    
 ;                 ;                                                                    
+
+(require Bazaar/scribblings/spec)
 
 (require (submod Bazaar/Common/cards examples))
 (require (submod Bazaar/Common/bags examples))
@@ -98,7 +104,13 @@
 #; {type Player+   = (player+ Player {Object with name method})}
 
 (module+ examples
-  (define gs1 (game b-ggggg [list c-ggggg c-rrbrr c-rgbrg] (list) (list (player+ p-r6 'unknown)))))
+  (define gs0 (game b-ggggg (list) (list) (list (player+ p-r6 'unknown))))
+  (define gs1 (game b-ggggg [list c-ggggg c-rrbrr c-rgbrg] (list) (list (player+ p-r6 'unknown))))
+
+  (define gs-no-players (game b-ggggg [list c-ggggg c-rrbrr c-rgbrg] (list) (list)))
+  (define gs-20 (game b-r [list c-ggggg] (list) (list (player+ p-rrbrr-20 'x) (player+ p-r6 'y)))))
+
+    
 
 ;                                                                                             
 ;      ;;                                                                                     
@@ -115,6 +127,19 @@
 ;                                                                                        ;    
 ;                                                                                       ;;    
 
+#; {GameState -> Boolean}
+(define (game-over? gs)
+  (match-define [game _bank visibles cards players] gs)
+  (or (empty? players)
+      (winning-points? (first players))
+      (and (empty? cards) (empty? visibles))))
+
+#; {Player+ -> Boolean}
+(define (winning-points? p+)
+  (match-define [player+ p _] p+)
+  (p:winning-points? p))
+
+;; ---------------------------------------------------------------------------------------------------
 #; {GameState -> TurnState}
 (define (extract-turn rs)
   (match-define [game bank visibles _cards player-states] rs)
@@ -160,4 +185,10 @@
   (render gs1))
 
 (module+ test
-  (check-equal? (jsexpr->game (game->jsexpr gs1)) gs1))
+  (check-equal? (jsexpr->game (game->jsexpr gs1)) gs1)
+
+  (check-true (game-over? gs0) "no cards left")
+  (check-true (game-over? gs-no-players) "no players left")
+  (check-true (game-over? gs-20) "player has enough points")
+  
+  (check-false (game-over? gs1)))

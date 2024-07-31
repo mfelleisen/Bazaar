@@ -1,8 +1,8 @@
 #lang racket
 
 ;; bags filled with pebbles 
-
 ;; ---------------------------------------------------------------------------------------------------
+
 (provide
  #; {type [Bag X] = [Listof X]}
  ;; X is what the bag contains 

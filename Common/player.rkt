@@ -1,11 +1,14 @@
 #lang racket
 
 ;; a data representation of the ref's knowledge about the active olayer that it shares during turn
+;; ---------------------------------------------------------------------------------------------------
 
 (provide
  #; {type Player}
  player?
  player-score
+
+ winning-points?
 
  #; {type Score = Natural}
 
@@ -23,7 +26,7 @@
 
 (module+ examples
   (provide
-   p-rg1 p-rg2 p-bbbb3 p-4xb-3xg4 p-ggg5 p-r6 p-g7 p-ggb8 p-gw9 p-ggggg p-rgbrg p-wyrbb p-rrbrr))
+   p-rg1 p-rg2 p-bbbb3 p-4xb-3xg4 p-ggg5 p-r6 p-g7 p-ggb8 p-gw9 p-ggggg p-rgbrg p-wyrbb p-rrbrr-20))
 
 (module+ json
   (provide
@@ -48,8 +51,9 @@
 ;   ;; ;;  ;      ;; ;;  ;      ;   ;  ;; ;;  ;      ;   ;  ;;        ;   ;      ;   ; 
 ;    ;;;;   ;;;;  ;;;;    ;;;;  ;   ;   ;;;;   ;;;;  ;   ;   ;;;;   ;;;;;  ;;;;   ;;;  
 ;                 ;                                                                    
-;                 ;                                                                    
-;                 ;                                                                    
+;                 ;
+
+(require Bazaar/scribblings/spec)
 
 (require (submod Bazaar/Common/bags json))
 (require (prefix-in b: Bazaar/Common/bags))
@@ -104,7 +108,7 @@
   (define p-ggggg (player b-ggggg 0))
   (define p-rgbrg (player b-rgbrg 0))
   (define p-wyrbb (player b-wyrbb 0))
-  (define p-rrbrr (player b-rrbrr 0)))
+  (define p-rrbrr-20 (player b-rrbrr PLAYER-WINS)))
 
 ;                                                                                             
 ;      ;;                                                                                     
@@ -121,6 +125,11 @@
 ;                                                                                        ;    
 ;                                                                                       ;;    
 
+(define (winning-points? p)
+  (match-define [player _wallet score] p)
+  (>= score PLAYER-WINS))
+
+;; ---------------------------------------------------------------------------------------------------
 #; {[Listof Player] -> Pict}
 (define (render* players)
   (define p-states (map render players))

@@ -151,7 +151,9 @@ The game ends if
 @; -----------------------------------------------------------------------------
 @itemlist[
 
- @item{the bank has no more pebbles at the end of a player's turn;}
+ @;item{the bank has no more pebbles at the end of a player's turn;}
+
+ @item{all players have been kicked at the end of a player's turn;}
 
  @item{a player has @(~a PLAYER-WINS) points at the end of its turn; or}
 

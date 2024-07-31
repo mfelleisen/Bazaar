@@ -1,8 +1,8 @@
 #lang racket
 
 ;; a data representation of cards 
-
 ;; ---------------------------------------------------------------------------------------------------
+
 (provide
  #; {type Card}
  ;; X is the "currency" displayed on cards
