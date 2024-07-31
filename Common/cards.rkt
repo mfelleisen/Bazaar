@@ -12,6 +12,9 @@
  #; {Card N -> N}
  calculate-points
 
+ #; {[Listof Card] -> Pict}
+ render*
+
  #; {Card -> Pict}
  render)
 
@@ -132,7 +135,6 @@
   (for/first ([p POINTS] #:when (>= pebbles# (points-cards-left p)))
     (if (card-face? card) (points-with-face p) (points-no-face p))))
 
-#; {[Listof Card] -> Pict}
 (define (render* c*)
   (define how-many 6)
   (define L (length c*))
@@ -226,11 +228,8 @@
   (render c-rrbrr*)
 
   (define c* (list c-rrbrr c-rrbrr* c-rgbrg c-wyrbb c-rgbrg* c-wyrbb* c-ggggg c-ggggg*))
-  'just-visible 
   (render* (take c* VISIBLE#))
-  'fewer-than-visble
   (render* (rest (take c* VISIBLE#)))
-  'all
   (render* c*))
 
 (module+ test
