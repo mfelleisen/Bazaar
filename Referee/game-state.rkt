@@ -127,6 +127,12 @@
 ;                                                                                        ;    
 ;                                                                                       ;;    
 
+#; {GameState -> GameState}
+(define (kick gs)
+  (match-define [game bank visibles cards players] gs)
+  (game bank visibles cards (rest players)))
+
+;; ---------------------------------------------------------------------------------------------------
 #; {GameState -> Boolean}
 (define (game-over? gs)
   (match-define [game _bank visibles cards players] gs)
@@ -182,13 +188,14 @@
 ;                                     
 
 (module+ pict
+  'gs1
   (render gs1))
 
 (module+ test
   (check-equal? (jsexpr->game (game->jsexpr gs1)) gs1)
 
   (check-true (game-over? gs0) "no cards left")
-  (check-true (game-over? gs-no-players) "no players left")
+  (check-true (game-over? gs-no-players) "no players left ")
   (check-true (game-over? gs-20) "player has enough points")
   
   (check-false (game-over? gs1)))
