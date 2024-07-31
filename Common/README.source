@@ -1,0 +1,39 @@
+## Common 
+
+this component represents the common ontology of Q players and the Q gaming framework 
+
+### Table of Content
+
+@@table
+
+Here is a rough overview of the layers: 
+
+```
+ KEY CONCEPTS
+ 
+        + ---------------- +
+        | player-interface |
+        + ---------------- +
+        | - setup          | refers to `states`, `coordinates`
+        | - take-turn      |
+        | - new-tiles      |
+        | - win            |
+        | - name           |
+        + ---------------- +
+        
+        + ---------------- +    *     + ---------------- +          
+        | turn-state       | -------> | players          | 
+        + ---------------- + ---+     + ---------------- +         
+        | players          |    |     | score            |
+        | tiles            |    |     | pebbles          |
+        | legal            |    |     + ---------------- +
+        | score            |    |     
+        | active-*         |    |
+        + ---------------- +    |
+                                |
+        ---------------------------------------------------------------------------------------------------
+                                |
+ BASIC CONCEPTS                 |
+                                |
+```
+

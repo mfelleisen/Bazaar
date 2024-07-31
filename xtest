@@ -15,11 +15,12 @@ time raco test Lib/*.rkt 2>> errors.txt
 echo "testing Common" >> errors.txt
 time raco test Common/*.rkt 2>> errors.txt
 
+echo "testing Referee" >> errors.txt
+time raco test Referee/game-state.rkt 2>> errors.txt
+#  Referee/referee.rkt
+
 # echo "testing Player" >> errors.txt
 # time raco test Player/*.rkt 2>> errors.txt
-
-# echo "testing Referee" >> errors.txt
-# time raco test Referee/ref-state.rkt Referee/referee.rkt 2>> errors.txt
 
 # time raco test Remote/*.rkt 2>> errors.txt
 # time raco test Client/*.rkt 2>> errors.txt

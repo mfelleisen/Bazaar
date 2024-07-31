@@ -1,0 +1,14 @@
+## Referee 
+
+this component implements the Q referee 
+
+The referee is organized as a mechanism that sets up an initial state,
+consults external players to cause transitions from one state
+to the next, and applies a rule chhecker to each such transition
+until a final state is reached. 
+
+### Table of Content
+
+@@table 
+
+
