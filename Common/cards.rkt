@@ -16,7 +16,8 @@
  render)
 
 (module+ examples
-  (provide c-rrbrr c-rrbrr*))
+  (provide c-rrbrr  c-rgbrg c-wyrbb c-ggggg  
+           c-rrbrr* c-rgbrg* c-wyrbb* c-ggggg*))
 
 (module+ json
   (provide
@@ -55,8 +56,7 @@
 (require pict/face)
 
 (module+ examples
-  (require (submod Bazaar/Common/bags examples))
-  (require (prefix-in p: (submod Bazaar/Common/pebbles examples))))
+  (require (submod Bazaar/Common/bags examples)))
 
 (module+ json
   (require (submod Bazaar/Common/bags json))
@@ -69,7 +69,6 @@
 (module+ test
   (require (submod ".." examples))
   (require (submod ".." json))
-  (require (submod Bazaar/Common/pebbles json))
   (require rackunit))
 
 ;                                                          
@@ -104,10 +103,15 @@
 #; {type Card = (card [Bad X] Boolean)}
 
 (module+ examples
-  (define c-rrbrr (card b-rrbrr #false))
+  (define c-rrbrr  (card b-rrbrr #false))
   (define c-rrbrr* (card b-rrbrr #true))
-  (define c-rg  (card b-rg    #false))
-  (define c-rg* (card b-rg    #true)))
+
+  (define c-ggggg  (card b-ggggg #false))
+  (define c-ggggg* (card b-ggggg #true))
+  (define c-rgbrg  (card b-rgbrg #false))
+  (define c-rgbrg* (card b-rgbrg #true))
+  (define c-wyrbb  (card b-wyrbb #false))
+  (define c-wyrbb* (card b-wyrbb #true)))
 
 ;                                                                                             
 ;      ;;                                                                                     
@@ -123,10 +127,25 @@
 ;                                                                                         ;   
 ;                                                                                        ;    
 ;                                                                                       ;;    
-
+  
 (define (calculate-points card pebbles#)
-    (for/first ([p POINTS] #:when (>= pebbles# (first p)))
-      (if (card-face? card) (third p) (second p))))
+  (for/first ([p POINTS] #:when (>= pebbles# (points-cards-left p)))
+    (if (card-face? card) (points-with-face p) (points-no-face p))))
+
+#; {[Listof Card] -> Pict}
+(define (render* c*)
+  (define how-many 6)
+  (define L (length c*))
+  (define picts (map render (take c* (min how-many L))))
+  (cond
+    [(>= L VISIBLE#) (apply hc-append 5 (squared (take picts VISIBLE#)) (drop picts VISIBLE#))]
+    [else (apply hc-append 5 picts)]))
+
+#; {[Listof Pict] -> Pict}
+(define (squared picts)
+  (vl-append
+   (apply hb-append (take picts (quotient VISIBLE# 2)))
+   (apply hb-append (drop picts (quotient VISIBLE# 2)))))
 
 (define (render c)
   (define pebbles (map p:render (card-pebbles c)))
@@ -204,11 +223,19 @@
 
 (module+ pict
   (render c-rrbrr)
-  (render c-rrbrr*))
+  (render c-rrbrr*)
+
+  (define c* (list c-rrbrr c-rrbrr* c-rgbrg c-wyrbb c-rgbrg* c-wyrbb* c-ggggg c-ggggg*))
+  'just-visible 
+  (render* (take c* VISIBLE#))
+  'fewer-than-visble
+  (render* (rest (take c* VISIBLE#)))
+  'all
+  (render* c*))
 
 (module+ test
-  (check-equal? (calculate-points c-rrbrr 0) (second (last POINTS)))
-  (check-equal? (calculate-points c-rrbrr* 0) (third (last POINTS)))
+  (check-equal? (calculate-points c-rrbrr 0) (points-no-face (last POINTS)))
+  (check-equal? (calculate-points c-rrbrr* 0) (points-with-face (last POINTS)))
   
   (check-equal? (jsexpr->card (card->jsexpr c-rrbrr)) c-rrbrr)
   (check-equal? (jsexpr->card* (card*->jsexpr (list c-rrbrr))) (list c-rrbrr)))

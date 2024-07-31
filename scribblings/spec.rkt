@@ -32,7 +32,10 @@
 
   (define TRADES# 3)
   (define TRADES#-as-str "three")
-  
+
+  (define points-cards-left first)
+  (define points-no-face    second)
+  (define points-with-face  third)
 
   (define POINTS
     (list

@@ -26,7 +26,8 @@
    jsexpr->bag))
 
 (module+ examples
-  (provide b-rg b-bbbb b-4xb-3xg b-ggg b-r b-g b-ggb b-gw b-rrbrr))
+  (provide b-rg b-bbbb b-4xb-3xg b-ggg b-r b-g b-ggb b-gw
+           b-ggggg b-rgbrg b-wyrbb b-rrbrr))
 
 ;                                                                                      
 ;       ;                                  ;                                           
@@ -82,7 +83,12 @@
 #;   [Bag Pebble]
 
 (module+ examples
+  ;; usable for cards 
   (define b-rrbrr [bag p:RED p:RED p:BLUE p:RED p:RED])
+  (define b-ggggg (bag p:GREEN p:GREEN p:GREEN p:GREEN p:GREEN))
+  (define b-rgbrg (bag p:RED p:GREEN p:BLUE p:RED p:GREEN))
+  (define b-wyrbb (bag p:WHITE p:YELLOW p:RED p:BLUE p:BLUE))
+  
   (define b-ggg [bag p:GREEN p:GREEN p:GREEN])
   (define b-r   [bag p:RED])
   (define b-g   [bag p:GREEN])
