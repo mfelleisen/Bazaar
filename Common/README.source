@@ -50,3 +50,20 @@ Here is a rough overview of the layers:
 
 @@include(../Common/interacting-with-turn-state.txt)
 
+### The Logical Protocol 
+
+#### Starting the Game 
+
+@@include(../Common/protocol-start-game.txt)
+
+#### Turn Case 1: player requests a random pebble
+
+@@include(../Common/protocol-play-turn-1.txt)
+
+#### Turn Case 2: player trades and purchases only
+
+@@include(../Common/protocol-play-turn-2.txt)
+
+#### Ending the Game
+
+@@include(../Common/protocol-end-game.txt)

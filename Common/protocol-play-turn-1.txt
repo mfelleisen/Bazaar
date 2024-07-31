@@ -1,0 +1,32 @@
+
+referee                         player (p_1) . . . player (p_n)
+  |                                |                 |
+  |   take-turn(TurnState)         |                 | % player receives:
+  | -----------------------------> |                 | % - turn state            
+  |                                |                 |
+  |     WANT-PEBBLE                |                 | % requests a pebble 
+  | <============================  |                 |
+  |                                |                 | 
+  |--+                             |                 |
+  .  |                             .                 . % if legal:
+  .  |                             .                 . % referee modifies game state
+  .  |                             .                 . % completes turn 
+  .  |                             .                 . % otherwise: 
+  .  |                             .                 . % kick player out 
+  .<-+                             .                 . % completes turn 
+
+  IF LEGAL:
+  | -----------------------------> |                 | 
+  |   take-turn(TurnState)         |                 | % player receives:
+  | -----------------------------> |                 | % - turn state
+  |                                |                 | % with additional pebble
+  |   trade->purchase([],cards)    |		     | 
+  | <============================= |                 | % purchases cards
+  |--+                             |                 |
+  .  |                             .                 . % if legal:
+  .  |                             .                 . % referee modifies game state
+  .  |                             .                 . % completes turn 
+  .  |                             .                 . % otherwise: 
+  .  |                             .                 . % kick player out 
+  .<-+                             .                 . % completes turn 
+  

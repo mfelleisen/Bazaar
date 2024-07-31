@@ -127,3 +127,102 @@ otherwise:
         | <------------------------- |                                
 ```
 
+### The Logical Protocol 
+
+#### Starting the Game 
+
+```
+
+referee                         player (p_1) . . . player (p_n)
+  |                                |                 |
+  |                                |                 |
+  |                                |                 |
+  |     setup(equations)    	   |                 | % the table of equations
+  | -----------------------------> |                 | 
+  |                                |                 | 
+  .                                .                 .
+  .                                .                 . % repeat for descending age
+  .                                .                 . 
+  |                                |                 |
+  |     setup(equations)    	   |                 | 
+  | -----------------------------------------------> |
+  |                                |                 |
+```
+
+#### Turn Step 1 
+
+```
+
+referee                         player (p_1) . . . player (p_n)
+  |                                |                 |
+  |   take-turn(TurnState)         |                 | % player receives:
+  | -----------------------------> |                 | % - turn state            
+  |                                |                 |
+  |     WANT-PEBBLE                |                 | % requests a pebble 
+  | <============================  |                 |
+  |                                |                 | 
+  |--+                             |                 |
+  .  |                             .                 . % if legal:
+  .  |                             .                 . % referee modifies game state
+  .  |                             .                 . % completes turn 
+  .  |                             .                 . % otherwise: 
+  .  |                             .                 . % kick player out 
+  .<-+                             .                 . % completes turn 
+
+  IF LEGAL:
+  | -----------------------------> |                 | 
+  |   take-turn(TurnState)         |                 | % player receives:
+  | -----------------------------> |                 | % - turn state
+  |                                |                 | % with additional pebble
+  |   trade->purchase([],cards)    |		     | 
+  | <============================= |                 | % purchases cards
+  |--+                             |                 |
+  .  |                             .                 . % if legal:
+  .  |                             .                 . % referee modifies game state
+  .  |                             .                 . % completes turn 
+  .  |                             .                 . % otherwise: 
+  .  |                             .                 . % kick player out 
+  .<-+                             .                 . % completes turn 
+  
+```
+
+#### Turn Step 2
+
+```
+
+referee                         player (p_1) . . . player (p_n)
+  |                                |                 |
+  |   take-turn(TurnState)         |                 | % player receives:
+  | -----------------------------> |                 | % - turn state            
+  |                                |                 |   
+  |   trade->purchase(eqs,cards)   |		     | % trade by equations
+  | <============================= |                 | % purchases cards
+  |--+                             |                 |
+  .  |                             .                 . % if legal:
+  .  |                             .                 . % referee modifies game state
+  .  |                             .                 . % completes turn 
+  .  |                             .                 . % otherwise: 
+  .  |                             .                 . % kick player out 
+  .<-+                             .                 . % completes turn 
+  
+```
+
+#### Ending the Game
+
+```
+
+referee                        player (p_1) . . . player (p_n)
+  |                                |                 |
+  |                                |                 |
+  |     win(Boolean)               |                 | 
+  | -----------------------------> |                 | % true means "winner"
+  |                                |                 | % false means "loser" 
+  .                                .                 . 
+  .                                .                 . 
+  .                                .                 .
+  .                                .                 .
+  |     win(Boolean)               |                 |
+  | -----------------------------------------------> | % both winners and 
+  |                                |                 | % losers are informed 
+  |                                |                 |
+```

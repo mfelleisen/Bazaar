@@ -22,7 +22,7 @@ exec racket -tm "$0" -- ${1+"$@"}
      ; ["Server" "server"]
      ["Referee" #; "referee" "game-state"]
      ["Common"
-;      "player-interface"
+      "player-interface"
       "turn-state"
       "player"
       ]
