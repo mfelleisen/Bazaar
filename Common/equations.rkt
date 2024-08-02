@@ -46,18 +46,18 @@
  #; {Bag Bag -> 1Equation}
  1eq)
 
+;; ---------------------------------------------------------------------------------------------------
 (module+ examples
   (provide
-   #; {type UsefulScenarios =
-            [Listof [List [List [Listof [1Equation Pebble]] [Bag Pebble] [Bag Pebble]]
-                          [Listof [1Equation Pebble]]
-                          String]]}
+   #; {type UsefulScenarios = [Listof 1Scenario]}
+   #; {type 1Scenario       =  [List [List [Listof 1Equation] Bag Bag] [Listof 1Equation] String]}
 
    #; UsefulScenarios
    ForStudents/
    Tests/
    Exns/))
 
+;; ---------------------------------------------------------------------------------------------------
 (module+ json
   (provide
    
@@ -157,9 +157,11 @@
   (define 3xg=g    (1eq b-ggg b-g)) ;; bad equation
   (define ggb=rw   (1eq b-ggb b-gw)))
 
-(module+ examples ;; make scenarios 
-  (define-syntax-rule (scenario+ kind actual expected msg)
-    (set! kind (append kind (list [list actual expected msg]))))
+(module+ examples ;; make scenarios
+
+  #; {(scenaro* Id [List [Listof 1Equation] bank:Bag wallet:Bag] [Listof 1Equation] String)}
+  (define-syntax-rule (scenario+ kind args expected msg)
+    (set! kind (append kind (list [list args expected msg]))))
   
   (define ForStudents/ '[])
   (scenario+ ForStudents/ `[,(list r-g=4xb) ,b-rg ,b-bbbb] (list r-g=4xb) "left2right, not vv")
@@ -296,10 +298,10 @@
   (define (run-scenario* t scenario* #:check (C (λ (equal? act exp m) (check equal? [act] exp m))))
     (eprintf "--------------- ~a\n" t)
     (for ([s scenario*] [i (in-naturals)])
-      (match-define (list actual expected msg) s)
-      (match-define (list equations wallet bank) actual)
+      (match-define (list args expected msg) s)
+      (match-define (list equations wallet bank) args)
       (show i equations wallet bank expected)
-      (C equations-equal? (λ () (apply useful actual)) expected msg)))
+      (C equations-equal? (λ () (apply useful args)) expected msg)))
 
   #; {Natural Equations Bag Bag (U Regexp Equations) -> Void}
   (define (show i equations wallet bank expected)
