@@ -19,7 +19,7 @@
    jsexpr->turn-state))
 
 (module+ examples
-  (provide ts0 ts1))
+  (provide ts0 ts1 ts-20))
   
 ;                                                                                      
 ;       ;                                  ;                                           
@@ -45,6 +45,7 @@
 (require (submod Bazaar/Common/player examples))
 
 (require (prefix-in b: Bazaar/Common/bags))
+(require (prefix-in c: Bazaar/Common/cards))
 (require (prefix-in p: Bazaar/Common/player))
 
 (require Bazaar/Lib/configuration)
@@ -82,7 +83,8 @@
 
 (module+ examples
   (define ts0 (turn-state b-ggggg (list)                         p-r6 '[]))
-  (define ts1 (turn-state b-ggggg [list c-ggggg c-rrbrr c-rgbrg] p-r6 '[])))
+  (define ts1 (turn-state b-ggggg [list c-ggggg c-rrbrr c-rgbrg] p-r6 '[]))
+  (define ts-20 (turn-state b-r [list c-ggggg] p-rrbrr-20 (list 6))))
 
 ;                                                                                             
 ;      ;;                                                                                     
@@ -100,11 +102,12 @@
 ;                                                                                       ;;    
 
 (define (render ts #:name (name ""))
-  (match-define [turn-state bank cards active scores] ts)
+  (match-define [turn-state bank visibles active scores] ts)
   (define p-bank   (b:render bank))
   (define p-active (p:render active #:name name))
+  (define p-visibles (c:render* visibles))
   (define p-scores (frame (inset (p:render-scores scores) 2)))
-  (frame (inset (hc-append 10 p-bank p-active p-scores) 5)))
+  (frame (inset (hc-append 10 p-bank p-visibles p-active p-scores) 5)))
 
 ;                                     
 ;                                     

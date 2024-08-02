@@ -138,6 +138,8 @@
 
   (define ForStudents/ '[])
   (scenario+ ForStudents/ gs0 ts0 "even end of game states can be serialized to JSON")
+  (scenario+ ForStudents/ gs1 ts1 "a one-palayer state goes JSON")
+  (scenario+ ForStudents/ gs-20 ts-20 "a one-palayer state goes JSON")
 
   (define Tests/ '[])
 
@@ -212,18 +214,20 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {GameState -> Pict}
-(define (render rs)
-  (match-define [game bank visibles cards player+*] rs)
+(define (render gs)
+  (match-define [game bank visibles cards player+*] gs)
   (define p-bank     (b:render bank))
   (define p-visibles (c:render* visibles))
   (define p-players  (render-players player+*))
   (frame (inset (hb-append 10 p-bank p-visibles (apply hb-append 5 p-players)) 2)))
 
 #; {[Listof Player+] -> [Listof Pict]}
-(define (render-players player+*)
-  (for/list ([p player+*])
-    (define name (if (is-a? p object%) (send p name) "unknown"))
-    (p:render (player+-player p) #:name name)))
+(define/contract (render-players player+*)
+  (-> (listof player+?) (listof pict?))
+  (for/list ([q player+*])
+    (match-define [player+ p o] q)
+    (define name (if (is-a? o object%) (send o name) "unknown"))
+    (p:render p #:name name)))
 
 ;                                     
 ;                                     
