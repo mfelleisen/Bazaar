@@ -101,25 +101,30 @@ pebbles. That's it.
 @; -----------------------------------------------------------------------------
 @bold{Playing a Turn}
 
-A player's turn consists of two phases: 
-@; -----------------------------------------------------------------------------
+A player's turn can proceed in one of three ways:
+
 @itemlist[
 
-  @item{During the first one, the player decides whether to ask the
-  referee for one of the bank's pebbles, randomly chosen. (The
-  physical game comes with a @(~a (length COLORS))-sided die that
-  displays the @(~a (length COLORS)) colors.)
+  @item{A player can draw a random pebble from the bank of remaining pebbles.
+  (The physical game comes with a @(~a (length COLORS))-sided die for this
+  purpose that shows the @(~a (length COLORS)) colors; our digital players will
+  ask the referee to draw randomly instead.)  Subsequently, the player may
+  purchase cards from the visible cards by exchanging a matching bunch of
+  pebbles with the bank.}
 
-  Alternatively, the player may trade pebbles with the bank up to @(~a
-  TRADES#-as-str) times, one at a time, according to any of the @(~a EQUATIONS#)
-  equations in any direction. (That's what ``equation'' means.) If the bank does
-  not own enough pebbles to trade according to some equation, the corresponding
-  trade cannot take place.}
- 
-  @item{During the second phase, the player may buy cards by
-  exchanging a matching bunch of pebbles with the bank.}
+  @item{A player may exchange pebbles with the bank, using any of the applicable
+  @(~a EQUATIONS#) equations as exchange rates.  (Equations may be used in
+  either direction; that's what ``equation'' means.)  If the bank does not own
+  enough pebbles for a particular equation, the corresponding trade cannot take
+  place.  Once exchanges are complete, the player can again purchase cards as
+  above.}
+
+  @item{Finally, a player may choose to skip obtaining a random pebble or
+  applying any exchange equations, and instead immediately start purchasing
+  cards.}
 
 ]
+
 @; -----------------------------------------------------------------------------
 The referee eliminates any player that violates any rules during a turn.  It
 returns the eliminated player's pebbles to the bank.  After a player's turn is
