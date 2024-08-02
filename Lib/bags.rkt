@@ -17,6 +17,8 @@
 
  subbag?
 
+ bag-add
+
  bag-minus
 
  bag-intersect
@@ -104,6 +106,8 @@
 (define (bag-minus b c)
   (for/fold ([b b]) ([x c])
     (remove x b)))
+
+(define bag-add append)
 
 (define (bag-remove b x)
   (remove x b))
