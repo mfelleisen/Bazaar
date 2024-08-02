@@ -1,6 +1,7 @@
 #lang racket
 
 ;; a data representation of the actions a player may request
+;; -----------------------------------------------------------------------------
 
 (provide
  #; {Any -> Boolean}
