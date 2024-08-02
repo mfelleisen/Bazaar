@@ -12,6 +12,7 @@
  bag-empty?
  bag-size
  subbag?
+ bag-add
  bag-minus
  bag-intersect
  bag-equal?
@@ -27,7 +28,7 @@
 
 (module+ examples
   (provide b-rg b-bbbb b-4xb-3xg b-ggg b-r b-g b-ggb b-gw
-           b-ggggg b-rgbrg b-wyrbb b-rrbrr))
+           b-bbbbb b-ggggg b-rgbrg b-wyrbb b-rrbrr))
 
 ;                                                                                      
 ;       ;                                  ;                                           
@@ -86,6 +87,7 @@
   ;; usable for cards 
   (define b-rrbrr [bag p:RED p:RED p:BLUE p:RED p:RED])
   (define b-ggggg (bag p:GREEN p:GREEN p:GREEN p:GREEN p:GREEN))
+  (define b-bbbbb [bag p:BLUE p:BLUE p:BLUE p:BLUE p:BLUE])
   (define b-rgbrg (bag p:RED p:GREEN p:BLUE p:RED p:GREEN))
   (define b-wyrbb (bag p:WHITE p:YELLOW p:RED p:BLUE p:BLUE))
   
