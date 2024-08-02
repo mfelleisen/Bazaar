@@ -64,9 +64,8 @@
      #:with name->jsexpr (format-id stx "~a->jsexpr" n #:source #'name #:props stx)
      #:with jsexpr->name (format-id stx "jsexpr->~a" n #:source #'name #:props stx)
      #:with name->def    (format-id stx "~a-struct->definition" n #:source #'name #:props stx)
-
-     #:with state->dict (format-id stx "~a->jsexpr" #'name #:source #'name #:props stx)
-     #:with dict->state (format-id stx "jsexpr->~a" #'name #:source #'name #:props stx)
+     #:with name?        (format-id stx "~a?" n #:source #'name #:props stx)
+    
      #`(begin
          (struct name [key ...] #:prefab)
          (define key* [list 'key ...])
@@ -74,6 +73,8 @@
          #; {Struct -> JSexpr}
          (define key+to* (map cons key* `[,to ...]))
          (define [name->jsexpr s-instance]
+           (unless (name? s-instance)
+             (error 'name->jsexpr "expected ~a instance, given ~a" 'name s-instance))
            (struct->jsexpr s-instance key+to*))
 
          #; {JSexpr -> Struct}
