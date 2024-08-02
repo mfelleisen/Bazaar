@@ -20,7 +20,11 @@
  extract-turn)
 
 (module+ examples
-  (provide gs0 gs1 gs-no-players gs-20 gs-20-rotate gs1+g-r+1))
+  (provide gs0 gs1 gs-no-players gs-20 gs-20-rotate gs1+g-r+1)
+
+  #; {type UsefulScenarios = [Listof 1Scenario]}
+  #; {type 1Scenario       = [List GameState TurnState]}
+  (provide ForStudents/ Tests/))
 
 (module+ json
   (provide
@@ -56,7 +60,7 @@
 (require (prefix-in p: Bazaar/Common/player))
 (require (prefix-in c: Bazaar/Common/cards))
 
-(require Bazaar/Common/turn-state)
+(require (prefix-in ts: Bazaar/Common/turn-state))
 
 (require Bazaar/Lib/configuration)
 (require (prefix-in b: Bazaar/Common/bags))
@@ -71,6 +75,9 @@
 
 (module+ pict
   (require (submod ".." examples)))
+
+(module+ examples
+  (require (submod Bazaar/Common/turn-state examples)))
 
 (module+ test
   (require (submod ".." examples))
@@ -122,6 +129,21 @@
   (define gs-20 (game b-r [list c-ggggg] (list) (list (player+ p-rrbrr-20 'x) (player+ p-r6 'y))))
   (define gs-20-rotate ;; a final state shouldn't be rotated 
     (game b-r [list c-ggggg] (list) (list (player+ p-r6 'y) (player+ p-rrbrr-20 'x)))))
+
+(module+ examples ;; test scenarios
+
+  #; {(scenaro+ GameState TurnState msg:String)}
+  (define-syntax-rule (scenario+ kind actual expected msg)
+    (set! kind (append kind (list [list actual expected msg]))))
+
+  (define ForStudents/ '[])
+  (scenario+ ForStudents/ gs0 ts0 "even end of game states can be serialized to JSON")
+
+  (define Tests/ '[])
+
+  )
+
+
 
 ;                                                                                             
 ;      ;;                                                                                     
@@ -182,7 +204,7 @@
   (match-define [game bank visibles _cards player-states] rs)
   (define active (first player-states))
   (define others (rest player-states))
-  (turn-state bank visibles (player+-player active) (extract-score others)))
+  (ts:turn-state bank visibles (player+-player active) (extract-score others)))
 
 #; {[Listof Player+] -> [Listof Score]}
 (define (extract-score players+)
@@ -230,11 +252,30 @@
   (check-equal? (kick gs1) gs-no-players)
   
   (check-equal? (update-pebbles-and-score gs1 1 b-g b-r) gs1+g-r+1)
-
-  (check-equal? (extract-turn gs0) ts0)
-
+  
   (check-true (game-over? gs0) "no cards left")
   (check-true (game-over? gs-no-players) "no players left ")
   (check-true (game-over? gs-20) "player has enough points")
   
   (check-false (game-over? gs1)))
+
+(module+ test
+  #; {Symbol UsefulScenarios {#:check [Equality Thunk Any String -> Void]} -> Void}
+  (define (run-scenario* t scenario*)
+    (eprintf "--------------- ~a\n" t)
+    (for ([s scenario*] [i (in-naturals)])
+      (match-define (list gs ts msg) s)
+      (show gs ts msg)
+      (check-equal? (extract-turn gs) ts msg)))
+
+  (define (show gs ts msg)
+    (define p-gs  (render gs))
+    (define p-ts  (ts:render ts))
+    (define is (text "---->" "roman" 12))
+    (define all (ht-append 5 p-gs is p-ts))
+    (eprintf "~a\n" msg)
+    (pretty-print (frame (inset all 10) #:line-width 4) (current-error-port)))
+                             
+    
+
+  (run-scenario* 'ForStudents ForStudents/))

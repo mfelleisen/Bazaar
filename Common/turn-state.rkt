@@ -6,7 +6,9 @@
 (provide
  #; {type TurnState}
  turn-state?
- turn-state)
+ turn-state
+
+ render)
 
 (provide ;; for milestone definitions 
  turn-state-struct->definition)
