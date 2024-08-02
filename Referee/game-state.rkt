@@ -10,11 +10,17 @@
  #; {GameState -> Boolean}
  game-over?
 
+ #; {GameState -> GameState}
+ kick
+
+ #; {GameState -> GameState}
+ rotate 
+
  #; {GameState -> TurnState}
  extract-turn)
 
 (module+ examples
-  (provide gs0 gs1 gs-no-players gs-20))
+  (provide gs0 gs1 gs-no-players gs-20 gs-20-rotate gs1+g-r+1))
 
 (module+ json
   (provide
@@ -59,6 +65,8 @@
 (require Bazaar/Lib/configuration)
 (require Bazaar/Lib/parse-json)
 
+(require SwDev/Lib/list)
+
 (require pict)
 
 (module+ pict
@@ -66,7 +74,8 @@
 
 (module+ test
   (require (submod ".." examples))
-  (require (submod Bazaar/Common/turn-state json))
+  (require (submod Bazaar/Common/pebbles examples))
+  (require (submod Bazaar/Common/turn-state examples))
   (require rackunit))
   
 ;                                                          
@@ -89,8 +98,9 @@
 (define (player+*->jsexpr p*)
   (map (compose player->jsexpr player+-player) p*))
 
+(define name* (make-parameter 'unknown)) ;; for testing
 (def/jsexpr-> player+*
-  #:array [(list (app jsexpr->player (? p:player? p)) ...) (map (λ (p) (player+ p 'unknown)) p)])
+  #:array [(list (app jsexpr->player (? p:player? p)) ...) (map (λ (p) (player+ p [name*])) p)])
 
 (struct/description
  game
@@ -101,16 +111,17 @@
            #:is-a "*Players"])
 
 #; {type GameState = (game Bag [Listof Card] [Listof Card] [Listof Player+])}
-#; {type Player+   = (player+ Player {Object with name method})}
+#; {type Player+   = (player+ Player {Object with name method take-turn method setup win})}
 
 (module+ examples
   (define gs0 (game b-ggggg (list) (list) (list (player+ p-r6 'unknown))))
-  (define gs1 (game b-ggggg [list c-ggggg c-rrbrr c-rgbrg] (list) (list (player+ p-r6 'unknown))))
-
+  (define gs1 (game b-ggggg [list c-ggggg c-rrbrr c-rgbrg] (list) (list (player+ p-r6 'x))))
+  (define gs1+g-r+1 (game b-ggggg [list c-ggggg c-rrbrr c-rgbrg] (list) (list (player+ p-g7 'x))))
+  
   (define gs-no-players (game b-ggggg [list c-ggggg c-rrbrr c-rgbrg] (list) (list)))
-  (define gs-20 (game b-r [list c-ggggg] (list) (list (player+ p-rrbrr-20 'x) (player+ p-r6 'y)))))
-
-    
+  (define gs-20 (game b-r [list c-ggggg] (list) (list (player+ p-rrbrr-20 'x) (player+ p-r6 'y))))
+  (define gs-20-rotate ;; a final state shouldn't be rotated 
+    (game b-r [list c-ggggg] (list) (list (player+ p-r6 'y) (player+ p-rrbrr-20 'x)))))
 
 ;                                                                                             
 ;      ;;                                                                                     
@@ -127,7 +138,27 @@
 ;                                                                                        ;    
 ;                                                                                       ;;    
 
+
 #; {GameState -> GameState}
+;; update active player: add `delta` to score, add `plus` its pebbles, subtract `minus` 
+(define (update-pebbles-and-score gs delta plus minus)
+  (match-define [game bank visibles cards players] gs)
+  (let* ([s (first players)]
+         [o (player+-connection s)]
+         [s (player+-player s)]
+         [s (p:update-score s delta)]
+         [s (p:update-pebbles s plus minus)])
+    (game bank visibles cards (cons (player+ s o) (rest players)))))
+
+;; ---------------------------------------------------------------------------------------------------
+#; {GameState -> GameState}
+(define (rotate gs)
+  (match-define [game bank visibles cards players] gs)
+  (game bank visibles cards (list-rotate+ players)))
+
+;; ---------------------------------------------------------------------------------------------------
+#; {GameState -> GameState}
+;; ASSUME there is an active player 
 (define (kick gs)
   (match-define [game bank visibles cards players] gs)
   (game bank visibles cards (rest players)))
@@ -138,7 +169,7 @@
   (match-define [game _bank visibles cards players] gs)
   (or (empty? players)
       (winning-points? (first players))
-      (and (empty? cards) (empty? visibles))))
+      (and (b:bag-empty? cards) (b:bag-empty? visibles))))
 
 #; {Player+ -> Boolean}
 (define (winning-points? p+)
@@ -151,7 +182,7 @@
   (match-define [game bank visibles _cards player-states] rs)
   (define active (first player-states))
   (define others (rest player-states))
-  (turn-state bank visibles active (extract-score others)))
+  (turn-state bank visibles (player+-player active) (extract-score others)))
 
 #; {[Listof Player+] -> [Listof Score]}
 (define (extract-score players+)
@@ -192,7 +223,15 @@
   (render gs1))
 
 (module+ test
-  (check-equal? (jsexpr->game (game->jsexpr gs1)) gs1)
+  (check-equal? (parameterize ([name* 'x]) (jsexpr->game (game->jsexpr gs1))) gs1)
+
+  (check-equal? (rotate gs-20) gs-20-rotate)
+ 
+  (check-equal? (kick gs1) gs-no-players)
+  
+  (check-equal? (update-pebbles-and-score gs1 1 b-g b-r) gs1+g-r+1)
+
+  (check-equal? (extract-turn gs0) ts0)
 
   (check-true (game-over? gs0) "no cards left")
   (check-true (game-over? gs-no-players) "no players left ")

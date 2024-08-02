@@ -4,14 +4,20 @@
 ;; ---------------------------------------------------------------------------------------------------
 
 (provide
+ #; {type Score = Natural}
  #; {type Player}
  player?
  player-score
 
+ #; {Player -> Boolean}
  winning-points?
 
- #; {type Score = Natural}
+ #; {Player Natural -> Player}
+ update-score
 
+ #; {Player Bag Bag  -> Player}
+ update-pebbles 
+ 
  #; {[Listof Player] -> Pict}
  render*
  
@@ -26,13 +32,15 @@
 
 (module+ examples
   (provide
-   p-rg1 p-rg2 p-bbbb3 p-4xb-3xg4 p-ggg5 p-r6 p-g7 p-ggb8 p-gw9 p-ggggg p-rgbrg p-wyrbb p-rrbrr-20))
+   p-rg1 p-rg2
+   p-bbbb3 p-bbbbb3
+   p-4xb-3xg4 p-ggg5 p-r6 p-g7 p-ggb8 p-gw9 p-ggggg p-rgbrg p-wyrbb p-rrbrr-20))
 
 (module+ json
   (provide
    player*->jsexpr
    jsexpr->player*
-
+   
    player->jsexpr
    jsexpr->player
 
@@ -70,6 +78,7 @@
 (module+ test
   (require (submod ".." examples))
   (require (submod ".." json))
+  (require (submod Bazaar/Common/pebbles examples))
   (require rackunit))
 
 (module+ json
@@ -99,6 +108,7 @@
   (define p-rg1 (player b-rg 1))
   (define p-rg2 (player b-rg 2))
   (define p-bbbb3 (player b-bbbb 3))
+  (define p-bbbbb3 (player b-bbbbb 3))
   (define p-4xb-3xg4 (player b-4xb-3xg 4))
   (define p-ggg5 (player b-ggg 5))
   (define p-r6 (player b-r 6))
@@ -125,6 +135,21 @@
 ;                                                                                        ;    
 ;                                                                                       ;;    
 
+#; {Player Bag Bag -> Player}
+(define (update-pebbles p plus minus)
+  (match-define [player wallet score] p)
+  (let* ([s wallet]
+         [s (b:bag-minus s minus)]
+         [s (b:bag-add s plus)])
+    (player s score)))
+
+;; ---------------------------------------------------------------------------------------------------
+#; {Player Natural -> Player}
+(define (update-score p delta)
+  (match-define [player wallet score] p)
+  (player wallet (+ score delta)))
+
+;; ---------------------------------------------------------------------------------------------------
 (define (winning-points? p)
   (match-define [player _wallet score] p)
   (>= score PLAYER-WINS))
@@ -196,6 +221,11 @@
 (module+ test
   (check-equal? (jsexpr->player* (player*->jsexpr (list p-r6))) (list p-r6))
   (check-equal? (jsexpr->player (player->jsexpr p-r6)) p-r6)
+
+  (check-equal? (update-score p-rg1 1) p-rg2)
+
+  (check-equal? (update-pebbles p-bbbb3 `[,BLUE] '[]) p-bbbbb3)
+  (check-equal? (update-pebbles p-bbbbb3 '[] `[,BLUE]) p-bbbb3)
 
   (define lon '[1 2 3])
   (check-equal? (jsexpr->score* (score*->jsexpr lon)) lon)

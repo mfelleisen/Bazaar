@@ -17,7 +17,7 @@
    jsexpr->turn-state))
 
 (module+ examples
-  (provide ts1))
+  (provide ts0 ts1))
   
 ;                                                                                      
 ;       ;                                  ;                                           
@@ -74,11 +74,12 @@
 (struct/description
  turn-state
  [bank   #:to-jsexpr boolean->jsexpr #:from-jsexpr jsexpr->boolean #:is-a "Boolean"]
- [cards  #:to-jsexpr card*->jsexpr #:from-jsexpr jsexpr->card* #:is-a "*Cards"]
+ [cards  #:to-jsexpr card*->jsexpr  #:from-jsexpr jsexpr->card* #:is-a "*Cards"]
  [active #:to-jsexpr player->jsexpr #:from-jsexpr jsexpr->player #:is-a "Player"]
  [scores #:to-jsexpr score*->jsexpr #:from-jsexpr jsexpr->score* #:is-a "Natural"])
 
 (module+ examples
+  (define ts0 (turn-state b-ggggg (list)                         p-r6 '[]))
   (define ts1 (turn-state b-ggggg [list c-ggggg c-rrbrr c-rgbrg] p-r6 '[])))
 
 ;                                                                                             
@@ -119,7 +120,9 @@
 ;                                     
 
 (module+ pict
-  (render ts1 #:name "Ben"))
+  (render ts1 #:name "Ben")
+  (render ts1))
 
 (module+ test
+  (check-equal? (jsexpr->turn-state (turn-state->jsexpr ts0)) ts0)
   (check-equal? (jsexpr->turn-state (turn-state->jsexpr ts1)) ts1))
