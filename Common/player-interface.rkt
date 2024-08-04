@@ -27,7 +27,7 @@
   (class/c
    [name      (->m string?)]
    [setup     (->m (listof e:1eq?) void?)]
-   [take-turn (->m turn-state? a:action*?)]
+   [take-turn (->m turn? a:action*?)]
    [win       (->m boolean? void?)]))
 
 (define player/c [instanceof/c player%/c])
