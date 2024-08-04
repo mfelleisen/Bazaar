@@ -19,6 +19,9 @@
  #; {GameState -> TurnState}
  extract-turn)
 
+(provide
+ game-struct->definition)
+
 (module+ examples
   (provide gs0 gs1 gs-no-players gs-20 gs-20-rotate gs1+g-r+1)
 
