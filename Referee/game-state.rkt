@@ -225,16 +225,20 @@
   (match-define [game bank visibles cards player+*] gs)
   (define p-bank     (b:render bank))
   (define p-visibles (c:render* visibles))
+  (define p-cards    (c:render* cards))
   (define p-players  (render-players player+*))
-  (frame (inset (hb-append 10 p-bank p-visibles (apply hb-append 5 p-players)) 2)))
+  (ts:combine p-bank p-visibles p-cards p-players))
 
-#; {[Listof Player+] -> [Listof Pict]}
-(define/contract (render-players player+*)
-  (-> (listof player+?) (listof pict?))
-  (for/list ([q player+*])
-    (match-define [player+ p o] q)
-    (define name (if (is-a? o object%) (send o name) "unknown"))
-    (p:render p #:name name)))
+#; {[Listof Player+] -> Pict}
+(define (render-players player+*) (-> (listof player+?) (listof pict?))
+  (for/fold ([p (blank 1 1)]) ([q player+*])
+    (hb-append 5 p (render-player+ q))))
+
+#; {Player+ -> Pict}
+(define (render-player+ q)
+  (match-define [player+ p o] q)
+  (define name (if (is-a? o object%) (send o name) "unknown"))
+    (p:render p #:name name))
 
 ;                                     
 ;                                     

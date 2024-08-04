@@ -8,15 +8,17 @@
  turn?
  turn
 
- render)
+ render
+
+ combine)
 
 (provide ;; for milestone definitions 
- turn)
+ turn-struct->definition)
 
 (module+ json
   (provide
-   turn
-   turn))
+   turn->jsexpr
+   jsexpr->turn))
 
 (module+ examples
   (provide ts0 ts1 ts-20 ts-20-rotate ts-6-players ts-3-zeros))
@@ -108,11 +110,21 @@
 
 (define (render ts #:name (name ""))
   (match-define [turn bank visibles active scores] ts)
-  (define p-bank   (b:render bank))
-  (define p-active (p:render active #:name name))
+  (define p-bank     (b:render bank))
+  (define p-active   (p:render active #:name name))
   (define p-visibles (c:render* visibles))
-  (define p-scores (frame (inset (p:render-scores scores) 2)))
-  (frame (inset (hb-append 10 p-bank p-visibles p-active p-scores) 5)))
+  (define p-scores   (p:render-scores scores))
+  (combine p-bank p-visibles p-active p-scores))
+
+(define (combine . x)
+  (define WIDTH 12)
+  (let* ([s (map (λ (p) (inset p (quotient WIDTH 2))) x)]
+         [h (apply max 0 (map pict-height s))]
+         [f (λ (p) (cb-superimpose p (rectangle (+ (pict-width p) WIDTH) h)))]
+         [s (map f s)]
+         [s (apply hb-append 10 s)]
+         [s (frame (inset s 12))])
+    s))
 
 ;                                     
 ;                                     
@@ -134,5 +146,5 @@
   (render ts1))
 
 (module+ test
-  (check-equal? (turn (turn ts0)) ts0)
-  (check-equal? (turn (turn ts1)) ts1))
+  (check-equal? (jsexpr->turn (turn->jsexpr ts0)) ts0)
+  (check-equal? (jsexpr->turn (turn->jsexpr ts1)) ts1))
