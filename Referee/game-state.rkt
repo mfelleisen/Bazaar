@@ -54,10 +54,9 @@
 
 (require (submod Bazaar/Common/bags json))
 (require (submod Bazaar/Common/cards json))
-(require (submod Bazaar/Common/player json))
 
-(require (prefix-in b: Bazaar/Common/bags))
-(require (prefix-in p: Bazaar/Common/player))
+; (require (prefix-in b: Bazaar/Common/bags))
+; (require (prefix-in p: Bazaar/Common/player))
 (require (prefix-in c: Bazaar/Common/cards))
 
 (require (prefix-in ts: Bazaar/Common/turn-state))
@@ -67,7 +66,6 @@
 (require (prefix-in p: Bazaar/Common/player))
 
 (require Bazaar/Lib/configuration)
-(require Bazaar/Lib/parse-json)
 
 (require SwDev/Lib/list)
 
@@ -81,10 +79,58 @@
 
 (module+ test
   (require (submod ".." examples))
-  (require (submod Bazaar/Common/pebbles examples))
-  (require (submod Bazaar/Common/turn-state examples))
   (require rackunit))
   
+;                                                   
+;                                                   
+;          ;;;                                      
+;            ;                                      
+;   ;;;;     ;    ;;;;   ;   ;   ;;;    ;;;;    ;   
+;   ;; ;;    ;        ;  ;   ;  ;;  ;   ;;  ;   ;   
+;   ;   ;    ;        ;   ; ;   ;   ;;  ;       ;   
+;   ;   ;    ;     ;;;;   ; ;   ;;;;;;  ;    ;;;;;;;
+;   ;   ;    ;    ;   ;   ; ;   ;       ;       ;   
+;   ;; ;;    ;    ;   ;   ;;    ;       ;       ;   
+;   ;;;;      ;;   ;;;;    ;     ;;;;   ;           
+;   ;                      ;                        
+;   ;                     ;                         
+;   ;                    ;;                         
+
+(module player+ racket
+  (provide
+   (struct-out player+)
+   render*
+   player+*->jsexpr
+   name*
+   jsexpr->player+*)
+  
+  (require (submod Bazaar/Common/player json))
+  (require (prefix-in p: Bazaar/Common/player))
+  (require Bazaar/Lib/configuration)
+  (require Bazaar/Lib/parse-json)
+  (require pict)
+
+  (struct player+ [player connection] #:prefab)
+
+  #; {[Listof Player+] -> Pict}
+  (define (render* player+*) (-> (listof player+?) (listof pict?))
+    (for/fold ([p (blank 1 1)]) ([q player+*])
+      (hb-append 5 p (render q))))
+
+  #; {Player+ -> Pict}
+  (define (render q)
+    (match-define [player+ p o] q)
+    (define name (if (is-a? o object%) (send o name) "unknown"))
+    (p:render p #:name name))
+
+  (define (player+*->jsexpr p*)
+    (map (compose player->jsexpr player+-player) p*))
+
+  (define name* (make-parameter 'unknown)) ;; for testing
+  (def/jsexpr-> player+*
+    #:array [(list (app jsexpr->player (? p:player? p)) ...) (map (λ (p) (player+ p [name*])) p)]))
+(require 'player+)
+
 ;                                                          
 ;       ;                                  ;            ;; 
 ;       ;           ;                      ;           ;   
@@ -99,15 +145,6 @@
 ;                                                          
 ;                                                          
 ;                                                          
-
-(struct player+ [player connection] #:prefab)
-
-(define (player+*->jsexpr p*)
-  (map (compose player->jsexpr player+-player) p*))
-
-(define name* (make-parameter 'unknown)) ;; for testing
-(def/jsexpr-> player+*
-  #:array [(list (app jsexpr->player (? p:player? p)) ...) (map (λ (p) (player+ p [name*])) p)])
 
 (struct/description
  game
@@ -226,19 +263,8 @@
   (define p-bank     (b:render bank))
   (define p-visibles (c:render* visibles))
   (define p-cards    (c:render* cards))
-  (define p-players  (render-players player+*))
+  (define p-players  (render* player+*))
   (ts:combine p-bank p-visibles p-cards p-players))
-
-#; {[Listof Player+] -> Pict}
-(define (render-players player+*) (-> (listof player+?) (listof pict?))
-  (for/fold ([p (blank 1 1)]) ([q player+*])
-    (hb-append 5 p (render-player+ q))))
-
-#; {Player+ -> Pict}
-(define (render-player+ q)
-  (match-define [player+ p o] q)
-  (define name (if (is-a? o object%) (send o name) "unknown"))
-    (p:render p #:name name))
 
 ;                                     
 ;                                     
