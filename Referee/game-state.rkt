@@ -17,7 +17,10 @@
  rotate 
 
  #; {GameState -> TurnState}
- extract-turn)
+ extract-turn
+
+ #; {GameState -> Pict}
+ render)
 
 (provide
  game-struct->definition)
