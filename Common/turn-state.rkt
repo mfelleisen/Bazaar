@@ -5,21 +5,21 @@
 
 (provide
  #; {type TurnState}
- turn-state?
- turn-state
+ turn?
+ turn
 
  render)
 
 (provide ;; for milestone definitions 
- turn-state-struct->definition)
+ turn)
 
 (module+ json
   (provide
-   turn-state->jsexpr
-   jsexpr->turn-state))
+   turn
+   turn))
 
 (module+ examples
-  (provide ts0 ts1 ts-20))
+  (provide ts0 ts1 ts-20 ts-20-rotate ts-6-players ts-3-zeros))
   
 ;                                                                                      
 ;       ;                                  ;                                           
@@ -75,16 +75,21 @@
 ;                                                          
 
 (struct/description
- turn-state
+ turn
  [bank   #:to-jsexpr boolean->jsexpr #:from-jsexpr jsexpr->boolean #:is-a "Boolean"]
  [cards  #:to-jsexpr card*->jsexpr  #:from-jsexpr jsexpr->card* #:is-a "*Cards"]
  [active #:to-jsexpr player->jsexpr #:from-jsexpr jsexpr->player #:is-a "Player"]
  [scores #:to-jsexpr score*->jsexpr #:from-jsexpr jsexpr->score* #:is-a "Natural"])
 
 (module+ examples
-  (define ts0 (turn-state b-ggggg (list)                         p-r6 '[]))
-  (define ts1 (turn-state b-ggggg [list c-ggggg c-rrbrr c-rgbrg] p-r6 '[]))
-  (define ts-20 (turn-state b-r [list c-ggggg] p-rrbrr-20 (list 6))))
+  (define ts0          (turn b-ggggg (list)                         p-r6 '[]))
+  (define ts1          (turn b-ggggg [list c-ggggg c-rrbrr c-rgbrg] p-r6 '[]))
+  (define ts-20        (turn b-r     [list c-ggggg]         p-rrbrr-20 '(6)))
+  (define ts-20-rotate (turn b-r     [list c-ggggg]         p-r6       '(20)))
+  (define ts-6-players (turn b-r     (list c-ggggg)         p-4xb-3xg4 '(5 6 7 8 9)))
+  (define ts-3-zeros   (turn b-rrbrr (list c-wyrbb c-ggggg) p-ggggg     '[0 0])))
+                                   
+
 
 ;                                                                                             
 ;      ;;                                                                                     
@@ -102,12 +107,12 @@
 ;                                                                                       ;;    
 
 (define (render ts #:name (name ""))
-  (match-define [turn-state bank visibles active scores] ts)
+  (match-define [turn bank visibles active scores] ts)
   (define p-bank   (b:render bank))
   (define p-active (p:render active #:name name))
   (define p-visibles (c:render* visibles))
   (define p-scores (frame (inset (p:render-scores scores) 2)))
-  (frame (inset (hc-append 10 p-bank p-visibles p-active p-scores) 5)))
+  (frame (inset (hb-append 10 p-bank p-visibles p-active p-scores) 5)))
 
 ;                                     
 ;                                     
@@ -129,5 +134,5 @@
   (render ts1))
 
 (module+ test
-  (check-equal? (jsexpr->turn-state (turn-state->jsexpr ts0)) ts0)
-  (check-equal? (jsexpr->turn-state (turn-state->jsexpr ts1)) ts1))
+  (check-equal? (turn (turn ts0)) ts0)
+  (check-equal? (turn (turn ts1)) ts1))

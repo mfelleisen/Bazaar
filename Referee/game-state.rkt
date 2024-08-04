@@ -128,7 +128,13 @@
   (define gs-no-players (game b-ggggg [list c-ggggg c-rrbrr c-rgbrg] (list) (list)))
   (define gs-20 (game b-r [list c-ggggg] (list) (list (player+ p-rrbrr-20 'x) (player+ p-r6 'y))))
   (define gs-20-rotate ;; a final state shouldn't be rotated 
-    (game b-r [list c-ggggg] (list) (list (player+ p-r6 'y) (player+ p-rrbrr-20 'x)))))
+    (game b-r [list c-ggggg] (list) (list (player+ p-r6 'y) (player+ p-rrbrr-20 'x))))
+
+  (define 6-players (map player+ (list p-4xb-3xg4 p-ggg5 p-r6 p-g7 p-ggb8 p-gw9) '[x y z a b c]))
+  (define gs-6-players (game b-r (list c-ggggg) (list) 6-players))
+
+  (define 3-0-players (map player+ (list p-ggggg p-rgbrg p-wyrbb) '[k l m]))
+  (define gs-3-zeros (game b-rrbrr (list c-wyrbb c-ggggg) '[] 3-0-players)))
 
 (module+ examples ;; test scenarios
 
@@ -138,12 +144,13 @@
 
   (define ForStudents/ '[])
   (scenario+ ForStudents/ gs0 ts0 "even end of game states can be serialized to JSON")
-  (scenario+ ForStudents/ gs1 ts1 "a one-palayer state goes JSON")
-  (scenario+ ForStudents/ gs-20 ts-20 "a one-palayer state goes JSON")
+  (scenario+ ForStudents/ gs1 ts1 "a one-palayer non-final state")
+  (scenario+ ForStudents/ gs-20 ts-20 "a two-palayer state")
 
   (define Tests/ '[])
-
-  )
+  (scenario+ Tests/ gs-20-rotate ts-20-rotate "final again")
+  (scenario+ Tests/ gs-6-players ts-6-players "six players")
+  (scenario+ Tests/ gs-3-zeros   ts-3-zeros "six players"))
 
 
 
@@ -206,7 +213,7 @@
   (match-define [game bank visibles _cards player-states] rs)
   (define active (first player-states))
   (define others (rest player-states))
-  (ts:turn-state bank visibles (player+-player active) (extract-score others)))
+  (ts:turn bank visibles (player+-player active) (extract-score others)))
 
 #; {[Listof Player+] -> [Listof Score]}
 (define (extract-score players+)
@@ -282,4 +289,5 @@
                              
     
 
-  (run-scenario* 'ForStudents ForStudents/))
+  (run-scenario* 'ForStudents ForStudents/)
+  (run-scenario* 'Tests Tests/))
