@@ -58,16 +58,21 @@
          (~optional (~seq #:to-jsexpr to #;function) #:defaults ([to #'identity]))
          (~optional (~seq #:from-jsexpr from #;function) #:defaults ([from #'identity]))
          (~optional (~seq #:is-a is-a ... #;string) #:defaults ([(is-a 1) (list #'"")]))]
-        ...)
+        ...
+        options ...)
      #:do   [(define n (syntax-e #'name))]
      #:with (keyv ...)   (generate-temporaries #'(key ...))
      #:with name->jsexpr (format-id stx "~a->jsexpr" n #:source #'name #:props stx)
      #:with jsexpr->name (format-id stx "jsexpr->~a" n #:source #'name #:props stx)
      #:with name->def    (format-id stx "~a-struct->definition" n #:source #'name #:props stx)
      #:with name?        (format-id stx "~a?" n #:source #'name #:props stx)
+
+     #:do [(define o* (map syntax-e (syntax->list #'(options ...))))
+           (define w/ (member '#:transparent o*))]
+     #:with (+option ...) (if w/ #'(options ...) (cons (datum->syntax stx '#:prefab) #'(options ...)))
     
      #`(begin
-         (struct name [key ...] #:prefab)
+         (struct name [key ...] +option ...)
          (define key* [list 'key ...])
          
          #; {Struct -> JSexpr}
