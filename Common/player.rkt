@@ -101,7 +101,7 @@
 
 (struct/description
  player
- [wallet #:to-jsexpr bag->jsexpr     #:from-jsexpr jsexpr->bag     #:is-a "*Pebblaes"]
+ [wallet #:to-jsexpr bag->jsexpr     #:from-jsexpr jsexpr->bag     #:is-a "*Pebbles"]
  [score  #:to-jsexpr natural->jsexpr #:from-jsexpr jsexpr->natural #:is-a "Natural"])
 
 (module+ examples
