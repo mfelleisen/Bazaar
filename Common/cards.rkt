@@ -17,6 +17,9 @@
  #; {Card -> Pict}
  render)
 
+(provide
+ card-struct->definition)
+
 (module+ examples
   (provide c-rrbrr  c-rgbrg c-wyrbb c-ggggg  
            c-rrbrr* c-rgbrg* c-wyrbb* c-ggggg*))
@@ -52,8 +55,15 @@
 
 (require Bazaar/scribblings/spec)
 
+(require (submod Bazaar/Common/bags json))
+
 (require (prefix-in p: "pebbles.rkt"))
 (require Bazaar/Common/bags)
+
+
+(require Bazaar/Lib/parse-json)
+(require Bazaar/Lib/configuration)
+
 (require pict)
 (require pict/face)
 
@@ -61,9 +71,7 @@
   (require (submod Bazaar/Common/bags examples)))
 
 (module+ json
-  (require (submod Bazaar/Common/bags json))
-  (require Bazaar/Common/bags)
-  (require Bazaar/Lib/parse-json))
+  (require Bazaar/Common/bags))
 
 (module+ pict
   (require (submod ".." examples)))
@@ -88,7 +96,11 @@
 ;                                                          
 ;                                                          
 
-(struct card [pebbles face?] #:transparent
+(struct/description
+ card
+ [pebbles #:to-jsexpr bag->jsexpr #:from-jsexpr jsexpr->bag #:is-a "Card"]
+ [face?   #:to-jsexpr boolean->jsexpr #:from-jsexpr jsexpr->boolean #:is-a "Boolean"]
+  #:transparent
   #:methods gen:equal+hash
   [(define equal-proc
      (λ (x y recursive-equal?)
@@ -197,15 +209,7 @@
     (map card->jsexpr lo-cards))
 
   (def/jsexpr-> card*
-    #:array [(list (app jsexpr->card (? card? c)) ...) c])
-  
-  (define (card->jsexpr c)
-    (match-define [card pebbles face?] c)
-    (hasheq PEBBLES (bag->jsexpr pebbles) FACE (boolean->jsexpr face?)))
-
-  (def/jsexpr-> card
-    #:object {[PEBBLES bag (? bag? b)] [FACE boolean f]}
-    (card b f)))
+    #:array [(list (app jsexpr->card (? card? c)) ...) c]))
 
 ;                                     
 ;                                     
