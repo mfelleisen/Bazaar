@@ -112,7 +112,6 @@
   
   (require (submod Bazaar/Common/player json))
   (require (prefix-in p: Bazaar/Common/player))
-  (require Bazaar/Lib/configuration)
   (require Bazaar/Lib/parse-json)
   (require pict)
 
