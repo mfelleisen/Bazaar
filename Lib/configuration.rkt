@@ -260,7 +260,8 @@
     (define the-defined (deftech (case-name name)))
     (define def-name    [list "A " the-defined (~a " is an object with " (length t*) " fields:")])
     (define definition  (splice-fields t* (blanks-needed t*) #true))
-    (apply verbatim #:indent 4 (element-join (cons def-name definition) ",\n")))
+    (element-join (list def-name
+                        (apply verbatim #:indent 4  (element-join definition ",\n")) "\n")))
 
   (define (case-name name)
     (define name* (string->list (~a name)))
@@ -353,7 +354,10 @@
                       {scores})
 
   (define b (turn 1 2 3))
-  
+
+  #;
+  [turn-struct->definition]
+
   (check-true (table? [turn-struct->definition]))
   (check-true (jsexpr? (turn->jsexpr b)))
   (check-equal? (jsexpr->turn (turn->jsexpr b)) b))
