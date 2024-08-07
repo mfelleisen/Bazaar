@@ -9,9 +9,6 @@
  card?
  card-pebbles
  card-face?
- 
- #; {Card N -> N}
- calculate-points
 
  #; {[Listof Card] -> Pict}
  render*
@@ -62,7 +59,6 @@
 (require (prefix-in p: "pebbles.rkt"))
 (require Bazaar/Common/bags)
 
-
 (require Bazaar/Lib/parse-json)
 (require Bazaar/Lib/configuration)
 
@@ -71,9 +67,6 @@
 
 (module+ examples
   (require (submod Bazaar/Common/bags examples)))
-
-(module+ json
-  (require Bazaar/Common/bags))
 
 (module+ pict
   (require (submod ".." examples)))
@@ -143,11 +136,8 @@
 ;                                                                                         ;   
 ;                                                                                        ;    
 ;                                                                                       ;;    
-  
-(define (calculate-points card pebbles#)
-  (for/first ([p POINTS] #:when (>= pebbles# (points-cards-left p)))
-    (if (card-face? card) (points-with-face p) (points-no-face p))))
 
+;; ---------------------------------------------------------------------------------------------------
 (define (render* c*)
   (define how-many 6)
   (define L (length c*))
@@ -161,6 +151,8 @@
   (vl-append
    (apply hb-append (take picts (quotient VISIBLE# 2)))
    (apply hb-append (drop picts (quotient VISIBLE# 2)))))
+
+;; WARNING this is one place where I break the abstraction barrier to bags
 
 (define (render c)
   (define pebbles (map p:render (card-pebbles c)))
@@ -238,9 +230,6 @@
   (render* c*))
 
 (module+ test
-  (check-equal? (calculate-points c-rrbrr 0) (points-no-face (last POINTS)))
-  (check-equal? (calculate-points c-rrbrr* 0) (points-with-face (last POINTS)))
-  
   (check-equal? (jsexpr->card (card->jsexpr c-rrbrr)) c-rrbrr)
   (check-equal? (jsexpr->card* (card*->jsexpr (list c-rrbrr))) (list c-rrbrr)))
   

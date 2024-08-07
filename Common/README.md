@@ -19,6 +19,7 @@ for an explanation of how code files are organized in Racket.
 | [cards.rkt](cards.rkt) | a data representation of cards | 
 | [equations.rkt](equations.rkt) | a data representation of (generic) equations | 
 | [pebbles.rkt](pebbles.rkt) | a data representationn for pebbles | 
+| [rule-book.rkt](rule-book.rkt) | the rules of the Bazaar game: legality and scoring | 
 
 
 Here is a rough overview of the layers: 
