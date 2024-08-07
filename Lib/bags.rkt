@@ -93,7 +93,10 @@
 (define bag-size length)
 
 (define (subbag? b c)
-  (and (<= (length b) (length c)) (subset? b c)))
+  (let/ec return
+    (for/fold ([c c]) ([x b])
+      (if (member x c) (remove x c) (return #false)))
+    #true))
 
 (define (bag-minus b c)
   (for/fold ([b b]) ([x c])
