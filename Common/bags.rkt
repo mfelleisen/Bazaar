@@ -10,6 +10,7 @@
  bag?
  bag
  bag-empty?
+ bag-member?
  bag-size
  subbag?
  bag-add

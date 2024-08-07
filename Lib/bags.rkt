@@ -8,23 +8,15 @@
  ;; X is what the bag contains 
 
  bag?
-
  bag
- 
  bag-empty?
-
+ bag-member?
  bag-size
-
  subbag?
-
  bag-add
-
  bag-minus
-
  bag-intersect
-
  bag-equal?
-
  render)
 
 (module+ json
@@ -117,6 +109,9 @@
 
 (define (bag-intersect b c)
   (for/list ([x b] #:when (member x c)) x))
+
+(define (bag-member? b x)
+  (cons? (member x b)))
 
 (define (render b render-element)
   (apply hc-append 2 (map render-element b)))

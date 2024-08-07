@@ -7,6 +7,8 @@
  #; {type Card}
  ;; X is the "currency" displayed on cards
  card?
+ card-pebbles
+ card-face?
  
  #; {Card N -> N}
  calculate-points
@@ -98,7 +100,7 @@
 
 (struct/description
  card
- [pebbles #:to-jsexpr bag->jsexpr #:from-jsexpr jsexpr->bag #:is-a "Card"]
+ [pebbles #:to-jsexpr bag->jsexpr #:from-jsexpr jsexpr->bag #:is-a "*Pebbles"]
  [face?   #:to-jsexpr boolean->jsexpr #:from-jsexpr jsexpr->boolean #:is-a "Boolean"]
   #:transparent
   #:methods gen:equal+hash

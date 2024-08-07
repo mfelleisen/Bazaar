@@ -78,10 +78,10 @@
 
 (struct/description
  turn
- [bank   #:to-jsexpr boolean->jsexpr #:from-jsexpr jsexpr->boolean #:is-a "Boolean"]
+ [bank   #:to-jsexpr bag->jsexpr #:from-jsexpr jsexpr->bag #:is-a "*Pebbles"]
  [cards  #:to-jsexpr card*->jsexpr  #:from-jsexpr jsexpr->card* #:is-a "*Cards"]
  [active #:to-jsexpr player->jsexpr #:from-jsexpr jsexpr->player #:is-a "Player"]
- [scores #:to-jsexpr score*->jsexpr #:from-jsexpr jsexpr->score* #:is-a "Natural"])
+ [scores #:to-jsexpr score*->jsexpr #:from-jsexpr jsexpr->score* #:is-a "*Naturals"])
 
 (module+ examples
   (define ts0          (turn b-ggggg (list)                         p-r6 '[]))

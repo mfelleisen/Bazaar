@@ -12,8 +12,7 @@
  render )
 
 (module+ examples
-  (provide
-   RED GREEN YELLOW WHITE BLUE))
+  (provide PEBBLES RED WHITE GREEN YELLOW BLUE))
 
 (module+ json
   (provide
@@ -68,6 +67,8 @@
 (define RADIUS 15)
 
 (module+ examples
+  (define PEBBLES (map pebble COLORS))
+
   (define RED    (pebble "red"))
   (define GREEN  (pebble "green"))
   (define YELLOW (pebble "yellow"))

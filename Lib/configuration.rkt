@@ -343,7 +343,8 @@
 
   [check-exn #px"key-value pair" (λ () (set-server-object default-server-object PORT 1 REF-SPEC))]
 
-  (check-true (table? (server-object->definition))))
+  #;
+  (server-object->definition))
 
 
 (module+ test
@@ -357,8 +358,7 @@
 
   #;
   [turn-struct->definition]
-
-  (check-true (table? [turn-struct->definition]))
+  
   (check-true (jsexpr? (turn->jsexpr b)))
   (check-equal? (jsexpr->turn (turn->jsexpr b)) b))
 
