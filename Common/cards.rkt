@@ -10,6 +10,9 @@
  card-pebbles
  card-face?
 
+ #; {Card Card -> Boolean}
+ 1card<= 
+
  #; {[Listof Card] -> Pict}
  render*
 
@@ -54,9 +57,9 @@
 
 (require Bazaar/scribblings/spec)
 
+(require (prefix-in p: (submod Bazaar/Common/pebbles examples)))
 (require (submod Bazaar/Common/bags json))
-
-(require (prefix-in p: "pebbles.rkt"))
+(require (prefix-in p: Bazaar/Common/pebbles))
 (require Bazaar/Common/bags)
 
 (require Bazaar/Lib/parse-json)
@@ -136,6 +139,13 @@
 ;                                                                                         ;   
 ;                                                                                        ;    
 ;                                                                                       ;;    
+
+#; {Card Card -> Boolean}
+;; a card is below another if for some color `c` it displays `c` and the other one doesn't
+;; the colors are checked in the specified order (RED, WHITE, BLUE, GREEN, YELLOW)
+(define (1card<= 1bag 2bag)
+  (for/first ([p p:PEBBLES] #:when (and (bag-member? 1bag p) (not (bag-member? 2bag p))))
+    #true))
 
 ;; ---------------------------------------------------------------------------------------------------
 (define (render* c*)
