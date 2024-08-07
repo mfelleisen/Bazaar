@@ -24,6 +24,10 @@
  #; {type 1Equation = [List Bag Bag]}
  ;; the intersection of thetwo sets must be empty
  1eq?
+ #; {Bag Bag -> 1Equation}
+ 1eq
+ 1eq-left
+ 1eq-right
  
  #; {Equations Equations -> Boolean}
  ;; are the two sets of equations equal? -- each side is considered a set, too
@@ -43,8 +47,8 @@
  ;; returns an image of `e` where `render-x` is used to render individual Xs
  render
 
- #; {Bag Bag -> 1Equation}
- 1eq)
+ #; {[Listof 1Equation] -> Pict}
+ render*)
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ examples
@@ -218,6 +222,10 @@
   (define left  (b:render (1eq-left 1eq)))
   (define right (b:render (1eq-right 1eq)))
   (hc-append 5 left (text "=") right))
+
+(define (render* e*)
+  (define p-e* (map render e*))
+  (apply vl-append 5 p-e*))
 
 ;                              
 ;      ;                       
