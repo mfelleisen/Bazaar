@@ -96,7 +96,8 @@
 
 (module+ examples
   (require (submod Bazaar/Common/bags examples))
-  (require (prefix-in p: (submod Bazaar/Common/pebbles examples))))
+  (require (prefix-in p: (submod Bazaar/Common/pebbles examples)))
+  (require SwDev/Testing/scenarios))
 
 (module+ json
   (require (submod Bazaar/Common/bags json))
@@ -150,7 +151,7 @@
 
 (module+ examples
   ;; local only
-  (provide b-rg b-bbbb r-g=4xb)
+  (provide r-g=4xb 3xg=r ggb=rw)
   
   (define r-g=4xb (1eq b-rg b-bbbb))
   (define g-r=4xb (1eq (reverse b-rg) b-bbbb))
@@ -162,22 +163,16 @@
   (define ggb=rw   (1eq b-ggb b-gw)))
 
 (module+ examples ;; make scenarios
-
-  #; {(scenaro* Id [List [Listof 1Equation] bank:Bag wallet:Bag] [Listof 1Equation] String)}
-  (define-syntax-rule (scenario+ kind args expected msg)
-    (set! kind (append kind (list [list args expected msg]))))
+  (setup-scenarios scenario+ Tests/ ForStudents/ Exns/)
   
-  (define ForStudents/ '[])
   (scenario+ ForStudents/ `[,(list r-g=4xb) ,b-rg ,b-bbbb] (list r-g=4xb) "left2right, not vv")
   (scenario+ ForStudents/ `[,(list r-g=4xb) ,b-rg ,b-bbbb] (list g-r=4xb) "left2right, permute")
   (scenario+ ForStudents/ `[,(list r-g=4xb 3xg=r) ,b-rg ,b-bbbb] (list g-r=4xb) "left2right/permute")
   
-  (define Tests/ '[])
   (scenario+ Tests/ `[,(list r-g=4xb) [] ,b-bbbb] (list) "emoty wallet")
   (scenario+ Tests/ `[,(list r-g=4xb) ,b-bbbb []] (list) "emoty bank")
   (scenario+ Tests/ `[,(list r-g=4xb ggb=rw 3xg=r) ,b-rg ,b-4xb-3xg] (list 3xg=r- r-g=4xb) "3 -> 2")
-
-  (define Exns/ '())
+  
   (scenario+ Exns/ `[,(list r-g=4xb 4xb=r-g) ,b-rg ,b-bbbb] #px"distinct-equations" "repeated eq")
   (scenario+ Exns/ `[,(list 3xg=g 4xb=r-g) ,b-rg ,b-bbbb]   #px"good-equations" "1 bad eq"))
 
