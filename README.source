@@ -1,11 +1,11 @@
-## The Q Project
+## The Bazaar Project
 
 ### Install
 
 ```
 $ git clone git:...
-$ cd Qwirkle
+$ cd Bazaar 
 $ raco pkg install
-$ raco doc Qwirkle 
+$ raco doc Bazaar 
 ```
 
