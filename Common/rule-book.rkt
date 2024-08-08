@@ -33,4 +33,5 @@
 ;; ---------------------------------------------------------------------------------------------------
 (module+ test
   (check-equal? (calculate-points c-rrbrr 0) (points-no-face (last POINTS)))
-  (check-equal? (calculate-points c-rrbrr* 0) (points-with-face (last POINTS))))
+  (check-equal? (calculate-points c-rrbrr* 0) (points-with-face (last POINTS)))
+  (check-equal? (calculate-points c-rrbrr* 6) (points-with-face (first POINTS))))
