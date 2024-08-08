@@ -9,6 +9,7 @@
 
  bag?
  bag
+ 
  bag-empty?
  bag-member?
  bag-size
@@ -17,6 +18,12 @@
  bag-minus
  bag-intersect
  bag-equal?
+
+ (contract-out 
+  [bag-transfer
+   #; (bag-transfer one to from-one-to-two from-two-to-one)
+   (-> bag? bag? bag? bag? (values bag? bag?))])
+ 
  render)
 
 (module+ json
@@ -28,7 +35,7 @@
    jsexpr->bag))
 
 (module+ examples
-  (provide b-rg b-bbbb b-4xb-3xg b-ggg b-r b-g b-ggb b-gw
+  (provide b-rg b-bbbb b-4xb-3xg b-ggg b-r b-g b-ggb b-gw b-rr b-gg
            b-bbbbb b-ggggg b-rgbrg b-wyrbb b-rrbrr))
 
 ;                                                                                      
@@ -93,7 +100,9 @@
   (define b-wyrbb (bag p:WHITE p:YELLOW p:RED p:BLUE p:BLUE))
   
   (define b-ggg [bag p:GREEN p:GREEN p:GREEN])
+  (define b-gg  [bag p:GREEN p:GREEN])
   (define b-r   [bag p:RED])
+  (define b-rr  [bag p:RED p:RED])
   (define b-g   [bag p:GREEN])
   (define b-ggb [bag p:GREEN p:GREEN p:BLUE])
   (define b-gw  [bag p:RED p:WHITE])
@@ -117,6 +126,10 @@
 ;                                                                                         ;   
 ;                                                                                        ;    
 ;                                                                                       ;;    
+
+(define (bag-transfer wallet bank left right)
+  (values (bag-add (bag-minus wallet left) right)
+          (bag-add (bag-minus bank right) left)))
 
 (define (render b) (lib:render b p:render))
 
@@ -155,6 +168,10 @@
 ;                                     
 ;                                     
 
-(module+ test 
+(module+ test
+  (require SwDev/Testing/check-values)
+
   (check-true (jsexpr? (bag->jsexpr b-rrbrr)))
-  (check bag-equal? (jsexpr->bag (bag->jsexpr b-rrbrr)) b-rrbrr "basic bag test"))
+  (check bag-equal? (jsexpr->bag (bag->jsexpr b-rrbrr)) b-rrbrr "basic bag test")
+
+  (check-values (bag-transfer b-rg b-rg b-r b-g) b-gg b-rr "transfer"))
