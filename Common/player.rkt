@@ -8,7 +8,8 @@
  #; {type Player}
  player?
  player-score
-
+ player-wallet
+ 
  #; {Player -> Boolean}
  winning-points?
 
