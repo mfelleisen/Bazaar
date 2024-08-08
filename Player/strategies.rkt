@@ -17,42 +17,55 @@ question 3: should the player buy cards?
 |#
 
 ;; ---------------------------------------------------------------------------------------------------
-;; what the core of the player would looke like:
 
-(require Bazaar/Common/player)
-(require (only-in Bazaar/Common/turn-state turn))
+(provide
+  #; {Equation* Bag Bag -> Exchange}
+ should-the-olayer-request-a-random-pebble
 
-#; {Turn {Bag -> Purchases} -> [Option Equation*]}
-;; #false denotes a request for a random bebble from bank
-#; (list 1eq ...) ; denotes a sequence of left-to-right exchanges 
-(define (should-request-pebble-or-trade equations turn-state buy-with-wallet)
-  (match-define [turn bank visibles p _scores] turn-state)
-  (define wallet (player-wallet p))
-  (cond
-    [(should-the-olayer-request-a-random-pebble equations wallet bank)
-     (match-define [purchase cards _]
-       (buy-cards wallet buy-with-wallet))
-     (set! *to-be-bought cards)
-     #false]
-    [else
-     (match-define [exchange trades [purchase cards _]]
-       (trade-then-purchase equations wallet bank buy-with-wallet))
-     (set! *to-be-bought cards)
-     trades]))
+ #; {Equation* [Setof Card] Bag Bag {Purchase -> Natural} -> Exchange}
+ trade-then-purchase
 
-(define *to-be-bought #false)
+ #; {[Setof Card] Bag [Purchase -> Natural] -> Purchases}
+ ;; the player wishes to purchase the cards in the specified list order 
+ buy-cards
 
-#; {Turn -> [Listof Card]}
-;; the catds that the player wishes to buy, in order 
-(define (should-buy-cards turn)
-  *to-be-bought)
-;; ---------------------------------------------------------------------------------------------------
+ #; {type Exchange}
+ exchange?
+ exchange-cards
+ exchange-trades
 
+ #; {type Purchase}
+ purchase?
+ purchase-cards
+
+ #; {Purchase -> Natural}
+ ;; the value of the cards purchased 
+ purchase-points
+
+ #; {Purchase -> Natural}
+ ;; the number of cards purchased 
+ purchase-size)
+ 
 (module+ examples
   (provide
    #; {type Trade&BuyScenario = [List Equation* Cards Wallet:bag Bank:bag Policy]}
    ForStudents/
    Tests/))
+
+;                                                                                      
+;       ;                                  ;                                           
+;       ;                                  ;                          ;                
+;       ;                                  ;                                           
+;    ;;;;   ;;;   ;;;;    ;;;   ; ;;    ;;;;   ;;;   ; ;;    ;;;    ;;;    ;;;    ;;;  
+;   ;; ;;  ;;  ;  ;; ;;  ;;  ;  ;;  ;  ;; ;;  ;;  ;  ;;  ;  ;;  ;     ;   ;;  ;  ;   ; 
+;   ;   ;  ;   ;; ;   ;  ;   ;; ;   ;  ;   ;  ;   ;; ;   ;  ;         ;   ;   ;; ;     
+;   ;   ;  ;;;;;; ;   ;  ;;;;;; ;   ;  ;   ;  ;;;;;; ;   ;  ;         ;   ;;;;;;  ;;;  
+;   ;   ;  ;      ;   ;  ;      ;   ;  ;   ;  ;      ;   ;  ;         ;   ;          ; 
+;   ;; ;;  ;      ;; ;;  ;      ;   ;  ;; ;;  ;      ;   ;  ;;        ;   ;      ;   ; 
+;    ;;;;   ;;;;  ;;;;    ;;;;  ;   ;   ;;;;   ;;;;  ;   ;   ;;;;   ;;;;;  ;;;;   ;;;  
+;                 ;                                                                    
+;                 ;                                                                    
+;                 ;                                                                    
 
 (require (prefix-in b: Bazaar/Common/bags))
 (require (prefix-in c: Bazaar/Common/cards))
@@ -70,6 +83,34 @@ question 3: should the player buy cards?
 
 (module+ test
   (require (submod ".." examples)))
+
+;                                                                        
+;                                                                        
+;                                               ;                        
+;                                               ;                        
+;   ;;;;   ;;;;    ;;;;  ;;;;  ;;;;;;   ;;;   ;;;;;   ;;;    ;;;;   ;;;  
+;   ;; ;;      ;   ;;  ;     ; ;  ;  ; ;;  ;    ;    ;;  ;   ;;  ; ;   ; 
+;   ;   ;      ;   ;         ; ;  ;  ; ;   ;;   ;    ;   ;;  ;     ;     
+;   ;   ;   ;;;;   ;      ;;;; ;  ;  ; ;;;;;;   ;    ;;;;;;  ;      ;;;  
+;   ;   ;  ;   ;   ;     ;   ; ;  ;  ; ;        ;    ;       ;         ; 
+;   ;; ;;  ;   ;   ;     ;   ; ;  ;  ; ;        ;    ;       ;     ;   ; 
+;   ;;;;    ;;;;   ;      ;;;; ;  ;  ;  ;;;;    ;;;   ;;;;   ;      ;;;  
+;   ;                                                                    
+;   ;                                                                    
+;   ;                                                                    
+
+#; {[Purchase -> Natural] -> [NEListof Purchase]  -> Purchase}
+(define ((pick-most f) possible)
+  (define first-best (f (argmax f possible)))
+  (define all-best   (filter (λ (p*) (= (f p*) first-best)) possible))
+  (define just-cards (map purchase-cards all-best))
+  (cond
+    [(empty? (rest just-cards)) (purchase (first just-cards) first-best)]
+    [else 
+     (define sorted  (tie-breaker-for-purchases just-cards))
+     (when (not (all-equal? sorted))
+       (error 'tie-breaker-for-purchases "tie breaking failed, ~a" all-best))
+     (purchase (first sorted) first-best)]))
 
 ;                                                                                             
 ;                 ;                                                                           
@@ -104,19 +145,21 @@ question 3: should the player buy cards?
 ;                                                                          ;    
 ;                                                                         ;;    
 
-(struct exchange [trade purchase] #:prefab)
+(struct exchange [trades purchase] #:prefab)
 #; {type Exchange = (exchange Equation* Purchases)}
 #; (exchange e* p)
 ;; applying the series of Equations e*, left to right, to the wallet yields as best purchases p
 
+;; the number of trades per exchane 
 (define (exchange-trade# ex)
-  (length (exchange-trade ex)))
-
-(define (exchange-value ex)
-  (purchase-points (exchange-purchase ex)))
+  (length (exchange-trades ex)))
 
 (define (exchange-cards ex)
   (purchase-cards (exchange-purchase ex)))
+
+;; the numerical value of an exchange 
+(define (exchange-value ex)
+  (purchase-points (exchange-purchase ex)))
 
 (define (null-exchange) (exchange '() null-purchases))
 
@@ -151,10 +194,9 @@ question 3: should the player buy cards?
 ;                                                                                        ;    
 ;                                                                                       ;;    
 
-#; {Equation* Bag Bag {Bag -> Purchases} -> Exchange}
-(define #; /contract (trade-then-purchase equations wallet0 bank0 buy-with-wallet)
+(define #; /contract (trade-then-purchase equations visibles wallet0 bank0 which)
   (-> (listof e:1eq?) b:bag? b:bag? (-> b:bag? (λ (x) (purchase? x))) exchange?)
-  (define pts (possible-trades equations wallet0 bank0 buy-with-wallet))
+  (define pts (possible-trades equations wallet0 bank0 (buy-from-wallet visibles which)))
   (cond
     [(empty? pts) '()]
     [else (tie-breaker-trade-then-purchase wallet0 pts)]))
@@ -182,8 +224,8 @@ question 3: should the player buy cards?
 
 #; {[Listof Card] [[Listof Purchases] -> Purchases] -> Bag -> Purchases}
 ;; a function for scoring a list of exchanges 
-(define ((buy-from-wallet visibles pick-best) wallet)
-  (buy-cards visibles wallet pick-best))
+(define ((buy-from-wallet visibles which) wallet)
+  (buy-cards visibles wallet which))
 
 ;                                                                                      
 ;                               ;                           ;                          
@@ -258,9 +300,8 @@ question 3: should the player buy cards?
     (for ([s scenario*] [i (in-naturals)])
       (match-define (list args expected msg) s)
       (match-define (list equations cards wallet bank policy) args)
-      (define score-1  (if (eq? policy 'points) pick-most-points pick-most-cards))
-      (define buy-from (buy-from-wallet cards score-1))
-      (check-equal? (trade-then-purchase equations wallet bank buy-from) expected msg)))
+      (define pick  (if (eq? policy 'points) purchase-points purchase-size))
+      (check-equal? (trade-then-purchase equations cards wallet bank pick) expected msg)))
 
   (run-scenario* 'ForStudents ForStudents/)
   (run-scenario* 'Tests Tests/))
@@ -284,7 +325,7 @@ question 3: should the player buy cards?
 #; {type Purchases = (purchase [Listof Card] Natural)}
 #; (node c* n) ; represent the purchase of cards `c` with `n` points for all purchases
 
-(define (purchase-length p)
+(define (purchase-size p)
   (length (purchase-cards p)))
 
 (define null-purchases (purchase '() 0))
@@ -304,14 +345,12 @@ question 3: should the player buy cards?
 ;                                                                                        ;    
 ;                                                                                       ;;    
 
-#; {[Setof Card] Bag [ [Listof Purchases] -> Purchases ] -> Purchases}
-;; the player wishes to purchase the cards in the specified list order 
-(define (buy-cards visibles wallet pick-best)
+(define (buy-cards visibles wallet which)
   #; {[Listof Purchases]}
   (define possible (possible-purchases visibles wallet))
   (cond
     [(empty? possible) null-purchases]
-    [else (pick-best possible)]))
+    [else ((pick-most which) possible)]))
 
 #; {[Setof Card] Bag [] -> Purchases}
 (define (possible-purchases visibles0 wallet0)
@@ -336,26 +375,6 @@ question 3: should the player buy cards?
          (p-p/accu visibles-- wallet-- from-root++ points++))]))
   
   possibles)
-
-;; ---------------------------------------------------------------------------------------------------
-#; {[Purchase -> Natural] -> [NEListof Purchase]  -> Purchase}
-(define ((pick-most f) possible)
-  (define first-best (f (argmax f possible)))
-  (define all-best   (filter (λ (p*) (= (f p*) first-best)) possible))
-  (define just-cards (map purchase-cards all-best))
-  (cond
-    [(empty? (rest just-cards)) (purchase (first just-cards) first-best)]
-    [else 
-     (define sorted  (tie-breaker-for-purchases just-cards))
-     (when (not (all-equal? sorted))
-       (error 'tie-breaker-for-purchases "tie breaking failed, ~a" all-best))
-     (purchase (first sorted) first-best)]))
-
-#; {[NEListof Purchases] -> [Listof Card]}
-(define pick-most-points (pick-most purchase-points))
-
-#; {[NEListof Purchases] -> [Listof Card]}
-(define pick-most-cards (pick-most purchase-length))
 
 ;                                                                               
 ;                               ;                           ;                   
@@ -403,12 +422,12 @@ question 3: should the player buy cards?
 (module+ test
   
   (require rackunit)
-  (check-equal? (buy-cards (list) (b:bag) pick-most-cards)
+  (check-equal? (buy-cards (list) (b:bag) purchase-size)
                 (purchase '() 0))
-  (check-equal? (buy-cards (list c-ggggg c-ggggg) b-ggggg pick-most-cards)
+  (check-equal? (buy-cards (list c-ggggg c-ggggg) b-ggggg purchase-size)
                 (purchase (list c-ggggg) 1))
   (check-equal? (possible-purchases (list c-ggggg c-ggggg) b-ggggg)
                 (list (purchase (list c-ggggg) 5) (purchase (list c-ggggg) 5)))
 
-  (check-equal? (buy-cards (list c-ggggg c-ggggg) b-ggggg pick-most-points)
+  (check-equal? (buy-cards (list c-ggggg c-ggggg) b-ggggg purchase-points)
                 (purchase (list c-ggggg) 5)))
