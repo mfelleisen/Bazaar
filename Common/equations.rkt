@@ -248,7 +248,7 @@
     
     (cond
       [(and eq* (distinct? eq*)) eq*]
-      [else (eprintf "distinct set of equations expected, given ~a" j) #false]))
+      [else (eprintf "distinct set of equations expected, given ~a\n" j) #false]))
   
   (define (1eq->jsexpr eq)
     (match-define [1eq left right] eq)
