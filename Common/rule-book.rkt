@@ -8,7 +8,8 @@
  calculate-points
 
  #; {[Listof Card] Bag -> [Listof Card]}
- can-buy)
+ (contract-out
+  [can-buy (-> (listof c:card?) b:bag? (listof c:card?))]))
 
 ;; ---------------------------------------------------------------------------------------------------
 (require Bazaar/scribblings/spec)
