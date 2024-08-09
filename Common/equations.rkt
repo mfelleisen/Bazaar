@@ -54,9 +54,14 @@
 ;; ---------------------------------------------------------------------------------------------------
 (module+ examples
   (provide
+    r-g=4xb r-g=4xb-
+    3xg=r   3xg=r-
+    ggb=rw  ggb=rw-)
+  
+  (provide
    #; {type UsefulScenarios = [Listof 1Scenario]}
    #; {type 1Scenario       =  [List [List [Listof 1Equation] Bag Bag] [Listof 1Equation] String]}
-
+  
    #; UsefulScenarios
    ForStudents/
    Tests/
@@ -65,12 +70,13 @@
 ;; ---------------------------------------------------------------------------------------------------
 (module+ json
   (provide
-   
    #;{1Equation -> JSExpr}
    equations->jsexpr
 
    #; {[JSExpr -> (U False 1Equation)]}
-   jsexpr->equations))
+   jsexpr->equations
+   ;; this second one allows the use of the same equation more than once 
+   jsexpr->trades))
 
 ;                                                                                      
 ;       ;                                  ;                                           
@@ -151,17 +157,17 @@
 #; {type Side     = b:Bag || (<= 1 (bag-size b) 4)}
 
 (module+ examples
-  ;; local only
-  (provide r-g=4xb 3xg=r ggb=rw)
-  
   (define r-g=4xb (1eq b-rg b-bbbb))
+  (define r-g=4xb- (1eq-flip r-g=4xb))
   (define g-r=4xb (1eq (reverse b-rg) b-bbbb))
   (define 4xb=r-g (1eq b-bbbb b-rg))
 
   (define 3xg=r    (1eq b-ggg b-r))
   (define 3xg=r-   (1eq-flip 3xg=r))
   (define 3xg=g    (1eq b-ggg b-g)) ;; bad equation
-  (define ggb=rw   (1eq b-ggb b-gw)))
+  (define ggb=rw   (1eq b-ggb b-gw))
+  (define ggb=rw-  (1eq-flip ggb=rw)))
+
 
 (module+ examples ;; make scenarios
   (setup-scenarios scenario+ Tests/ ForStudents/ Exns/)
@@ -241,7 +247,7 @@
 (module+ json
   (define (equations->jsexpr eq*)
     (map 1eq->jsexpr eq*))
-
+  
   (define (jsexpr->equations j)
     (def/jsexpr-> equations #:array [(list (app jsexpr->1eq (? 1eq? 1eq)) ...) 1eq])
     (define eq* (jsexpr->equations j))
@@ -249,6 +255,11 @@
     (cond
       [(and eq* (distinct? eq*)) eq*]
       [else (eprintf "distinct set of equations expected, given ~a\n" j) #false]))
+
+  (define (jsexpr->trades j)
+    (def/jsexpr-> equations #:array [(list (app jsexpr->1eq (? 1eq? 1eq)) ...) 1eq])
+    (define eq* (jsexpr->equations j))
+    eq*)
   
   (define (1eq->jsexpr eq)
     (match-define [1eq left right] eq)
