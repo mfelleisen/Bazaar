@@ -220,7 +220,7 @@
   (define (struct->jsexpr s field-names+to*)
     (define values (rest (vector->list (struct->vector s))))
     (define j
-      (for/fold ([h (hash)]) ([k+to field-names+to*] [v values])
+      (for/fold ([h (hasheq)]) ([k+to field-names+to*] [v values])
         (match-define (cons k to) k+to)
         (dict-set h k (to v))))
     j)
