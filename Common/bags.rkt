@@ -14,18 +14,21 @@
  bag-member?
  bag-size
  subbag?
- bag-add
+ bag-add ;; bag ... bag -> bag 
  bag-minus
  bag-intersect
  bag-equal?
 
- (contract-out 
+ bag<= ;; if bag1 contains the pebble colors in order and bag2 fails
+ 
+ (contract-out
   [bag-transfer
    #; (bag-transfer one to from-one-to-two from-two-to-one)
    (-> bag? bag? bag? bag? (values bag? bag?))])
  
  render)
 
+;; ---------------------------------------------------------------------------------------------------
 (module+ json
   (provide
    #;{[Bag X] [X -> JSexpr] -> JSExpr}
@@ -34,9 +37,12 @@
    #; {[JSExpr [Y -> Boolean : X] [JSExpr -> X] -> (U False [Bag X])]}
    jsexpr->bag))
 
+;; ---------------------------------------------------------------------------------------------------
 (module+ examples
-  (provide b-rg b-bbbb b-4xb-3xg b-ggg b-r b-g b-ggb b-gw b-rr b-gg
-           b-bbbbb b-ggggg b-rgbrg b-wyrbb b-rrbrr))
+  (provide b-rg b-bbbb b-4xb-3xg b-ggg b-r b-g b-ggb b-gw b-rr b-gg b-yyw
+           ;; for cards 
+           b-bbbbb b-ggggg b-rgbrg b-wyrbb b-rrbrr b-rbbbb b-yyrwg))
+
 
 ;                                                                                      
 ;       ;                                  ;                                           
@@ -53,6 +59,7 @@
 ;                 ;                                                                    
 ;                 ;                                                                    
 
+(require (prefix-in p: (submod Bazaar/Common/pebbles examples)))
 (require (prefix-in p: Bazaar/Common/pebbles))
 (require (prefix-in lib: (only-in Bazaar/Lib/bags render)))
 (require Bazaar/Lib/bags)
@@ -69,8 +76,7 @@
   (require (prefix-in lib: (submod Bazaar/Lib/bags json)))
   (require Bazaar/Lib/parse-json))
 
-(module+ examples
-  (require (prefix-in p: (submod Bazaar/Common/pebbles examples))))
+(module+ examples)
 
 
 ;                                                          
@@ -92,13 +98,19 @@
 #;   [Bag Pebble]
 
 (module+ examples
+  
+  (define b-bbbb    [bag p:BLUE p:BLUE p:BLUE p:BLUE])
+
   ;; usable for cards 
   (define b-rrbrr [bag p:RED p:RED p:BLUE p:RED p:RED])
   (define b-ggggg (bag p:GREEN p:GREEN p:GREEN p:GREEN p:GREEN))
   (define b-bbbbb [bag p:BLUE p:BLUE p:BLUE p:BLUE p:BLUE])
   (define b-rgbrg (bag p:RED p:GREEN p:BLUE p:RED p:GREEN))
   (define b-wyrbb (bag p:WHITE p:YELLOW p:RED p:BLUE p:BLUE))
-  
+  (define b-rbbbb (bag-add b-bbbb (list p:RED)))
+  (define b-yyrwg (bag p:YELLOW p:YELLOW p:RED p:WHITE p:BLUE))
+
+  (define b-yyw [bag p:YELLOW p:YELLOW p:WHITE])
   (define b-ggg [bag p:GREEN p:GREEN p:GREEN])
   (define b-gg  [bag p:GREEN p:GREEN])
   (define b-r   [bag p:RED])
@@ -108,7 +120,6 @@
   (define b-gw  [bag p:RED p:WHITE])
   (define b-4xb-3xg [bag p:BLUE p:BLUE p:BLUE p:BLUE p:GREEN p:GREEN p:GREEN])
   (define b-rg      [bag p:RED p:GREEN])
-  (define b-bbbb    [bag p:BLUE p:BLUE p:BLUE p:BLUE])
 
 )
 
@@ -126,6 +137,10 @@
 ;                                                                                         ;   
 ;                                                                                        ;    
 ;                                                                                       ;;    
+
+(define (bag<= 1bag 2bag)
+  (for/first ([p p:PEBBLES] #:when (and (bag-member? 1bag p) (not (bag-member? 2bag p))))
+    #true))
 
 (define (bag-transfer wallet bank left right)
   (values (bag-add (bag-minus wallet left) right)
