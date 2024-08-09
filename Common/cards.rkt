@@ -9,7 +9,7 @@
  card?
  card-pebbles
  card-face?
-
+ 
  #; {Card Card -> Boolean}
  1card<= 
 
@@ -22,10 +22,14 @@
 (provide
  card-struct->definition)
 
+;; ---------------------------------------------------------------------------------------------------
 (module+ examples
-  (provide c-rrbrr  c-rgbrg c-wyrbb c-ggggg  
-           c-rrbrr* c-rgbrg* c-wyrbb* c-ggggg*))
+  (require (submod ".."))
+     
+  (provide c-rrbrr  c-rgbrg  c-wyrbb  c-ggggg  c-rbbbb c-rbbbb*
+           c-rrbrr* c-rgbrg* c-wyrbb* c-ggggg* c-yyrwg c-yyrwg*))
 
+;; ---------------------------------------------------------------------------------------------------
 (module+ json
   (provide
    #; {[Listof Card] -> JSexpr}
@@ -57,7 +61,6 @@
 
 (require Bazaar/scribblings/spec)
 
-(require (prefix-in p: (submod Bazaar/Common/pebbles examples)))
 (require (submod Bazaar/Common/bags json))
 (require (prefix-in p: Bazaar/Common/pebbles))
 (require Bazaar/Common/bags)
@@ -115,6 +118,11 @@
 #; {type Card = (card [Bad X] Boolean)}
 
 (module+ examples
+  (define c-rbbbb  (card b-rbbbb #false))
+  (define c-rbbbb* (card b-rbbbb #true))
+  (define c-yyrwg  (card b-yyrwg #false))
+  (define c-yyrwg* (card b-yyrwg #true))
+  
   (define c-rrbrr  (card b-rrbrr #false))
   (define c-rrbrr* (card b-rrbrr #true))
 
@@ -143,9 +151,10 @@
 #; {Card Card -> Boolean}
 ;; a card is below another if for some color `c` it displays `c` and the other one doesn't
 ;; the colors are checked in the specified order (RED, WHITE, BLUE, GREEN, YELLOW)
-(define (1card<= 1bag 2bag)
-  (for/first ([p p:PEBBLES] #:when (and (bag-member? 1bag p) (not (bag-member? 2bag p))))
-    #true))
+(define (1card<= 1card 2card)
+  (define 1bag (card-pebbles 1card))
+  (define 2bag (card-pebbles 2card))
+  (bag<= 1bag 2bag))
 
 ;; ---------------------------------------------------------------------------------------------------
 (define (render* c*)
