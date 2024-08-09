@@ -52,6 +52,12 @@ question 3: should the player buy cards?
    #; {type Trade&BuyScenario = [List Equation* [Listof Card] Wallet:bag Bank:bag Policy]}
    ForStudents/
    Tests/))
+
+;; ---------------------------------------------------------------------------------------------------
+(module+ json
+  (provide
+   policy->jsexpr
+   jsexpr->policy))
   
 ;                                                                                      
 ;       ;                                  ;                                           
@@ -83,7 +89,9 @@ question 3: should the player buy cards?
   (require SwDev/Testing/scenarios))
 
 (module+ test
-  (require (submod ".." examples)))
+  (require (submod ".." examples))
+  (require (submod ".." json))
+  (require rackunit))
 
 ;                                                                        
 ;                                                                        
@@ -169,16 +177,16 @@ question 3: should the player buy cards?
 
   (define equations (list r-g=4xb 3xg=r ggb=rw))
   (define cards     (list c-rrbrr* c-ggggg))
-  
-  (scenario+ ForStudents/ (list equations cards b-4xb-3xg b-rg 'points) (null-exchange) "points 0")
+  (define ns        (null-exchange))
+  (scenario+ ForStudents/ (list equations cards b-4xb-3xg b-rg purchase-points) ns "points 0")
 
   (define wal (b:bag-add b-rg b-rg b-rg b-4xb-3xg))
   (define ban (b:bag-add b-ggggg b-rrbrr b-rg b-rg))
   (define res-1 [exchange '() (purchase (list c-ggggg) 1)])
-  (scenario+ ForStudents/ (list equations cards wal ban 'cards) res-1 "cards 1")
+  (scenario+ ForStudents/ (list equations cards wal ban purchase-size) res-1 "cards 1")
   
   (define res-2 [exchange `(,3xg=r) (purchase (list c-rrbrr*) 2)])
-  (scenario+ ForStudents/ (list equations cards wal ban 'points) res-2 "points 2"))
+  (scenario+ ForStudents/ (list equations cards wal ban purchase-points) res-2 "points 2"))
 
 ;                                                                                             
 ;      ;;                                                                                     
@@ -302,7 +310,7 @@ question 3: should the player buy cards?
       (match-define (list args expected msg) s)
       (match-define (list equations cards wallet bank policy) args)
       (define pick  (if (eq? policy 'points) purchase-points purchase-size))
-      (check-equal? (trade-then-purchase equations cards wallet bank pick) expected msg)))
+      (check-equal? (trade-then-purchase equations cards wallet bank policy) expected msg)))
 
   (run-scenario* 'ForStudents ForStudents/)
   (run-scenario* 'Tests Tests/))
@@ -331,6 +339,26 @@ question 3: should the player buy cards?
 
 (define null-purchases (purchase '() 0))
 
+(module+ json
+  (define PS (~a (object-name purchase-size)))
+  (define PP (~a (object-name purchase-points)))
+  
+  (define (policy->jsexpr p)
+    (cond
+      [(equal? p purchase-size) PS]
+      [(equal? p purchase-points) PP]
+      [else (error 'policy->jsexpr "policy expected, given ~a" p)]))
+
+  (define (jsexpr->policy p)
+    (cond
+      [(equal? p PS) purchase-size]
+      [(equal? p PP) purchase-points]
+      [else #false])))
+
+(module+ test
+  (check-equal? (jsexpr->policy (policy->jsexpr purchase-size)) purchase-size)
+  (check-equal? (jsexpr->policy (policy->jsexpr purchase-points)) purchase-points))
+  
 ;                                                                                             
 ;      ;;                                                                                     
 ;     ;                           ;       ;                        ;;;       ;     ;          
@@ -421,8 +449,6 @@ question 3: should the player buy cards?
 ;                                     
 
 (module+ test
-  
-  (require rackunit)
   (check-equal? (buy-cards (list) (b:bag) purchase-size)
                 (purchase '() 0))
   (check-equal? (buy-cards (list c-ggggg c-ggggg) b-ggggg purchase-size)
