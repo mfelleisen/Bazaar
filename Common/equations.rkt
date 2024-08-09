@@ -18,6 +18,7 @@
 (define (good-size b)
   (<= 1 (b:bag-size b) [MAX-EQ-SIDE]))
 
+;; ---------------------------------------------------------------------------------------------------
 (provide
  #; {type Equation* = [Setof 1Equation]}
  

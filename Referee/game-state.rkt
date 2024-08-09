@@ -25,13 +25,15 @@
 (provide
  game-struct->definition)
 
+;; ---------------------------------------------------------------------------------------------------
 (module+ examples
   (provide gs0 gs1 gs-no-players gs-20 gs-20-rotate gs1+g-r+1)
 
-  #; {type UsefulScenarios = [Listof 1Scenario]}
-  #; {type 1Scenario       = [List GameState TurnState]}
+  #; {type GameTurnScenarios = [Listof 1Scenario]}
+  #; {type 1Scenario         = [List GameState TurnState]}
   (provide ForStudents/ Tests/))
 
+;; ---------------------------------------------------------------------------------------------------
 (module+ json
   (provide
    game->jsexpr

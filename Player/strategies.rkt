@@ -19,7 +19,7 @@ question 3: should the player buy cards?
 ;; ---------------------------------------------------------------------------------------------------
 
 (provide
-  #; {Equation* Bag Bag -> Exchange}
+ #; {Equation* Bag Bag -> Exchange}
  should-the-olayer-request-a-random-pebble
 
  #; {Equation* [Setof Card] Bag Bag {Purchase -> Natural} -> Exchange}
@@ -45,13 +45,14 @@ question 3: should the player buy cards?
  #; {Purchase -> Natural}
  ;; the number of cards purchased 
  purchase-size)
- 
+
+;; ---------------------------------------------------------------------------------------------------
 (module+ examples
   (provide
-   #; {type Trade&BuyScenario = [List Equation* Cards Wallet:bag Bank:bag Policy]}
+   #; {type Trade&BuyScenario = [List Equation* [Listof Card] Wallet:bag Bank:bag Policy]}
    ForStudents/
    Tests/))
-
+  
 ;                                                                                      
 ;       ;                                  ;                                           
 ;       ;                                  ;                          ;                
