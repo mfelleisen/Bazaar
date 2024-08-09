@@ -12,7 +12,8 @@
  bag-empty?
  bag-member?
  bag-size
- subbag?
+ (contract-out
+  [subbag? (-> bag? bag? boolean?)])
  bag-add
  bag-minus
  bag-intersect
