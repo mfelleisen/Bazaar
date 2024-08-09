@@ -74,6 +74,8 @@ question 3: should the player buy cards?
 ;                 ;                                                                    
 ;                 ;                                                                    
 
+(require Bazaar/scribblings/spec)
+
 (require (prefix-in b: Bazaar/Common/bags))
 (require (prefix-in c: Bazaar/Common/cards))
 (require (prefix-in e: Bazaar/Common/equations))
@@ -220,7 +222,8 @@ question 3: should the player buy cards?
   #; [Listof [Listof Exchange]]
   (define possibles '[])
   (define p-so-far0 (list (exchange '() (buy-with-wallet wallet0))))
-  (let p-t/accu ([wallet wallet0] [bank bank0] [trades-so-far '()] [p-so-far p-so-far0] [fuel 3])
+  (define fuel0    (SearchDepth))
+  (let p-t/accu ([wallet wallet0] [bank bank0] [trades-so-far '()] [p-so-far p-so-far0] [fuel fuel0])
     (define rules (e:useful equations wallet bank))
     (cond
       [(or (empty? rules) (zero? fuel))

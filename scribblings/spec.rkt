@@ -46,6 +46,8 @@
 
   (define PLAYER-WINS 20)
 
+  (define SearchDepth (make-parameter 4))
+
   ;; -----------------------------------------------------------------------------
   [define PER-TURN-s 6]
 
