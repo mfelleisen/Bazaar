@@ -10,9 +10,9 @@
  card-pebbles
  card-face?
  
- #; {Card Card -> Boolean}
- 1card<= 
-
+ #; {[Listof Card] [Listof Card] -> Natural}
+ cards<
+ 
  #; {[Listof Card] -> Pict}
  render*
 
@@ -148,10 +148,14 @@
 ;                                                                                        ;    
 ;                                                                                       ;;    
 
+;; one card sequence is below another seq if the cards are below each other in order 
+(define (cards< 1cards 2cards)
+  (for/first ([p 1cards] [q 2cards] #:when (1card< p q)) #true))
+
 #; {Card Card -> Boolean}
 ;; a card is below another if its displayed pebbles are below the ones of the second 
-(define (1card<= 1card 2card)
-  (bag<= (card-pebbles 1card) (card-pebbles 2card)))
+(define (1card< 1card 2card)
+  (bag< (card-pebbles 1card) (card-pebbles 2card)))
 
 ;; ---------------------------------------------------------------------------------------------------
 (define (render* c*)

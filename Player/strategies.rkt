@@ -301,7 +301,7 @@
 
 #; {[Listof Exchange] -> [Listof Exchange]}
 (define (sort-by-lhs richest)
-  (sort richest b:bag<= #:key (λ (ex) (map e:1eq-left (exchange-trades ex)))))
+  (sort richest b:bag< #:key (λ (ex) (map e:1eq-left (exchange-trades ex)))))
 
 ;                                     
 ;                                     
@@ -475,12 +475,7 @@
 #; {[NEListof [Listof Card]] -> [Listof [List Card Card N]]}
 ;; pick the list of cards that is best according to some whimsical ordering of card sequences
 (define (tie-breaker-for-purchases all-best)
-  (sort all-best cards<=))
-
-#; {[Listof Card] [Listof Card] -> Natural}
-;; one card sequence is below another seq if the cards are below each other in order 
-(define (cards<= 1cards 2cards)
-  (for/first ([p 1cards] [q 2cards] #:when (c:1card<= p q)) #true))
+  (sort all-best c:cards<))
 
 ;                                     
 ;                                     
