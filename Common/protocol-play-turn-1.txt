@@ -1,12 +1,17 @@
-
+	
 referee                         player (p_1) . . . player (p_n)
   |                                |                 |
-  |   take-turn(TurnState)         |                 | % player receives:
+  |   request-pebble-or-trades(    |                 | % player receives:
   | -----------------------------> |                 | % - turn state            
+  | 		TurnState)         |		     |
+  | 				   |		     |
   |                                |                 |
-  |     WANT-PEBBLE                |                 | % requests a pebble 
-  | <============================  |                 |
-  |                                |                 | 
+  |     WANT-PEBBLE-or-TRADES      |                 | % requests a pebble 
+  | <============================  |                 | % or 
+  |                                |                 | % an exchange of pebbles
+  |				   |		     |
+  |				   |		     |
+  |				   |		     |
   |--+                             |                 |
   .  |                             .                 . % if legal:
   .  |                             .                 . % referee modifies game state
@@ -17,10 +22,13 @@ referee                         player (p_1) . . . player (p_n)
 
   IF LEGAL:
   | -----------------------------> |                 | 
-  |   take-turn(TurnState)         |                 | % player receives:
+  |   request-cards(TurnState)     |                 | % player receives:
   | -----------------------------> |                 | % - turn state
-  |                                |                 | % with additional pebble
-  |   trade->purchase([],cards)    |		     | 
+  |                                |                 | % with a revised 
+  |				   |		     | % wallet of pebbles
+  |				   |		     |
+  |				   |		     |
+  |   SequenceOf<Card>             |		     | 
   | <============================= |                 | % purchases cards
   |--+                             |                 |
   .  |                             .                 . % if legal:

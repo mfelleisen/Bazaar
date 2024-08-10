@@ -19,16 +19,16 @@
 (require Bazaar/Common/turn-state)
 
 (module+ test
-  (require)
   (require rackunit))
 
 ;; ---------------------------------------------------------------------------------------------------
 (define player%/c
   (class/c
-   [name      (->m string?)]
-   [setup     (->m (listof e:1eq?) void?)]
-   [take-turn (->m turn? a:action*?)]
-   [win       (->m boolean? void?)]))
+   [name                     (->m string?)]
+   [setup                    (->m (listof e:1eq?) void?)]
+   [request-pebble-or-trades (->m turn? (or/c a:want-pebble? a:trades?))]
+   [request-cards            (->m turn? a:buy-cards?)]
+   [win                      (->m boolean? void?)]))
 
 (define player/c [instanceof/c player%/c])
 

@@ -4,28 +4,23 @@
 ;; -----------------------------------------------------------------------------
 
 (provide
- #; {Any -> Boolean}
+ #; {Any -> Boolean?}
+ ;; #false denotes the request for a random pebble 
  want-pebble?
 
  #; {Any -> Boolean}
- action*?
+ #; (list eq1 ...) ; is a request to trade according to these rules in order 
+ trades?
 
- #; {type TP = (trade->purchase [Listof 1Eq] [Listof Card])}
- (struct-out trade->purchase))
+ #; {Any -> Boolean}
+ #; (list c1 ...) ;; is a request to purchase the specified cards in order 
+ buy-cards?)
 
 ;; -----------------------------------------------------------------------------
 (require (prefix-in c: Bazaar/Common/cards))
 (require (prefix-in e: Bazaar/Common/equations))
 
 ;; -----------------------------------------------------------------------------
-(define want-pebble (gensym 'want-pepple))
-(define (want-pebble? x) (eq? x want-pebble))
-
-(struct trade->purchase [trades purchases] #:prefab)
-#; {type TP = (trade->purchase [Listof 1Eq] [Listof Card])}
-
-(define (action*? x)
-  (or (want-pebble? x)
-      (and (trade->purchase? x)
-           ((listof e:1eq?) (trade->purchase-trades x))
-           ((listof c:card?) (trade->purchase-purchases x)))))
+(define want-pebble? false?)
+(define trades?      (listof e:1eq?))
+(define buy-cards?   (listof c:card?))
