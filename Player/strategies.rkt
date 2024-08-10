@@ -205,42 +205,38 @@
 ;                                                                                        ;    
 ;                                                                                       ;;    
 
-(define #; /contract (trade-then-purchase equations visibles wallet0 bank0 which)
-  (-> (listof e:1eq?) b:bag? b:bag? (-> b:bag? (λ (x) (purchase? x))) exchange?)
+(define (trade-then-purchase equations visibles wallet0 bank0 which)
   (define pts (possible-trades equations wallet0 bank0 (λ (w) (buy-cards visibles w which))))
   (cond
     [(empty? pts) '()]
-    [else (tie-breaker-trade-then-purchase wallet0 pts)]))
+    [else (tie-breaker-trade-then-purchase wallet0 pts which)]))
 
-#; {Equation* Bag Bag {Bag -> Purchases} -> [Listof [Listof Exchange]]}
+#; {Equation* Bag Bag {Bag -> Purchases} -> [Setof Exchange]}
 
 ;; determine all possible exchanges between the `wallet` and the `bank` that are feasible
 ;; up to `SearchDepth` of a generative tree and maximize at each node in this search tree
 ;; what the player buys according to `buy-with-wallet`, for now:
 ;; -- maximize points that player can get with a particular sequencing of card purchases
 ;; -- maximize the number of cards that player can get with a particular sequencing of card purchases
-;;
 
-(define #; /contract (possible-trades equations wallet0 bank0 buy-with-wallet)
-  (-> (listof e:1eq?) b:bag? b:bag? (-> b:bag? (λ (x) (purchase? x))) (listof (listof exchange?)))
+(define (possible-trades equations wallet0 bank0 buy-with-wallet)
   #; [Listof [Listof Exchange]]
-  (define *possibles '[]) ;; imperatively accumulate all paths of exchanges from root to leafs
+  (define *possibles `[,(exchange '() (buy-with-wallet wallet0))])
+  ;; imperatively accumulate all from root to leafs
   
-  (define p-so-far0 (list (exchange '() (buy-with-wallet wallet0))))
-  (define fuel0    (SearchDepth))
-  (let p-t/accu ([wallet wallet0] [bank bank0] [trades-so-far '()] [p-so-far p-so-far0] [fuel fuel0])
+  (let p-t/accu ([wallet wallet0] [bank bank0] [trades-so-far '()] [fuel (SearchDepth)])
     (define rules (e:useful equations wallet bank))
     (cond
-      [(or (empty? rules) (zero? fuel))
-       (set! *possibles (cons (reverse p-so-far) *possibles))]
+      [(or (empty? rules) (zero? fuel)) (void)]
       [else
        (for ([x rules])
          (define-values (wallet++ bank++) (b:bag-transfer wallet bank (e:1eq-left x) (e:1eq-right x)))
          (define trades   (cons x trades-so-far))
          (define xchange  (exchange (reverse trades) (buy-with-wallet wallet++)))
+         (set! *possibles (cons xchange *possibles))
          ;; the buying does _not_ apply to the wallet or bank because once the player buys cards
          ;; it can no longer trade pebbles 
-         (p-t/accu wallet++ bank++ trades (cons xchange p-so-far) (sub1 fuel)))]))
+         (p-t/accu wallet++ bank++ trades (sub1 fuel)))]))
 
   *possibles)
 
@@ -259,36 +255,32 @@
 ;                                                                                 ;  ; 
 ;                                                                                  ;;  
 
-#; {[Listof [Listof Exchange]] -> [Listof Exchange]}
+#; {[Listof Exchange] -> Exchange}
 ;; given all possible exchange paths, break ties among the embedded trades-buys as follows:
 ;; -- get the best node from each path
 ;; -- from those pick the ones with the smallest number of trades
 ;; -- from those pick the ones that leave the player with the most pebbles
 ;; -- finally pick the one with the smallest wallet according to bag< 
-(define #;/contract (tie-breaker-trade-then-purchase wallet0 pts)
-  (-> b:bag? (listof (listof exchange?)) exchange?)
-  (define the-bests (best-value pts))
-  (define shortest  (smallest-number-of-trades the-bests))
-  (define richest   (most-pebbles-left wallet0 shortest))
-  (pick-smallest-according-to-bag< richest))
-
-#; {[Listof [Listof Exchange]] -> [Listof Exchange]}
-(define (best-value pts)
-  (define best-each (map (λ (ex*) (argmax exchange-value ex*)) pts))
-  (define the-max   (exchange-value (argmax exchange-value best-each)))
-  (filter (λ (ex) (= (exchange-value ex) the-max)) best-each))
+(define (tie-breaker-trade-then-purchase wallet0 pts which)
+  (define the-bests (single pts best-value which))
+  (define shortest  (single the-bests smallest-number-of-trades))
+  (define richest   (single shortest #:upgrade (λ (x) `[[0 ,x]]) most-pebbles-left wallet0))
+  (single richest #:upgrade second pick-smallest-according-to-bag<))
 
 #; {[Listof Exchange] -> [Listof Exchange]}
-(define (smallest-number-of-trades the-bests)
-  (define the-min (exchange-trade# (argmin exchange-trade# the-bests)))
-  (filter (λ (ex) (= (exchange-trade# ex) the-min)) the-bests))
+(define (best-value pts which)
+  (all-argmax (compose which exchange-purchase) pts))
 
+;; ---------------------------------------------------------------------------------------------------
+#; {[Listof Exchange] -> [Listof Exchange]}
+(define (smallest-number-of-trades the-bests)
+  (all-argmin exchange-trade# the-bests))
+
+;; ---------------------------------------------------------------------------------------------------
 #; {[Listof Exchange] -> [Listof [List Natural Exchange]]}
-(define (most-pebbles-left wallet exchanges)
+(define (most-pebbles-left exchanges wallet)
   (define exchanges-with-pebbles-left (map (pebbles-left wallet) exchanges))
-  (define pl (compose b:bag-size first))
-  (define xx (pl (argmax pl exchanges-with-pebbles-left)))
-  (filter (λ (ex) (= (pl ex) xx)) exchanges-with-pebbles-left))
+  (all-argmax (compose b:bag-size first) exchanges-with-pebbles-left))
 
 #; {Bag -> Exchange -> [List Bag Exchange]}
 (define ((pebbles-left wallet0) ex)
@@ -297,12 +289,15 @@
     (define-values (wallet++ _) (b:bag-transfer wallet (b:bag) (e:1eq-left t) (e:1eq-right t)))
     wallet++))
 
+;; ---------------------------------------------------------------------------------------------------
 #; {[Listof [List Natural Exchange]] -> Exchange}
 (define (pick-smallest-according-to-bag< richest)
-  (define sorted (sort richest b:bag< #:key first))
-  (second (first sorted)))
-  
+  (second (first (sort richest b:bag< #:key first))))
 
+;; ---------------------------------------------------------------------------------------------------
+(define (single id f  #:upgrade (u identity) . e)
+  (if (empty? (rest id)) (u (first id)) (apply f id e)))
+  
 ;                                     
 ;                                     
 ;     ;                    ;          
