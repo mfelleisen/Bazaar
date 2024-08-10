@@ -6,7 +6,12 @@
 (provide
  #; {type TurnState}
  turn?
- turn
+ (contract-out
+  [turn (-> b:bag? (listof c:card?) p:player? (listof natural?) turn?)])
+ turn-active
+ turn-bank
+ turn-cards
+ turn-wallet
 
  render
 
@@ -82,6 +87,8 @@
  [cards  #:to-jsexpr card*->jsexpr  #:from-jsexpr jsexpr->card* #:is-a "*Cards"]
  [active #:to-jsexpr player->jsexpr #:from-jsexpr jsexpr->player #:is-a "Player"]
  [scores #:to-jsexpr score*->jsexpr #:from-jsexpr jsexpr->score* #:is-a "*Naturals"])
+
+(define turn-wallet (compose p:player-wallet turn-active))
 
 (module+ examples
   (define ts0          (turn b-ggggg (list)                         p-r6 '[]))
