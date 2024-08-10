@@ -7,7 +7,7 @@
 ;; ---------------------------------------------------------------------------------------------------
 
 (provide
- #; {Equation* Bag Bag -> Exchange}
+ #; {Equation* Bag Bag -> Boolean}
  should-the-olayer-request-a-random-pebble
 
  #; {Equation* [Setof Card] Bag Bag {Purchase -> Natural} -> Exchange}
