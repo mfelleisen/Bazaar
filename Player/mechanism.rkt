@@ -4,20 +4,22 @@
 ;; what the core of the player would looke like:
 
 (require Bazaar/Player/strategies)
-(require Bazaar/Common/player)
-(require (only-in Bazaar/Common/turn-state turn))
+(require Bazaar/Common/turn-state)
+(require (prefix-in p: Bazaar/Common/player))
 
 (define strategy purchase-size)
+(define equations '())
 
 #; {Turn {Purchase -> Natural} -> [Option Equation*]}
 ;; #false denotes a request for a random bebble from bank
 #; (list 1eq ...) ; denotes a sequence of left-to-right exchanges 
-(define (should-request-pebble-or-trade equations turn-state)
-  (match-define [turn bank visibles p _scores] turn-state)
-  (define wallet (player-wallet p))
+(define (request-pebble-or-trade turn-state)
+  (define bank (turn-bank turn-state))
+  (define visibles (turn-cards turn-state))
+  (define active   (turn-active turn-state))
+  (define wallet   (turn-wallet active))
   (cond
     [(should-the-olayer-request-a-random-pebble equations wallet bank)
-     (set! *to-be-bought [purchase-cards (buy-cards wallet strategy)])
      #false]
     [else
      (define trades&buys (trade-then-purchase equations wallet bank strategy))
@@ -28,5 +30,6 @@
 
 #; {Turn -> [Listof Card]}
 ;; the catds that the player wishes to buy, in order 
-(define (should-buy-cards turn)
+(define (buy-which-cards-if-any turn)
+  (set! *to-be-bought [purchase-cards (buy-cards (turn-wallet turn) strategy)])
   *to-be-bought)
