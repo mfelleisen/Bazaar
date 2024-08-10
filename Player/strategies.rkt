@@ -264,14 +264,13 @@
 ;; -- get the best node from each path
 ;; -- from those pick the ones with the smallest number of trades
 ;; -- from those pick the ones that leave the player with the most pebbles
-;; -- and finally sort the remaining list via the LHS of the required trades 
+;; -- finally pick the one with the smallest wallet according to bag< 
 (define #;/contract (tie-breaker-trade-then-purchase wallet0 pts)
   (-> b:bag? (listof (listof exchange?)) exchange?)
   (define the-bests (best-value pts))
   (define shortest  (smallest-number-of-trades the-bests))
   (define richest   (most-pebbles-left wallet0 shortest))
-  (define sorted    (sort-by-lhs richest))
-  (first sorted))
+  (pick-smallest-according-to-bag< richest))
 
 #; {[Listof [Listof Exchange]] -> [Listof Exchange]}
 (define (best-value pts)
@@ -280,28 +279,29 @@
   (filter (λ (ex) (= (exchange-value ex) the-max)) best-each))
 
 #; {[Listof Exchange] -> [Listof Exchange]}
-(define (most-pebbles-left wallet exchanges)
-  (define pl (pebbles-left wallet)) 
-  (define xx (pl (argmax pl exchanges)))
-  (filter (λ (ex) (= (pl ex) xx)) exchanges))
-
-#; {Bag -> Exchange -> Natural}
-(define ((pebbles-left wallet) ex)
-  (match-define [exchange trade purchases] ex)
-  (define wallet++
-    (for/fold ([wallet wallet]) ([t trade])
-      (define-values (wallet++ _) (b:bag-transfer wallet (b:bag) (e:1eq-left t) (e:1eq-right t)))
-      wallet++))
-  (b:bag-size wallet++))
-
-#; {[Listof Exchange] -> [Listof Exchange]}
 (define (smallest-number-of-trades the-bests)
   (define the-min (exchange-trade# (argmin exchange-trade# the-bests)))
   (filter (λ (ex) (= (exchange-trade# ex) the-min)) the-bests))
 
-#; {[Listof Exchange] -> [Listof Exchange]}
-(define (sort-by-lhs richest)
-  (sort richest b:bag< #:key (λ (ex) (map e:1eq-left (exchange-trades ex)))))
+#; {[Listof Exchange] -> [Listof [List Natural Exchange]]}
+(define (most-pebbles-left wallet exchanges)
+  (define exchanges-with-pebbles-left (map (pebbles-left wallet) exchanges))
+  (define pl (compose b:bag-size first))
+  (define xx (pl (argmax pl exchanges-with-pebbles-left)))
+  (filter (λ (ex) (= (pl ex) xx)) exchanges-with-pebbles-left))
+
+#; {Bag -> Exchange -> [List Bag Exchange]}
+(define ((pebbles-left wallet0) ex)
+  (match-define [exchange trade purchases] ex)
+  (for/fold ([wallet wallet0] #:result (list wallet ex)) ([t trade])
+    (define-values (wallet++ _) (b:bag-transfer wallet (b:bag) (e:1eq-left t) (e:1eq-right t)))
+    wallet++))
+
+#; {[Listof [List Natural Exchange]] -> Exchange}
+(define (pick-smallest-according-to-bag< richest)
+  (define sorted (sort richest b:bag< #:key first))
+  (second (first sorted)))
+  
 
 ;                                     
 ;                                     
