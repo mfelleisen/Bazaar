@@ -149,12 +149,9 @@
 ;                                                                                       ;;    
 
 #; {Card Card -> Boolean}
-;; a card is below another if for some color `c` it displays `c` and the other one doesn't
-;; the colors are checked in the specified order (RED, WHITE, BLUE, GREEN, YELLOW)
+;; a card is below another if its displayed pebbles are below the ones of the second 
 (define (1card<= 1card 2card)
-  (define 1bag (card-pebbles 1card))
-  (define 2bag (card-pebbles 2card))
-  (bag<= 1bag 2bag))
+  (bag<= (card-pebbles 1card) (card-pebbles 2card)))
 
 ;; ---------------------------------------------------------------------------------------------------
 (define (render* c*)

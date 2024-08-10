@@ -138,6 +138,8 @@
 ;                                                                                        ;    
 ;                                                                                       ;;    
 
+;; a bag is below another if for some color `c` it displays `c` and the other one doesn't
+;; the colors are checked in the specified order (RED, WHITE, BLUE, GREEN, YELLOW)
 (define (bag<= 1bag 2bag)
   (for/first ([p p:PEBBLES] #:when (and (bag-member? 1bag p) (not (bag-member? 2bag p))))
     #true))

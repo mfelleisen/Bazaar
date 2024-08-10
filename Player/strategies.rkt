@@ -1,20 +1,8 @@
 #lang racket
 
-;; draft strategy file
-;; ---------------------------------------------------------------------------------------------------
-
-#|
-question 1: should the player make a request for a random pebble?
-  answer 1: only if the player can't perform any trades
-
-question 2: should the player perform trades? 
-  answer 2: yes, depending on the answers to question 3  
-
-question 3: should the player buy cards?
-  answer 3-points: maximize the number of points a player can get by purchasing cards ... 
-  answer 3-beans:  maximize the number of cards a player can purchase ...
-    with maximally 3 pebble trades
-|#
+;; two strategies for a Bazaar player for choosing
+;;  (1) whether to request a random pebble from the bank or a series of exchanges
+;;  (2) whether to buy cards and which one 
 
 ;; ---------------------------------------------------------------------------------------------------
 
@@ -88,7 +76,9 @@ question 3: should the player buy cards?
 (require SwDev/Lib/should-be-racket)
 
 (module+ examples
-  (require SwDev/Testing/scenarios))
+  (require (submod ".."))
+  (require SwDev/Testing/scenarios)
+  (require rackunit))
 
 (module+ test
   (require (submod ".." examples))
@@ -163,30 +153,38 @@ question 3: should the player buy cards?
 
 (module+ examples
   (setup-scenarios scenario+ Tests/ ForStudents/ Extras/)
+  (define equations (list r-g=4xb 3xg=r ggb=rw)))
 
-  (define equations (list r-g=4xb 3xg=r ggb=rw))
+(module+ examples ;; for students 
+  ;; even though trades are possible, none will yield a wallet that allows card purchases
   (define ns        (null-exchange))
-  
   (define cards-for (list c-rrbrr* c-ggggg))
-  (scenario+ ForStudents/ (list equations cards-for b-4xb-3xg b-rg purchase-points) ns "points 0")
+  (check-true (should-the-olayer-request-a-random-pebble equations b-4xb-3xg b-rg) "trades possible")
+  (scenario+ ForStudents/ (list equations cards-for b-4xb-3xg b-rg purchase-points) ns "no trades")
 
+  ;; the player can buy a card for 1 point w/o trading 
   (define wal (b:bag-add b-rg b-rg b-rg b-4xb-3xg))
   (define ban (b:bag-add b-bbbbb b-ggggg b-rrbrr b-rg b-rg))
   (define res-1 [exchange '() (purchase (list c-ggggg) 1)])
   (scenario+ ForStudents/ (list equations cards-for wal ban purchase-size) res-1 "cards 1")
-  
-  (define res-2 [exchange `(,3xg=r) (purchase (list c-rrbrr*) 2)])
-  (scenario+ ForStudents/ (list equations cards-for wal ban purchase-points) res-2 "points 2")
 
+  ;; the player must trade once to buy a card for 2 points 
+  (define res-2 [exchange `(,3xg=r) (purchase (list c-rrbrr*) 2)])
+  (scenario+ ForStudents/ (list equations cards-for wal ban purchase-points) res-2 "points 2"))
+
+(module+ examples ;; for testing students
+  ;; the player must make 2 trades to buy a card for 1 point 
   (define cards-test (list c-rbbbb c-yyrwg* c-ggggg))
   (define wal-test   (b:bag-add b-rr b-yyw))
   (define res-test   [exchange (list 3xg=r- 3xg=r-) (purchase (list c-ggggg) 1)])
   (scenario+ Tests/ (list equations cards-test wal-test ban purchase-points) res-test "t 1")
 
+  ;; the player must make 2 trades to buy a card for 2 points; an alterantive would yield only 1 point
   (define wal-test2  (b:bag-add wal-test b-r))
   (define res-test2  [exchange (list 3xg=r- r-g=4xb) (purchase (list c-yyrwg*) 2)])
   (scenario+ Tests/ (list equations cards-test wal-test2 ban purchase-points) res-test2 "x 2")
 
+  ;; a player can buy 2 cards for 3 points if it makes three trades 
   (define cards-test3 (list c-rbbbb* c-yyrwg* c-ggggg))
   (define wal-test3  (b:bag-add wal-test b-rr))
   (define res-test3  [exchange (list 3xg=r- r-g=4xb 3xg=r-) (purchase (list c-yyrwg* c-ggggg) 3)])
@@ -215,28 +213,36 @@ question 3: should the player buy cards?
     [else (tie-breaker-trade-then-purchase wallet0 pts)]))
 
 #; {Equation* Bag Bag {Bag -> Purchases} -> [Listof [Listof Exchange]]}
-;; determine all possible exchanges that apply up to a certain depth
-;; and then maxi
+
+;; determine all possible exchanges between the `wallet` and the `bank` that are feasible
+;; up to `SearchDepth` of a generative tree and maximize at each node in this search tree
+;; what the player buys according to `buy-with-wallet`, for now:
+;; -- maximize points that player can get with a particular sequencing of card purchases
+;; -- maximize the number of cards that player can get with a particular sequencing of card purchases
+;;
+
 (define #; /contract (possible-trades equations wallet0 bank0 buy-with-wallet)
   (-> (listof e:1eq?) b:bag? b:bag? (-> b:bag? (λ (x) (purchase? x))) (listof (listof exchange?)))
   #; [Listof [Listof Exchange]]
-  (define possibles '[])
+  (define *possibles '[]) ;; imperatively accumulate all paths of exchanges from root to leafs
+  
   (define p-so-far0 (list (exchange '() (buy-with-wallet wallet0))))
   (define fuel0    (SearchDepth))
   (let p-t/accu ([wallet wallet0] [bank bank0] [trades-so-far '()] [p-so-far p-so-far0] [fuel fuel0])
     (define rules (e:useful equations wallet bank))
     (cond
       [(or (empty? rules) (zero? fuel))
-       (set! possibles (cons (reverse p-so-far) possibles))]
+       (set! *possibles (cons (reverse p-so-far) *possibles))]
       [else
        (for ([x rules])
          (define-values (wallet++ bank++) (b:bag-transfer wallet bank (e:1eq-left x) (e:1eq-right x)))
          (define trades   (cons x trades-so-far))
-         (define best-buy (buy-with-wallet wallet++))
-         (define xchange* (cons (exchange (reverse trades) best-buy) p-so-far))
-         (p-t/accu wallet++ bank++ trades xchange* (sub1 fuel)))]))
+         (define xchange  (exchange (reverse trades) (buy-with-wallet wallet++)))
+         ;; the buying does _not_ apply to the wallet or bank because once the player buys cards
+         ;; it can no longer trade pebbles 
+         (p-t/accu wallet++ bank++ trades (cons xchange p-so-far) (sub1 fuel)))]))
 
-  possibles)
+  *possibles)
 
 ;                                                                                      
 ;                               ;                           ;                          
@@ -254,6 +260,11 @@ question 3: should the player buy cards?
 ;                                                                                  ;;  
 
 #; {[Listof [Listof Exchange]] -> [Listof Exchange]}
+;; given all possible exchange paths, break ties among the embedded trades-buys as follows:
+;; -- get the best node from each path
+;; -- from those pick the ones with the smallest number of trades
+;; -- from those pick the ones that leave the player with the most pebbles
+;; -- and finally sort the remaining list via the LHS of the required trades 
 (define #;/contract (tie-breaker-trade-then-purchase wallet0 pts)
   (-> b:bag? (listof (listof exchange?)) exchange?)
   (define the-bests (best-value pts))
@@ -416,27 +427,35 @@ question 3: should the player buy cards?
     [else ((pick-most which) possible)]))
 
 #; {[Setof Card] Bag [] -> Purchases}
+;; imperatively accumulate all paths of cards from root to leafs, evaluate, turn into purchases
 (define (possible-purchases visibles0 wallet0)
-  #; {Setof Card}
-  (define possibles '[])
-
+  #; {Listof Purchases}
+  (define *possibles '[])
+  
   ;; ACCU in reverse order of possible purchaes from `visibles0` & `wallet0` to `visibles` & `wallet`
   (let p-p/accu ([visibles visibles0] [wallet wallet0] [from-root-to-here '()] [points 0])
     #; [Listof Card]
-    (define trades (c:can-buy visibles wallet))
+    (define possible-buys (c:can-buy visibles wallet))
     (cond
-      [(empty? trades)
+      [(empty? possible-buys)
        (define proper-order (reverse from-root-to-here))
-       (set! possibles (cons (purchase proper-order points) possibles))]
+       (set! *possibles (cons (purchase proper-order points) *possibles))]
       [else
-       (for ([t trades])
-         (define visibles--  (remove t visibles))
-         (define wallet--    (b:bag-minus wallet (c:card-pebbles t)))
-         (define points++    (+ (c:calculate-points t (b:bag-size wallet--)) points))
-         (define from-root++ (cons t from-root-to-here))
-         (p-p/accu visibles-- wallet-- from-root++ points++))]))
+       (for ([t possible-buys])
+         (define-values [visibles-- wallet-- more] (purchase-1-card t visibles wallet))
+         (p-p/accu visibles-- wallet-- (cons t from-root-to-here) (+ more points)))]))
   
-  possibles)
+  *possibles)
+
+#; {Card [Setof Card] Bag -> [Setof Card] Bag Natural}
+;;  ASSUME `c` is in `visibles`
+(define (purchase-1-card c visibles wallet)
+  (define visibles--  (remove c visibles))
+  (define wallet--    (b:bag-minus wallet (c:card-pebbles c)))
+  (define points      (c:calculate-points c (b:bag-size wallet--)))
+  (values visibles-- wallet-- points))
+  
+
 
 ;                                                                               
 ;                               ;                           ;                   
@@ -454,7 +473,7 @@ question 3: should the player buy cards?
 ;                                                                               
 
 #; {[NEListof [Listof Card]] -> [Listof [List Card Card N]]}
-;; pick the list of cards that is 
+;; pick the list of cards that is best according to some whimsical ordering of card sequences
 (define (tie-breaker-for-purchases all-best)
   (sort all-best cards<=))
 
