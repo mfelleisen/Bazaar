@@ -74,6 +74,9 @@
    equations->jsexpr
 
    #; {[JSExpr -> (U False 1Equation)]}
+   jsexpr->1eq
+
+   #; {[JSExpr -> (U False Equation*)]}
    jsexpr->equations
    ;; this second one allows the use of the same equation more than once 
    jsexpr->trades))
