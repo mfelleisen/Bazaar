@@ -295,7 +295,7 @@
   (second (first (sort richest b:bag< #:key first))))
 
 ;; ---------------------------------------------------------------------------------------------------
-(define (single id f  #:upgrade (u identity) . e)
+(define (single id f  #:upgrade (u list) . e)
   (if (empty? (rest id)) (u (first id)) (apply f id e)))
   
 ;                                     
