@@ -159,7 +159,7 @@
   ;; even though trades are possible, none will yield a wallet that allows card purchases
   (define ns        (null-exchange))
   (define cards-for (list c-rrbrr* c-ggggg))
-  (check-true (should-the-player-request-a-random-pebble equations b-4xb-3xg b-rg) "trades possible")
+  (check-true (should-the-player-request-a-random-pebble '[] b-4xb-3xg b-rg) "trades possible")
   (scenario+ ForStudents/ (list equations cards-for b-4xb-3xg b-rg purchase-points) ns "no trades")
 
   ;; the player can buy a card for 1 point w/o trading 
