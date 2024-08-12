@@ -153,42 +153,60 @@
 
 (module+ examples
   (setup-scenarios scenario+ Tests/ ForStudents/ Extras/)
-  (define equations (list r-g=4xb 3xg=r ggb=rw)))
+  
+  (define equations (list r-g=4xb 3xg=r ggb=rw))
+  (define cards0    (list c-rrbrr* c-ggggg))
+  (define bank0     (b:bag-add b-bbbbb b-ggggg b-rrbrr b-rg b-rg))
 
-(module+ examples ;; for students 
+  #;{Bag 1Eq ... -> (values Equation* Bag)}
+  (define (create-wallet-from-transfers w0 . e...)
+    (let*-values ([(e1) 3xg=r-]
+                  [(e2) 3xg=r-]
+                  [(ω _)
+                   (for/fold ([w w0] [bank bank0]) ([e e...])
+                     (b:bag-transfer w bank (e:1eq-left e) (e:1eq-right e)))])
+      (values e... ω))))
+
+#; (b:bag-transfer wallet bank (e:1eq-left x) (e:1eq-right x))
+
+(module+ examples ;; for students
   ;; even though trades are possible, none will yield a wallet that allows card purchases
-  (define ns        (null-exchange))
-  (define cards-for (list c-rrbrr* c-ggggg))
-  (check-true (should-the-player-request-a-random-pebble '[] b-4xb-3xg b-rg) "trades possible")
-  (scenario+ ForStudents/ (list equations cards-for b-4xb-3xg b-rg purchase-points) ns "no trades")
+  (define wallet0 (b:bag-add b-rg b-rg b-rg b-4xb-3xg))
+  
+  (let*-values ([(r) (exchange '[] (purchase '[] 0 b-4xb-3xg))])
+    (scenario+ ForStudents/ (list equations cards0 b-4xb-3xg b-rg purchase-points) r "no trades"))
 
-  ;; the player can buy a card for 1 point w/o trading 
-  (define wal (b:bag-add b-rg b-rg b-rg b-4xb-3xg))
-  (define ban (b:bag-add b-bbbbb b-ggggg b-rrbrr b-rg b-rg))
-  (define res-1 [exchange '() (purchase (list c-ggggg) 1)])
-  (scenario+ ForStudents/ (list equations cards-for wal ban purchase-size) res-1 "cards 1")
+  ;; the player can buy a card for 1 point w/o trading
+  (let*-values ([(r) (exchange '() (purchase (list c-ggggg) 1 (b:bag-minus wallet0 b-ggggg)))])
+    (scenario+ ForStudents/ (list equations cards0 wallet0 bank0 purchase-size) r "cards 1"))
 
-  ;; the player must trade once to buy a card for 2 points 
-  (define res-2 [exchange `(,3xg=r) (purchase (list c-rrbrr*) 2)])
-  (scenario+ ForStudents/ (list equations cards-for wal ban purchase-points) res-2 "points 2"))
+  ;; the player must trade once to buy a card for 2 points
+  (let*-values ([(t w) (create-wallet-from-transfers wallet0 3xg=r)]
+                [(r) (exchange t (purchase (list c-rrbrr*) 2 (b:bag-minus w b-rrbrr)))])
+    (scenario+ ForStudents/ (list equations cards0 wallet0 bank0 purchase-points) r "points 2")))
 
 (module+ examples ;; for testing students
-  ;; the player must make 2 trades to buy a card for 1 point 
-  (define cards-test (list c-rbbbb c-yyrwg* c-ggggg))
-  (define wal-test   (b:bag-add b-rr b-yyw))
-  (define res-test   [exchange (list 3xg=r- 3xg=r-) (purchase (list c-ggggg) 1)])
-  (scenario+ Tests/ (list equations cards-test wal-test ban purchase-points) res-test "t 1")
+  ;; the player must make 2 trades to buy a card for 1 point
+  (define cards-test  (list c-rbbbb c-yyrwg* c-ggggg))
+  (define wallet-test (b:bag-add b-rr b-yyw))
+ 
+  (let*-values ([(w0) wallet-test]
+                [(t ω) (create-wallet-from-transfers w0 3xg=r- 3xg=r-)]
+                [(r) [exchange t (purchase (list c-ggggg) 1 (b:bag-minus ω b-ggggg))]])
+    (scenario+ Tests/ (list equations cards-test w0 bank0 purchase-points) r "t 1"))
 
   ;; the player must make 2 trades to buy a card for 2 points; an alterantive would yield only 1 point
-  (define wal-test2  (b:bag-add wal-test b-r))
-  (define res-test2  [exchange (list 3xg=r- r-g=4xb) (purchase (list c-yyrwg*) 2)])
-  (scenario+ Tests/ (list equations cards-test wal-test2 ban purchase-points) res-test2 "x 2")
+  (let*-values ([(w0) (b:bag-add wallet-test b-r)]
+                [(t ω) (create-wallet-from-transfers w0 3xg=r- r-g=4xb)]
+                [(r) [exchange t (purchase (list c-yyrwg*) 2 (b:bag-minus ω b-yyrwg))]])
+    (scenario+ Tests/ (list equations cards-test w0 bank0 purchase-points) r "x 2"))
 
-  ;; a player can buy 2 cards for 3 points if it makes three trades 
-  (define cards-test3 (list c-rbbbb* c-yyrwg* c-ggggg))
-  (define wal-test3  (b:bag-add wal-test b-rr))
-  (define res-test3  [exchange (list 3xg=r- r-g=4xb 3xg=r-) (purchase (list c-yyrwg* c-ggggg) 3)])
-  (scenario+ Tests/ (list equations cards-test3 wal-test3 ban purchase-points) res-test3 "t 2"))
+  ;; a player can buy 2 cards for 3 points if it makes three trades
+  (let*-values ([(w0) (b:bag-add wallet-test b-rr)]
+                [(t w1) (create-wallet-from-transfers w0  3xg=r- r-g=4xb 3xg=r-)]
+                [(ω) (b:bag-minus (b:bag-minus w1 b-yyrwg) b-ggggg)]
+                [(r)  [exchange t (purchase (list c-yyrwg* c-ggggg) 3 ω)]])
+    (scenario+ Tests/ (list equations cards-test w0 bank0 purchase-points) r "t 2")))
 
 ;                                                                                             
 ;      ;;                                                                                     
@@ -264,8 +282,8 @@
 (define (tie-breaker-trade-then-purchase wallet0 pts which)
   (define the-bests (single pts best-value which))
   (define shortest  (single the-bests smallest-number-of-trades))
-  (define richest   (single shortest #:upgrade (λ (x) `[[0 ,x]]) most-pebbles-left wallet0))
-  (single richest #:upgrade second pick-smallest-according-to-bag<))
+  (define richest   (single shortest most-pebbles-left wallet0))
+  (single richest #:upgrade identity pick-smallest-according-to-bag<))
 
 #; {[Listof Exchange] -> [Listof Exchange]}
 (define (best-value pts which)
@@ -277,22 +295,14 @@
   (all-argmin exchange-trade# the-bests))
 
 ;; ---------------------------------------------------------------------------------------------------
-#; {[Listof Exchange] -> [Listof [List Natural Exchange]]}
+#; {[Listof Exchange] -> [Listof Exchange]}
 (define (most-pebbles-left exchanges wallet)
-  (define exchanges-with-pebbles-left (map (pebbles-left wallet) exchanges))
-  (all-argmax (compose b:bag-size first) exchanges-with-pebbles-left))
-
-#; {Bag -> Exchange -> [List Bag Exchange]}
-(define ((pebbles-left wallet0) ex)
-  (match-define [exchange trade purchases] ex)
-  (for/fold ([wallet wallet0] #:result (list wallet ex)) ([t trade])
-    (define-values (wallet++ _) (b:bag-transfer wallet (b:bag) (e:1eq-left t) (e:1eq-right t)))
-    wallet++))
+  (all-argmax (compose b:bag-size purchase-walletω exchange-purchase) exchanges))
 
 ;; ---------------------------------------------------------------------------------------------------
-#; {[Listof [List Natural Exchange]] -> Exchange}
+#; {[Listof Exchange] -> Exchange}
 (define (pick-smallest-according-to-bag< richest)
-  (second (first (sort richest b:bag< #:key first))))
+  (first (sort richest b:bag< #:key (compose purchase-walletω exchange-purchase))))
 
 ;; ---------------------------------------------------------------------------------------------------
 (define (single id f  #:upgrade (u list) . e)
@@ -314,6 +324,8 @@
 ;                                     
 
 (module+ test
+  (check-true (should-the-player-request-a-random-pebble '[] b-4xb-3xg b-rg) "trades possible")
+  
   #; {Symbol Trade&BuyScenarios {#:check [Equality Thunk Any String -> Void]} -> Void}
   (define (run-scenario* t scenario* #:check (C (λ (equal? act exp m) (check equal? [act] exp m))))
     (eprintf "--------------- ~a\n" t)
@@ -343,14 +355,15 @@
 ;                  ;    
 ;                 ;;    
                                  
-(struct purchase [cards points] #:prefab)
-#; {type Purchases = (purchase [Listof Card] Natural)}
-#; (node c* n) ; represent the purchase of cards `c` with `n` points for all purchases
+(struct purchase [cards points walletω] #:prefab)
+#; {type Purchases = (purchase [Listof Card] Natural Bag)}
+#; (node (list c ...) n w)
+;; represents the purchase of cards `c` .. in order with `n` points for all purchases, final wallet w
 
 (define (purchase-size p)
   (length (purchase-cards p)))
 
-(define null-purchases (purchase '() 0))
+(define null-purchases (purchase '() 0 (b:bag)))
 
 (module+ json
   (define PS (~a (object-name purchase-size)))
@@ -394,10 +407,8 @@
   (define all-best   (filter (λ (p*) (= (f p*) first-best)) possible))
   (define just-cards (map purchase-cards all-best))
   (cond
-    [(empty? (rest just-cards)) (purchase (first just-cards) first-best)]
-    [else 
-     (define sorted (tie-breaker-for-purchases just-cards))
-     (purchase (first sorted) first-best)]))
+    [(empty? (rest all-best)) (first all-best)]
+    [else (tie-breaker-for-purchases all-best)]))
 
 ;                                                                                             
 ;      ;;                                                                                     
@@ -421,7 +432,7 @@
     [(empty? possible) null-purchases]
     [else ((pick-most which) possible)]))
 
-#; {[Setof Card] Bag [] -> Purchases}
+#; {[Setof Card] Bag [] -> [Listof Purchases]}
 ;; imperatively accumulate all paths of cards from root to leafs, evaluate, turn into purchases
 (define (possible-purchases visibles0 wallet0)
   #; {Listof Purchases}
@@ -434,7 +445,7 @@
     (cond
       [(empty? possible-buys)
        (define proper-order (reverse from-root-to-here))
-       (set! *possibles (cons (purchase proper-order points) *possibles))]
+       (set! *possibles (cons (purchase proper-order points wallet) *possibles))]
       [else
        (for ([t possible-buys])
          (define-values [visibles-- wallet-- more] (purchase-1-card t visibles wallet))
@@ -467,10 +478,10 @@
 ;                                                                               
 ;                                                                               
 
-#; {[NEListof [Listof Card]] -> [Listof [List Card Card N]]}
+#; {[NEListof Purchases] -> Purchases}
 ;; pick the list of cards that is best according to some whimsical ordering of card sequences
 (define (tie-breaker-for-purchases all-best)
-  (sort all-best c:cards<))
+  (first (sort all-best c:cards< #:key purchase-cards)))
 
 ;                                     
 ;                                     
@@ -489,15 +500,15 @@
 
 (module+ test
   (check-equal? (buy-cards (list) (b:bag) purchase-size)
-                (purchase '() 0))
+                (purchase '() 0 (b:bag)))
   (check-equal? (buy-cards (list c-ggggg c-ggggg) b-ggggg purchase-size)
-                (purchase (list c-ggggg) 1))
+                (purchase (list c-ggggg) 5 (b:bag)))
   
   (check-equal? (possible-purchases (list c-ggggg c-ggggg) b-ggggg)
-                (list (purchase (list c-ggggg) 5) (purchase (list c-ggggg) 5)))
+                (list (purchase (list c-ggggg) 5 (b:bag)) (purchase (list c-ggggg) 5 (b:bag))))
 
   (check-equal? (buy-cards (list c-ggggg c-ggggg) b-ggggg purchase-points)
-                (purchase (list c-ggggg) 5))
+                (purchase (list c-ggggg) 5 (b:bag)))
 
   (check-equal? (buy-cards (list c-ggggg c-ggggg) (b:bag-add b-ggggg  b-ggggg) purchase-points)
-                (purchase (list c-ggggg c-ggggg) 6)))
+                (purchase (list c-ggggg c-ggggg) 6 (b:bag))))
