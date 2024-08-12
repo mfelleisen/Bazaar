@@ -227,7 +227,7 @@
   (define pts (possible-trades equations wallet0 bank0 (λ (w) (buy-cards visibles w which))))
   (cond
     [(empty? pts) '()]
-    [else (tie-breaker-trade-then-purchase wallet0 pts which)]))
+    [else (tie-breaker-trade-then-purchase pts which)]))
 
 #; {Equation* Bag Bag {Bag -> Purchases} -> [Setof Exchange]}
 
@@ -279,10 +279,10 @@
 ;; -- from those pick the ones with the smallest number of trades
 ;; -- from those pick the ones that leave the player with the most pebbles
 ;; -- finally pick the one with the smallest wallet according to bag< 
-(define (tie-breaker-trade-then-purchase wallet0 pts which)
+(define (tie-breaker-trade-then-purchase pts which)
   (define the-bests (single pts best-value which))
   (define shortest  (single the-bests smallest-number-of-trades))
-  (define richest   (single shortest most-pebbles-left wallet0))
+  (define richest   (single shortest most-pebbles-left))
   (single richest #:upgrade identity pick-smallest-according-to-bag<))
 
 #; {[Listof Exchange] -> [Listof Exchange]}
@@ -296,7 +296,7 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {[Listof Exchange] -> [Listof Exchange]}
-(define (most-pebbles-left exchanges wallet)
+(define (most-pebbles-left exchanges)
   (all-argmax (compose b:bag-size purchase-walletω exchange-purchase) exchanges))
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -307,6 +307,13 @@
 ;; ---------------------------------------------------------------------------------------------------
 (define (single id f  #:upgrade (u list) . e)
   (if (empty? (rest id)) (u (first id)) (apply f id e)))
+
+(module+ test ;; Ben's example concerning tie breaking 
+  (define w `[,BLUE ,BLUE ,BLUE])
+  (define e1 (exchange (list 3xg=r- r-g=4xb 3xg=r-) (purchase (list c-yyrwg* c-ggggg) 3 w)))
+  (define e2 (exchange (list 3xg=r- 3xg=r- r-g=4xb) (purchase (list c-yyrwg* c-ggggg) 3 w)))
+  (define selector (compose purchase-walletω exchange-purchase))
+  (check-true (b:bag< (selector e1) (selector e2))))
   
 ;                                     
 ;                                     
