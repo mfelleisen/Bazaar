@@ -229,7 +229,7 @@
     [(list ex) ex]
     [possibles (tie-breaker-trade-then-purchase possibles)]))
 
-#; {Equation* Bag Bag {Bag -> Purchases} -> [Setof Exchange]}
+#; {Equation* Bag Bag {Purchases -> Real} -> [Setof Exchange]}
 
 ;; determine all possible exchanges between the `wallet` and the `bank` that are feasible
 ;; up to `SearchDepth` of a generative tree and maximize at each node in this search tree
@@ -240,8 +240,8 @@
 (define (possible-trades equations wallet0 bank0 visibles which)
   (define buy-with-wallet (λ (w) (buy-cards visibles w which)))
   #; [Listof [Listof Exchange]]
-  (define cards-w/o-trade (buy-with-wallet wallet0))
-  (define max-ish (new max% [e0 (exchange '() cards-w/o-trade)] [v0 (which cards-w/o-trade)]))
+  (define ex0 (exchange '() (buy-with-wallet wallet0)))
+  (define best-which-es (new collector% [e0 ex0] [score (compose which exchange-purchase)]))
   ;; imperatively the best exchanges from root to leafs
   
   (let p-t/accu ([wallet wallet0] [bank bank0] [trades-so-far '()] [fuel (SearchDepth)])
@@ -253,30 +253,13 @@
          (define-values (wallet++ bank++) (b:bag-transfer wallet bank (e:1eq-left x) (e:1eq-right x)))
          (define trades   (cons x trades-so-far))
          (define cards    (buy-with-wallet wallet++))
-         (send max-ish add-if-better (exchange (reverse trades) cards) (which cards))
+         (send best-which-es add-if-better (exchange (reverse trades) cards))
          ;; the buying does _not_ apply to the wallet or bank because once the player buys cards
          ;; it can no longer trade pebbles 
          (p-t/accu wallet++ bank++ trades (sub1 fuel)))]))
 
-  (send max-ish done))
+  (send best-which-es done))
 
-(define max%
-  (class object% (init e0 v0)
-    (field [*best-score v0])
-    (field [*possibles [set e0]])
-    (super-new)
-
-    (define/public (done)
-      (set->list *possibles))
-
-    (define/public (add-if-better e1 v1)
-      (cond
-        [(> v1 *best-score)
-         (set!-values (*best-score *possibles) (values v1 `[,e1]))]
-        [(= v1 *best-score)
-         (set! *possibles (set-add *possibles e1))]
-        [else (void)]))))
-      
 ;                                                                                      
 ;                               ;                           ;                          
 ;     ;       ;                 ;                           ;         ;                
@@ -425,10 +408,10 @@
     [(list p) p]
     [possible (tie-breaker-for-purchases possible)]))
 
-#; {[Setof Card] Bag [] -> [Listof Purchases]}
+#; {[Setof Card] Bag [Purchases-> Real] -> [Listof Purchases]}
 ;; imperatively accumulate all paths of cards from root to leafs, evaluate, turn into purchases
 (define (possible-purchases visibles0 wallet0 which)
-  (define max-ish (new max% [e0 (purchase '[] 0 wallet0)] [v0 0]))
+  (define max-ish (new collector% [e0 (purchase '[] 0 wallet0)] [score which]))
   
   ;; ACCU in reverse order of possible purchaes from `visibles0` & `wallet0` to `visibles` & `wallet`
   (let p-p/accu ([visibles visibles0] [wallet wallet0] [from-root-to-here '()] [points 0])
@@ -437,7 +420,7 @@
     (cond
       [(empty? possible-buys)
        (define e1 (purchase (reverse from-root-to-here) points wallet))
-       (send max-ish add-if-better e1 (which e1))]
+       (send max-ish add-if-better e1)]
       [else
        (for ([t possible-buys])
          (define-values [visibles-- wallet-- more] (purchase-1-card t visibles wallet))
@@ -474,6 +457,45 @@
 ;; pick the list of cards that is best according to some whimsical ordering of card sequences
 (define (tie-breaker-for-purchases all-best)
   (first (sort all-best c:cards< #:key purchase-cards)))
+
+;                                                                 
+;                                                                 
+;                 ;;;    ;;;                    ;                 
+;                   ;      ;                    ;                 
+;    ;;;    ;;;     ;      ;     ;;;    ;;;   ;;;;;   ;;;    ;;;; 
+;   ;;  ;  ;; ;;    ;      ;    ;;  ;  ;;  ;    ;    ;; ;;   ;;  ;
+;   ;      ;   ;    ;      ;    ;   ;; ;        ;    ;   ;   ;    
+;   ;      ;   ;    ;      ;    ;;;;;; ;        ;    ;   ;   ;    
+;   ;      ;   ;    ;      ;    ;      ;        ;    ;   ;   ;    
+;   ;;     ;; ;;    ;      ;    ;      ;;       ;    ;; ;;   ;    
+;    ;;;;   ;;;      ;;     ;;   ;;;;   ;;;;    ;;;   ;;;    ;    
+;                                                                 
+;                                                                 
+;                                                                 
+
+#; {class (X)
+     [init {e0 X}]
+     [init-field {score (X -> Real)}]
+     [done (->m [Listof X])]
+     [add-if-better (->m X Void)]}
+;; collect the best elements according to `score` 
+(define collector%
+  (class object% (init e0) (init-field score)
+    (field [*best-score (score e0)])
+    (field [*possibles [set e0]])
+    (super-new)
+    
+    (define/public (done)
+      (set->list *possibles))
+
+    (define/public (add-if-better e1)
+      (define v1 (score e1))
+      (cond
+        [(> v1 *best-score)
+         (set!-values (*best-score *possibles) (values v1 `[,e1]))]
+        [(= v1 *best-score)
+         (set! *possibles (set-add *possibles e1))]
+        [else (void)]))))
 
 ;                                     
 ;                                     
