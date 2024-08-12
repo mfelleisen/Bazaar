@@ -224,10 +224,10 @@
 ;                                                                                       ;;    
 
 (define (trade-then-purchase equations visibles wallet0 bank0 which)
-  (define pts (possible-trades equations wallet0 bank0 (λ (w) (buy-cards visibles w which))))
-  (cond
-    [(empty? pts) '()]
-    [else (tie-breaker-trade-then-purchase pts which)]))
+  (match (possible-trades equations wallet0 bank0 visibles which)
+    ['()       (null-exchange)]
+    [(list ex) ex]
+    [possibles (tie-breaker-trade-then-purchase possibles)]))
 
 #; {Equation* Bag Bag {Bag -> Purchases} -> [Setof Exchange]}
 
@@ -237,10 +237,12 @@
 ;; -- maximize points that player can get with a particular sequencing of card purchases
 ;; -- maximize the number of cards that player can get with a particular sequencing of card purchases
 
-(define (possible-trades equations wallet0 bank0 buy-with-wallet)
+(define (possible-trades equations wallet0 bank0 visibles which)
+  (define buy-with-wallet (λ (w) (buy-cards visibles w which)))
   #; [Listof [Listof Exchange]]
-  (define *possibles `[,(exchange '() (buy-with-wallet wallet0))])
-  ;; imperatively accumulate all from root to leafs
+  (define cards-w/o-trade (buy-with-wallet wallet0))
+  (define max-ish (new max% [e0 (exchange '() cards-w/o-trade)] [v0 (which cards-w/o-trade)]))
+  ;; imperatively the best exchanges from root to leafs
   
   (let p-t/accu ([wallet wallet0] [bank bank0] [trades-so-far '()] [fuel (SearchDepth)])
     (define rules (e:useful equations wallet bank))
@@ -250,14 +252,31 @@
        (for ([x rules])
          (define-values (wallet++ bank++) (b:bag-transfer wallet bank (e:1eq-left x) (e:1eq-right x)))
          (define trades   (cons x trades-so-far))
-         (define xchange  (exchange (reverse trades) (buy-with-wallet wallet++)))
-         (set! *possibles (cons xchange *possibles))
+         (define cards    (buy-with-wallet wallet++))
+         (send max-ish add-if-better (exchange (reverse trades) cards) (which cards))
          ;; the buying does _not_ apply to the wallet or bank because once the player buys cards
          ;; it can no longer trade pebbles 
          (p-t/accu wallet++ bank++ trades (sub1 fuel)))]))
 
-  *possibles)
+  (send max-ish done))
 
+(define max%
+  (class object% (init e0 v0)
+    (field [*best-score v0])
+    (field [*possibles [set e0]])
+    (super-new)
+
+    (define/public (done)
+      (set->list *possibles))
+
+    (define/public (add-if-better e1 v1)
+      (cond
+        [(> v1 *best-score)
+         (set!-values (*best-score *possibles) (values v1 `[,e1]))]
+        [(= v1 *best-score)
+         (set! *possibles (set-add *possibles e1))]
+        [else (void)]))))
+      
 ;                                                                                      
 ;                               ;                           ;                          
 ;     ;       ;                 ;                           ;         ;                
@@ -275,19 +294,13 @@
 
 #; {[Listof Exchange] -> Exchange}
 ;; given all possible exchange paths, break ties among the embedded trades-buys as follows:
-;; -- get the best node from each path
 ;; -- from those pick the ones with the smallest number of trades
 ;; -- from those pick the ones that leave the player with the most pebbles
 ;; -- finally pick the one with the smallest wallet according to bag< 
-(define (tie-breaker-trade-then-purchase pts which)
-  (define the-bests (single pts best-value which))
-  (define shortest  (single the-bests smallest-number-of-trades))
+(define (tie-breaker-trade-then-purchase possibles)
+  (define shortest  (single possibles smallest-number-of-trades))
   (define richest   (single shortest most-pebbles-left))
   (single richest #:upgrade identity pick-smallest-according-to-bag<))
-
-#; {[Listof Exchange] -> [Listof Exchange]}
-(define (best-value pts which)
-  (all-argmax (compose which exchange-purchase) pts))
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {[Listof Exchange] -> [Listof Exchange]}
@@ -392,31 +405,6 @@
   (check-equal? (jsexpr->policy (policy->jsexpr purchase-size)) purchase-size)
   (check-equal? (jsexpr->policy (policy->jsexpr purchase-points)) purchase-points))
 
-
-;                                                                        
-;                                                                        
-;                                               ;                        
-;                                               ;                        
-;   ;;;;   ;;;;    ;;;;  ;;;;  ;;;;;;   ;;;   ;;;;;   ;;;    ;;;;   ;;;  
-;   ;; ;;      ;   ;;  ;     ; ;  ;  ; ;;  ;    ;    ;;  ;   ;;  ; ;   ; 
-;   ;   ;      ;   ;         ; ;  ;  ; ;   ;;   ;    ;   ;;  ;     ;     
-;   ;   ;   ;;;;   ;      ;;;; ;  ;  ; ;;;;;;   ;    ;;;;;;  ;      ;;;  
-;   ;   ;  ;   ;   ;     ;   ; ;  ;  ; ;        ;    ;       ;         ; 
-;   ;; ;;  ;   ;   ;     ;   ; ;  ;  ; ;        ;    ;       ;     ;   ; 
-;   ;;;;    ;;;;   ;      ;;;; ;  ;  ;  ;;;;    ;;;   ;;;;   ;      ;;;  
-;   ;                                                                    
-;   ;                                                                    
-;   ;                                                                    
-
-#; {[Purchase -> Natural] -> [NEListof Purchase]  -> Purchase}
-(define ((pick-most f) possible)
-  (define first-best (f (argmax f possible)))
-  (define all-best   (filter (λ (p*) (= (f p*) first-best)) possible))
-  (define just-cards (map purchase-cards all-best))
-  (cond
-    [(empty? (rest all-best)) (first all-best)]
-    [else (tie-breaker-for-purchases all-best)]))
-
 ;                                                                                             
 ;      ;;                                                                                     
 ;     ;                           ;       ;                        ;;;       ;     ;          
@@ -433,17 +421,14 @@
 ;                                                                                       ;;    
 
 (define (buy-cards visibles wallet which)
-  #; {[Listof Purchases]}
-  (define possible (possible-purchases visibles wallet))
-  (cond
-    [(empty? possible) null-purchases]
-    [else ((pick-most which) possible)]))
+  (match (possible-purchases visibles wallet which)
+    [(list p) p]
+    [possible (tie-breaker-for-purchases possible)]))
 
 #; {[Setof Card] Bag [] -> [Listof Purchases]}
 ;; imperatively accumulate all paths of cards from root to leafs, evaluate, turn into purchases
-(define (possible-purchases visibles0 wallet0)
-  #; {Listof Purchases}
-  (define *possibles '[])
+(define (possible-purchases visibles0 wallet0 which)
+  (define max-ish (new max% [e0 (purchase '[] 0 wallet0)] [v0 0]))
   
   ;; ACCU in reverse order of possible purchaes from `visibles0` & `wallet0` to `visibles` & `wallet`
   (let p-p/accu ([visibles visibles0] [wallet wallet0] [from-root-to-here '()] [points 0])
@@ -451,14 +436,14 @@
     (define possible-buys (c:can-buy visibles wallet))
     (cond
       [(empty? possible-buys)
-       (define proper-order (reverse from-root-to-here))
-       (set! *possibles (cons (purchase proper-order points wallet) *possibles))]
+       (define e1 (purchase (reverse from-root-to-here) points wallet))
+       (send max-ish add-if-better e1 (which e1))]
       [else
        (for ([t possible-buys])
          (define-values [visibles-- wallet-- more] (purchase-1-card t visibles wallet))
          (p-p/accu visibles-- wallet-- (cons t from-root-to-here) (+ more points)))]))
-  
-  *possibles)
+
+  (send max-ish done))
 
 #; {Card [Setof Card] Bag -> [Setof Card] Bag Natural}
 ;;  ASSUME `c` is in `visibles`
@@ -511,8 +496,8 @@
   (check-equal? (buy-cards (list c-ggggg c-ggggg) b-ggggg purchase-size)
                 (purchase (list c-ggggg) 5 (b:bag)))
   
-  (check-equal? (possible-purchases (list c-ggggg c-ggggg) b-ggggg)
-                (list (purchase (list c-ggggg) 5 (b:bag)) (purchase (list c-ggggg) 5 (b:bag))))
+  (check-equal? (possible-purchases (list c-ggggg c-ggggg) b-ggggg purchase-points)
+                (list (purchase (list c-ggggg) 5 (b:bag)) #; (purchase (list c-ggggg) 5 (b:bag))))
 
   (check-equal? (buy-cards (list c-ggggg c-ggggg) b-ggggg purchase-points)
                 (purchase (list c-ggggg) 5 (b:bag)))
