@@ -54,9 +54,11 @@
 ;; ---------------------------------------------------------------------------------------------------
 (module+ examples
   (provide
-    r-g=4xb r-g=4xb-
-    3xg=r   3xg=r-
-    ggb=rw  ggb=rw-)
+   r=4xb
+   r=4xg
+   r-g=4xb r-g=4xb-
+   3xg=r   3xg=r-
+   ggb=rw  ggb=rw-)
   
   (provide
    #; {type UsefulScenarios = [Listof 1Scenario]}
@@ -164,6 +166,9 @@
   (define r-g=4xb- (1eq-flip r-g=4xb))
   (define g-r=4xb (1eq (reverse b-rg) b-bbbb))
   (define 4xb=r-g (1eq b-bbbb b-rg))
+
+  (define r=4xb    (1eq b-r b-bbbb))
+  (define r=4xg    (1eq b-r b-gggg))
 
   (define 3xg=r    (1eq b-ggg b-r))
   (define 3xg=r-   (1eq-flip 3xg=r))

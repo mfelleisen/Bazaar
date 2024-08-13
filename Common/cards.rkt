@@ -26,8 +26,8 @@
 (module+ examples
   (require (submod ".."))
      
-  (provide c-rrbrr  c-rgbrg  c-wyrbb  c-ggggg  c-rbbbb c-rbbbb*
-           c-rrbrr* c-rgbrg* c-wyrbb* c-ggggg* c-yyrwg c-yyrwg*))
+  (provide c-rrbrr  c-rgbrg  c-wyrbb  c-ggggg  c-rbbbb c-rbbbb* c-bbbbb
+           c-rrbrr* c-rgbrg* c-wyrbb* c-ggggg* c-yyrwg c-yyrwg* c-bbbbb*))
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ json
@@ -120,14 +120,16 @@
 (module+ examples
   (define c-rbbbb  (card b-rbbbb #false))
   (define c-rbbbb* (card b-rbbbb #true))
-  (define c-yyrwg  (card b-yyrwg #false))
-  (define c-yyrwg* (card b-yyrwg #true))
+  (define c-yyrwg  (card b-yyrwb #false))
+  (define c-yyrwg* (card b-yyrwb #true))
   
   (define c-rrbrr  (card b-rrbrr #false))
   (define c-rrbrr* (card b-rrbrr #true))
 
   (define c-ggggg  (card b-ggggg #false))
   (define c-ggggg* (card b-ggggg #true))
+  (define c-bbbbb  (card b-bbbbb #false))
+  (define c-bbbbb* (card b-bbbbb #true))
   (define c-rgbrg  (card b-rgbrg #false))
   (define c-rgbrg* (card b-rgbrg #true))
   (define c-wyrbb  (card b-wyrbb #false))

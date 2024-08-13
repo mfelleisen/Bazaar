@@ -39,9 +39,9 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ examples
-  (provide b-rg b-bbbb b-4xb-3xg b-ggg b-r b-g b-ggb b-gw b-rr b-gg b-yyw
+  (provide b-rg b-bbbb b-4xb-3xg b-ggg b-r b-g b-ggb b-gw b-rr b-gg b-yyw b-gggg b-b
            ;; for cards 
-           b-bbbbb b-ggggg b-rgbrg b-wyrbb b-rrbrr b-rbbbb b-yyrwg))
+           b-bbbbb b-ggggg b-rgbrg b-wyrbb b-rrbrr b-rbbbb b-yyrwb))
 
 
 ;                                                                                      
@@ -108,7 +108,9 @@
   (define b-rgbrg (bag p:RED p:GREEN p:BLUE p:RED p:GREEN))
   (define b-wyrbb (bag p:WHITE p:YELLOW p:RED p:BLUE p:BLUE))
   (define b-rbbbb (bag-add b-bbbb (list p:RED)))
-  (define b-yyrwg (bag p:YELLOW p:YELLOW p:RED p:WHITE p:BLUE))
+  (define b-yyrwb (bag p:YELLOW p:YELLOW p:RED p:WHITE p:BLUE))
+
+  (define b-gggg [bag p:GREEN p:GREEN p:GREEN p:GREEN])
 
   (define b-yyw [bag p:YELLOW p:YELLOW p:WHITE])
   (define b-ggg [bag p:GREEN p:GREEN p:GREEN])
@@ -116,12 +118,13 @@
   (define b-r   [bag p:RED])
   (define b-rr  [bag p:RED p:RED])
   (define b-g   [bag p:GREEN])
+  (define b-b   [bag p:BLUE])
   (define b-ggb [bag p:GREEN p:GREEN p:BLUE])
   (define b-gw  [bag p:RED p:WHITE])
   (define b-4xb-3xg [bag p:BLUE p:BLUE p:BLUE p:BLUE p:GREEN p:GREEN p:GREEN])
   (define b-rg      [bag p:RED p:GREEN])
 
-)
+  )
 
 ;                                                                                             
 ;      ;;                                                                                     
@@ -143,6 +146,11 @@
 (define (bag< 1bag 2bag)
   (for/first ([p p:PEBBLES] #:when (and (bag-member? 1bag p) (not (bag-member? 2bag p))))
     #true))
+
+(provide bag-index)
+(define (bag-index 1bag)
+  (for/sum ([p 1bag] [i (in-naturals)] #:when (bag-member? 1bag p)) (expt 10 i)))
+  
 
 (define (bag-transfer wallet bank left right)
   (values (bag-add (bag-minus wallet left) right)
