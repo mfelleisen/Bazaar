@@ -3,13 +3,13 @@ referee                         player (p_1) . . . player (p_n)
   |                                |                 |
   |                                |                 |
   |                                |                 |
-  |     setup(equations)    	   |                 | % the table of equations
+  |     setup(equations)           |                 | % the table of equations
   | -----------------------------> |                 | 
   |                                |                 | 
   .                                .                 .
   .                                .                 . % repeat for descending age
   .                                .                 . 
   |                                |                 |
-  |     setup(equations)    	   |                 | 
+  |     setup(equations)           |                 | 
   | -----------------------------------------------> |
   |                                |                 |
