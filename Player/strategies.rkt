@@ -74,6 +74,7 @@
 (require (submod Bazaar/Common/equations examples))
 
 (require SwDev/Lib/should-be-racket)
+(require pict)
 
 (module+ examples
   (require (submod ".."))
@@ -118,23 +119,31 @@
 ;                                                                          ;    
 ;                                                                         ;;    
 
-(struct exchange [trades purchase] #:prefab)
+(struct exchange [trades purchase]
+  #:transparent
+  #:methods gen:equal+hash
+  [(define equal-proc
+     (λ (x y recursive-equal?)
+       (define c (exchange-trades x))
+       (define d (exchange-trades y))
+       (and
+        (= (length c) (length d))
+        (equal? (apply set c) (apply set d))
+        (equal? (exchange-purchase x) (exchange-purchase y)))))
+   (define (hash-proc x re-hash)
+     (+ (* 1000 (re-hash (exchange-purchase x)))
+        (* 10 (re-hash (exchange-purchase x)))))
+   (define (hash2-proc x re-hash2)
+     (+ (* 891 (re-hash2 (exchange-purchase x)))
+        (* 999 (re-hash2 (exchange-purchase x)))))])
+  
 #; {type Exchange = (exchange Equation* Purchases)}
 #; (exchange e* p)
 ;; applying the series of Equations e*, left to right, to the wallet yields as best purchases p
 
-;; the number of trades per exchane 
-(define (exchange-trade# ex)
-  (length (exchange-trades ex)))
-
 (define (exchange-cards ex)
   (purchase-cards (exchange-purchase ex)))
 
-;; the numerical value of an exchange 
-(define (exchange-value ex)
-  (purchase-points (exchange-purchase ex)))
-
-(define (null-exchange) (exchange '() null-purchases))
 
 ;                                                                 
 ;                                                                 
@@ -198,15 +207,31 @@
   ;; the player must make 2 trades to buy a card for 2 points; an alterantive would yield only 1 point
   (let*-values ([(w0) (b:bag-add wallet-test b-r)]
                 [(t ω) (create-wallet-from-transfers w0 3xg=r- r-g=4xb)]
-                [(r) [exchange t (purchase (list c-yyrwg*) 2 (b:bag-minus ω b-yyrwg))]])
+                [(r) [exchange t (purchase (list c-yyrwg*) 2 (b:bag-minus ω b-yyrwb))]])
     (scenario+ Tests/ (list equations cards-test w0 bank0 purchase-points) r "x 2"))
 
   ;; a player can buy 2 cards for 3 points if it makes three trades
   (let*-values ([(w0) (b:bag-add wallet-test b-rr)]
                 [(t w1) (create-wallet-from-transfers w0  3xg=r- r-g=4xb 3xg=r-)]
-                [(ω) (b:bag-minus (b:bag-minus w1 b-yyrwg) b-ggggg)]
+                [(ω) (b:bag-minus (b:bag-minus w1 b-yyrwb) b-ggggg)]
                 [(r)  [exchange t (purchase (list c-yyrwg* c-ggggg) 3 ω)]])
     (scenario+ Tests/ (list equations cards-test w0 bank0 purchase-points) r "t 2")))
+
+(module+ examples
+  (provide Extras/)
+
+  (let*-values ([(e) (list r=4xg   r=4xb)]
+                [(c) (list c-bbbbb c-ggggg)]
+                [(w) (b:bag-add (b:bag-add b-rr b-b) b-g)]
+                [(b) (b:bag-add b-ggggg b-rbbbb)])
+    (scenario+ Extras/ (list e c w b purchase-points) 1 "2 rules, 2 cards, score 6, wallet: 0"))
+
+  (let*-values ([(e) (list 3xg=r- r-g=4xb)]
+                [(c) (list c-yyrwg* c-ggggg)]
+                [(w) (b:bag-add wallet-test b-rr)])
+    (define e1 (exchange (list 3xg=r- r-g=4xb 3xg=r-) (purchase (list c-yyrwg* c-ggggg) 3 w)))
+    (define e2 (exchange (list 3xg=r- 3xg=r- r-g=4xb) (purchase (list c-yyrwg* c-ggggg) 3 w)))
+    (scenario+ Extras/ (list e c w bank0 purchase-points) 1 "3 rules, 2 cards, score 3, wallet 3b")))
 
 ;                                                                                             
 ;      ;;                                                                                     
@@ -225,15 +250,15 @@
 
 (define (trade-then-purchase equations visibles wallet0 bank0 which)
   (match (possible-trades equations wallet0 bank0 visibles which)
-    ['()       (null-exchange)]
     [(list ex) ex]
     [possibles (tie-breaker-trade-then-purchase possibles)]))
 
-#; {Equation* Bag Bag {Purchases -> Real} -> [Setof Exchange]}
+;; ---------------------------------------------------------------------------------------------------
+#; {Equation* Bag Bag {Purchases -> Real} -> [NESetof Exchange]}
 
 ;; determine all possible exchanges between the `wallet` and the `bank` that are feasible
 ;; up to `SearchDepth` of a generative tree and maximize at each node in this search tree
-;; what the player buys according to `buy-with-wallet`, for now:
+;; what the player buys according to `which`, for now:
 ;; -- maximize points that player can get with a particular sequencing of card purchases
 ;; -- maximize the number of cards that player can get with a particular sequencing of card purchases
 
@@ -260,57 +285,26 @@
 
   (send best-which-es done))
 
-;                                                                                      
-;                               ;                           ;                          
-;     ;       ;                 ;                           ;         ;                
-;     ;                         ;                           ;                          
-;   ;;;;;   ;;;    ;;;          ;;;;    ;;;;   ;;;   ;;;;   ;  ;    ;;;   ; ;;    ;;;; 
-;     ;       ;   ;;  ;         ;; ;;   ;;  ; ;;  ;      ;  ;  ;      ;   ;;  ;  ;;  ; 
-;     ;       ;   ;   ;;        ;   ;   ;     ;   ;;     ;  ; ;       ;   ;   ;  ;   ; 
-;     ;       ;   ;;;;;;        ;   ;   ;     ;;;;;;  ;;;;  ;;;       ;   ;   ;  ;   ; 
-;     ;       ;   ;             ;   ;   ;     ;      ;   ;  ; ;       ;   ;   ;  ;   ; 
-;     ;       ;   ;             ;; ;;   ;     ;      ;   ;  ;  ;      ;   ;   ;  ;; ;; 
-;     ;;;   ;;;;;  ;;;;         ;;;;    ;      ;;;;   ;;;;  ;   ;   ;;;;; ;   ;   ;;;; 
-;                                                                                    ; 
-;                                                                                 ;  ; 
-;                                                                                  ;;  
-
-#; {[Listof Exchange] -> Exchange}
+;; ---------------------------------------------------------------------------------------------------
+#; {[NEListof Exchange] -> Exchange}
 ;; given all possible exchange paths, break ties among the embedded trades-buys as follows:
 ;; -- from those pick the ones with the smallest number of trades
 ;; -- from those pick the ones that leave the player with the most pebbles
-;; -- finally pick the one with the smallest wallet according to bag< 
-(define (tie-breaker-trade-then-purchase possibles)
-  (define shortest  (single possibles smallest-number-of-trades))
-  (define richest   (single shortest most-pebbles-left))
-  (single richest #:upgrade identity pick-smallest-according-to-bag<))
+
+(define (tie-breaker-trade-then-purchase possibles0)
+  (define f* (list smallest-number-of-trades most-pebbles-left))
+  (tie-breaker f* possibles0))
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {[Listof Exchange] -> [Listof Exchange]}
 (define (smallest-number-of-trades the-bests)
-  (all-argmin exchange-trade# the-bests))
+  (all-argmin (λ (ex) (length (exchange-trades ex))) the-bests))
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {[Listof Exchange] -> [Listof Exchange]}
 (define (most-pebbles-left exchanges)
   (all-argmax (compose b:bag-size purchase-walletω exchange-purchase) exchanges))
 
-;; ---------------------------------------------------------------------------------------------------
-#; {[Listof Exchange] -> Exchange}
-(define (pick-smallest-according-to-bag< richest)
-  (first (sort richest b:bag< #:key (compose purchase-walletω exchange-purchase))))
-
-;; ---------------------------------------------------------------------------------------------------
-(define (single id f  #:upgrade (u list) . e)
-  (if (empty? (rest id)) (u (first id)) (apply f id e)))
-
-(module+ test ;; Ben's example concerning tie breaking 
-  (define w `[,BLUE ,BLUE ,BLUE])
-  (define e1 (exchange (list 3xg=r- r-g=4xb 3xg=r-) (purchase (list c-yyrwg* c-ggggg) 3 w)))
-  (define e2 (exchange (list 3xg=r- 3xg=r- r-g=4xb) (purchase (list c-yyrwg* c-ggggg) 3 w)))
-  (define selector (compose purchase-walletω exchange-purchase))
-  (check-true (b:bag< (selector e1) (selector e2))))
-  
 ;                                     
 ;                                     
 ;     ;                    ;          
@@ -330,18 +324,47 @@
   (check-true (should-the-player-request-a-random-pebble '[] b-4xb-3xg b-rg) "trades possible")
   
   #; {Symbol Trade&BuyScenarios {#:check [Equality Thunk Any String -> Void]} -> Void}
-  (define (run-scenario* t scenario* #:check (C (λ (equal? act exp m) (check equal? [act] exp m))))
+  (define (run-scenario* t scenario*)
     (eprintf "--------------- ~a\n" t)
     (define count 0)
     (for ([s scenario*] [i (in-naturals)])
       (set! count (+ count 1))
       (match-define (list args expected msg) s)
       (match-define (list equations cards wallet bank policy) args)
+      #;
+      (show expected equations cards wallet bank policy msg)
       (check-equal? (trade-then-purchase equations cards wallet bank policy) expected msg))
+    (eprintf "~a tests completed\n" count))
+
+  (define (show expected equations cards wallet bank policy msg)
+    (define p-equations (e:render* equations))
+    (define p-cards     (c:render* cards))
+    (define p-wallet    (frame (b:render wallet)))
+    (define p-bank      (frame (b:render bank)))
+    (eprintf "---- ~a with policy ~a\n" msg policy)
+    (pretty-print (frame (inset (hb-append 10 p-equations p-cards p-wallet p-bank) 2)))
+    (pretty-print expected))
+
+  (define (run-ties* t scenario*)
+    (eprintf "--------------- ~a\n" t)
+    (define count 0)
+    (for ([s scenario*] [i (in-naturals)])
+      (set! count (+ count 1))
+      (match-define (list args expected msg) s)
+      (match-define (list equations cards wallet bank policy) args)
+      (check-equal? (let* ([s (possible-trades equations wallet bank cards policy)]
+                           [s (tie-breaker-trade-then-purchase s)]
+                           [s (if (exchange? s) 1 (length s))])
+                      s)
+                    expected
+                    msg))
     (eprintf "~a tests completed\n" count))
   
   (run-scenario* 'ForStudents ForStudents/)
-  (run-scenario* 'Tests Tests/))
+  (run-scenario* 'Tests Tests/)
+  
+  (run-ties* 'Extras Extras/))
+
 
 ;                       
 ;   ;                   
@@ -358,15 +381,49 @@
 ;                  ;    
 ;                 ;;    
                                  
-(struct purchase [cards points walletω] #:prefab)
+(struct purchase [cards points walletω] #:transparent
+  #:methods gen:equal+hash
+  [(define equal-proc
+     (λ (x y recursive-equal?)
+       (define c (purchase-cards x))
+       (define d (purchase-cards y))
+       (and
+        (= (length c) (length d))
+        (equal? (apply set c) (apply set d))
+        (= (purchase-points x) (purchase-points y))
+        (b:bag-equal? (purchase-walletω x) (purchase-walletω y)))))
+   (define (hash-proc x re-hash)
+     (+ (* 1000 (re-hash (purchase-cards x)))
+        (* 10 (re-hash (purchase-cards x)))))
+   (define (hash2-proc x re-hash2)
+     (+ (* 891 (re-hash2 (purchase-cards x)))
+        (* 999 (re-hash2 (purchase-cards x)))))])
 #; {type Purchases = (purchase [Listof Card] Natural Bag)}
 #; (node (list c ...) n w)
 ;; represents the purchase of cards `c` .. in order with `n` points for all purchases, final wallet w
+;; NOTE two different orderings of `cards` are equivalent _if_ they yield the same number of points &
+;; result in the same wallet
+
+(module+ test
+  (check-equal? (purchase `[,c-ggggg ,c-yyrwg] 3 b-bbbb) (purchase `[,c-yyrwg ,c-ggggg] 3 b-bbbb)))
 
 (define (purchase-size p)
   (length (purchase-cards p)))
 
-(define null-purchases (purchase '() 0 (b:bag)))
+;                              
+;      ;                       
+;                              
+;                              
+;    ;;;    ;;;    ;;;   ; ;;  
+;      ;   ;   ;  ;; ;;  ;;  ; 
+;      ;   ;      ;   ;  ;   ; 
+;      ;    ;;;   ;   ;  ;   ; 
+;      ;       ;  ;   ;  ;   ; 
+;      ;   ;   ;  ;; ;;  ;   ; 
+;      ;    ;;;    ;;;   ;   ; 
+;      ;                       
+;      ;                       
+;    ;;                        
 
 (module+ json
   (define PS (~a (object-name purchase-size)))
@@ -428,6 +485,7 @@
 
   (send max-ish done))
 
+;; ---------------------------------------------------------------------------------------------------
 #; {Card [Setof Card] Bag -> [Setof Card] Bag Natural}
 ;;  ASSUME `c` is in `visibles`
 (define (purchase-1-card c visibles wallet)
@@ -435,8 +493,46 @@
   (define wallet--    (b:bag-minus wallet (c:card-pebbles c)))
   (define points      (c:calculate-points c (b:bag-size wallet--)))
   (values visibles-- wallet-- points))
-  
 
+;; ---------------------------------------------------------------------------------------------------
+#; {[NEListof Purchases] -> Purchases}
+;; pick the list of cards that is best according to some whimsical ordering of card sequences
+(define (tie-breaker-for-purchases lop)
+  (tie-breaker (list wallet-index) lop))
+
+#; {Purchase -> Natural}
+(define (wallet-index p)
+  (all-argmin (λ (x) (for/sum ([w p]) (b:bag-index (purchase-walletω w)))) p))
+
+;                                     
+;                                     
+;     ;                    ;          
+;     ;                    ;          
+;   ;;;;;   ;;;    ;;;   ;;;;;   ;;;  
+;     ;    ;;  ;  ;   ;    ;    ;   ; 
+;     ;    ;   ;; ;        ;    ;     
+;     ;    ;;;;;;  ;;;     ;     ;;;  
+;     ;    ;          ;    ;        ; 
+;     ;    ;      ;   ;    ;    ;   ; 
+;     ;;;   ;;;;   ;;;     ;;;   ;;;  
+;                                     
+;                                     
+;                                     
+
+(module+ test
+  (check-equal? (buy-cards (list) (b:bag) purchase-size)
+                (purchase '() 0 (b:bag)))
+  (check-equal? (buy-cards (list c-ggggg c-ggggg) b-ggggg purchase-size)
+                (purchase (list c-ggggg) 5 (b:bag)))
+  
+  (check-equal? (possible-purchases (list c-ggggg c-ggggg) b-ggggg purchase-points)
+                (list (purchase (list c-ggggg) 5 (b:bag)) #; (purchase (list c-ggggg) 5 (b:bag))))
+
+  (check-equal? (buy-cards (list c-ggggg c-ggggg) b-ggggg purchase-points)
+                (purchase (list c-ggggg) 5 (b:bag)))
+
+  (check-equal? (buy-cards (list c-ggggg c-ggggg) (b:bag-add b-ggggg  b-ggggg) purchase-points)
+                (purchase (list c-ggggg c-ggggg) 6 (b:bag))))
 
 ;                                                                               
 ;                               ;                           ;                   
@@ -453,10 +549,18 @@
 ;                                                                               
 ;                                                                               
 
-#; {[NEListof Purchases] -> Purchases}
-;; pick the list of cards that is best according to some whimsical ordering of card sequences
-(define (tie-breaker-for-purchases all-best)
-  (first (sort all-best c:cards< #:key purchase-cards)))
+#; {[nEListof (X -> Real)] [NEListof X] -> X}
+#; (tie-breaker (f1 ... fN) lox)
+;; apply the fj-s to lox until 
+#; (fi ... (f1 lox) ...)
+;; yields singleton list; otherwise error 
+(define (tie-breaker f*0 lox0)
+  (let while ([lox lox0] [f* f*0])
+    (match lox 
+      [(list one) one]
+      [_ (if (empty? f*)
+             [error 'tie-breakder "given ~a\n" (with-output-to-string (λ () (pretty-print lox0)))]
+             (while ((first f*) lox) (rest f*)))])))
 
 ;                                                                 
 ;                                                                 
@@ -496,33 +600,3 @@
         [(= v1 *best-score)
          (set! *possibles (set-add *possibles e1))]
         [else (void)]))))
-
-;                                     
-;                                     
-;     ;                    ;          
-;     ;                    ;          
-;   ;;;;;   ;;;    ;;;   ;;;;;   ;;;  
-;     ;    ;;  ;  ;   ;    ;    ;   ; 
-;     ;    ;   ;; ;        ;    ;     
-;     ;    ;;;;;;  ;;;     ;     ;;;  
-;     ;    ;          ;    ;        ; 
-;     ;    ;      ;   ;    ;    ;   ; 
-;     ;;;   ;;;;   ;;;     ;;;   ;;;  
-;                                     
-;                                     
-;                                     
-
-(module+ test
-  (check-equal? (buy-cards (list) (b:bag) purchase-size)
-                (purchase '() 0 (b:bag)))
-  (check-equal? (buy-cards (list c-ggggg c-ggggg) b-ggggg purchase-size)
-                (purchase (list c-ggggg) 5 (b:bag)))
-  
-  (check-equal? (possible-purchases (list c-ggggg c-ggggg) b-ggggg purchase-points)
-                (list (purchase (list c-ggggg) 5 (b:bag)) #; (purchase (list c-ggggg) 5 (b:bag))))
-
-  (check-equal? (buy-cards (list c-ggggg c-ggggg) b-ggggg purchase-points)
-                (purchase (list c-ggggg) 5 (b:bag)))
-
-  (check-equal? (buy-cards (list c-ggggg c-ggggg) (b:bag-add b-ggggg  b-ggggg) purchase-points)
-                (purchase (list c-ggggg c-ggggg) 6 (b:bag))))
