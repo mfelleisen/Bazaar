@@ -21,10 +21,12 @@
  exchange?
  exchange-cards
  exchange-trades
+ exchange-purchase
 
  #; {type Purchase}
  purchase?
  purchase-cards
+ purchase-walletω
 
  #; {Purchase -> Natural}
  ;; the value of the cards purchased 
@@ -124,11 +126,8 @@
   #:methods gen:equal+hash
   [(define equal-proc
      (λ (x y recursive-equal?)
-       (define c (exchange-trades x))
-       (define d (exchange-trades y))
        (and
-        (= (length c) (length d))
-        (equal? (apply set c) (apply set d))
+        (b:bag-equal? (apply b:bag (exchange-trades x)) (apply b:bag (exchange-trades y)))
         (equal? (exchange-purchase x) (exchange-purchase y)))))
    (define (hash-proc x re-hash)
      (+ (* 1000 (re-hash (exchange-purchase x)))
@@ -385,11 +384,8 @@
   #:methods gen:equal+hash
   [(define equal-proc
      (λ (x y recursive-equal?)
-       (define c (purchase-cards x))
-       (define d (purchase-cards y))
        (and
-        (= (length c) (length d))
-        (equal? (apply set c) (apply set d))
+        (b:bag-equal? (apply b:bag (purchase-cards x)) (apply b:bag (purchase-cards y)))
         (= (purchase-points x) (purchase-points y))
         (b:bag-equal? (purchase-walletω x) (purchase-walletω y)))))
    (define (hash-proc x re-hash)

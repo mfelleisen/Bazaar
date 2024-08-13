@@ -9,6 +9,8 @@
  player?
  player-score
  player-wallet
+ (contract-out
+  [player (-> b:bag? natural? player?)])
  
  #; {Player -> Boolean}
  winning-points?
