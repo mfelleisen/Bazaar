@@ -30,4 +30,6 @@
 (req->prov (only-in Bazaar/Common/player player-struct->definition))
 (req->prov (only-in Bazaar/Common/turn-state turn-struct->definition))
 (req->prov (only-in Bazaar/Referee/game-state game-struct->definition))
+(req->prov Bazaar/Player/strategies)
+
 
