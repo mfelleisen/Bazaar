@@ -18,8 +18,6 @@
  bag-minus
  bag-intersect
  bag-equal?
-
- bag< ;; if bag1 contains the pebble colors in order and bag2 fails
  
  (contract-out
   [bag-transfer
@@ -146,11 +144,6 @@
 (define (bag< 1bag 2bag)
   (for/first ([p p:PEBBLES] #:when (and (bag-member? 1bag p) (not (bag-member? 2bag p))))
     #true))
-
-(provide bag-index)
-(define (bag-index 1bag)
-  (for/sum ([p 1bag] [i (in-naturals)] #:when (bag-member? 1bag p)) (expt 10 i)))
-  
 
 (define (bag-transfer wallet bank left right)
   (values (bag-add (bag-minus wallet left) right)

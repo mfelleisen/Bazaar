@@ -4,11 +4,8 @@
 ;; ---------------------------------------------------------------------------------------------------
 
 (provide 
- #; {Card N -> N}
- calculate-points
-
- #; {[Listof Card] Bag -> [Listof Card]}
  (contract-out
+  [calculate-points (-> c:card? natural? natural?)]
   [can-buy (-> (listof c:card?) b:bag? (listof c:card?))]))
 
 ;; ---------------------------------------------------------------------------------------------------

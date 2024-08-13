@@ -494,11 +494,12 @@
 #; {[NEListof Purchases] -> Purchases}
 ;; pick the list of cards that is best according to some whimsical ordering of card sequences
 (define (tie-breaker-for-purchases lop)
-  (tie-breaker (list wallet-index) lop))
+  (tie-breaker (list #;wallet-index) lop))
 
 #; {Purchase -> Natural}
+;; would compute some polynomial over the colors in a player's wallet 
 (define (wallet-index p)
-  (all-argmin (λ (x) (for/sum ([w p]) (b:bag-index (purchase-walletω w)))) p))
+  (all-argmin (λ (x) (for/sum ([w p]) (values (purchase-walletω w)))) p))
 
 ;                                     
 ;                                     

@@ -30,15 +30,18 @@
  #; {[Listof Score] -> Pict}
  render-scores)
 
+;; ---------------------------------------------------------------------------------------------------
 (provide ;; for homework
  player-struct->definition)
 
+;; ---------------------------------------------------------------------------------------------------
 (module+ examples
   (provide
    p-rg1 p-rg2
    p-bbbb3 p-bbbbb3
    p-4xb-3xg4 p-ggg5 p-r6 p-g7 p-ggb8 p-gw9 p-ggggg p-rgbrg p-wyrbb p-rrbrr-20))
 
+;; ---------------------------------------------------------------------------------------------------
 (module+ json
   (provide
    player*->jsexpr
