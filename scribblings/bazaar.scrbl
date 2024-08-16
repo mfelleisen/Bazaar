@@ -160,9 +160,11 @@ The game ends if
 
  @item{all players have been kicked at the end of a player's turn;}
 
- @item{a player has @(~a PLAYER-WINS) points at the end of its turn; or}
+ @item{a player has @(~a PLAYER-WINS) points at the end of its turn;}
 
- @item{all cards have been bought up.}
+ @item{all cards have been bought up; or}
+
+ @item{the bank is empty and no player can buy.}
 
 ]
 @; -----------------------------------------------------------------------------
