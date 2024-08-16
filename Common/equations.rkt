@@ -114,15 +114,12 @@
 (module+ json
   (require (submod Bazaar/Common/bags json))
   (require (submod Bazaar/Common/pebbles json))
-  (require Bazaar/Common/pebbles)
   (require Bazaar/Lib/parse-json))
   
 (module+ test
   (require (submod ".."))
   (require (submod ".." examples))
   (require (submod ".." json))
-  (require (prefix-in p: Bazaar/Common/pebbles))
-  (require Bazaar/Lib/parse-json)
   (require rackunit))
 
 (module+ pict
@@ -180,6 +177,21 @@
   (define ggb=rw   (1eq b-ggb b-gw))
   (define ggb=rw-  (1eq-flip ggb=rw)))
 
+
+;                                                                 
+;                                                                 
+;                                                ;                
+;                                                                 
+;    ;;;    ;;;    ;;;   ; ;;   ;;;;    ;;;;   ;;;    ;;;    ;;;  
+;   ;   ;  ;;  ;  ;;  ;  ;;  ;      ;   ;;  ;    ;   ;; ;;  ;   ; 
+;   ;      ;      ;   ;; ;   ;      ;   ;        ;   ;   ;  ;     
+;    ;;;   ;      ;;;;;; ;   ;   ;;;;   ;        ;   ;   ;   ;;;  
+;       ;  ;      ;      ;   ;  ;   ;   ;        ;   ;   ;      ; 
+;   ;   ;  ;;     ;      ;   ;  ;   ;   ;        ;   ;; ;;  ;   ; 
+;    ;;;    ;;;;   ;;;;  ;   ;   ;;;;   ;      ;;;;;  ;;;    ;;;  
+;                                                                 
+;                                                                 
+;                                                                 
 
 (module+ examples ;; make scenarios
   (setup-scenarios scenario+ Tests/ ForStudents/ Exns/)
