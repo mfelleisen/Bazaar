@@ -13,7 +13,6 @@ for an explanation of how code files are organized in Racket.
 | [player-interface.rkt](player-interface.rkt) | a player interface that the referee can use to service players | 
 | [turn-state.rkt](turn-state.rkt) | a data representation of the information that the referee sends to the active player | 
 | [player.rkt](player.rkt) | a data representation of the ref's knowledge about the active olayer that it shares during turn | 
-| [README.more](README.more) |  | 
 | [actions.rkt](actions.rkt) | a data representation of the actions a player may request | 
 | [bags.rkt](bags.rkt) | bags filled with pebbles | 
 | [cards.rkt](cards.rkt) | a data representation of cards | 
@@ -138,14 +137,14 @@ referee                         player (p_1) . . . player (p_n)
   |                                |                 |
   |                                |                 |
   |                                |                 |
-  |     setup(equations)    	   |                 | % the table of equations
+  |     setup(equations)           |                 | % the table of equations
   | -----------------------------> |                 | 
   |                                |                 | 
   .                                .                 .
   .                                .                 . % repeat for descending age
   .                                .                 . 
   |                                |                 |
-  |     setup(equations)    	   |                 | 
+  |     setup(equations)           |                 | 
   | -----------------------------------------------> |
   |                                |                 |
 ```
@@ -153,15 +152,22 @@ referee                         player (p_1) . . . player (p_n)
 #### Turn Case 1: player requests a random pebble
 
 ```
-
+	
 referee                         player (p_1) . . . player (p_n)
   |                                |                 |
-  |   take-turn(TurnState)         |                 | % player receives:
+  |                                |                 | % call only if game
+  |                                |                 | % is not finished
+  |   request-pebble-or-trades(    |                 | % player receives:
   | -----------------------------> |                 | % - turn state            
+  | 		TurnState)         |		     |
+  | 				   |		     |
   |                                |                 |
-  |     WANT-PEBBLE                |                 | % requests a pebble 
-  | <============================  |                 |
-  |                                |                 | 
+  |     WANT-PEBBLE-or-TRADES      |                 | % requests a pebble 
+  | <============================  |                 | % or 
+  |                                |                 | % an exchange of pebbles
+  |				   |		     |
+  |				   |		     |
+  |				   |		     |
   |--+                             |                 |
   .  |                             .                 . % if legal:
   .  |                             .                 . % referee modifies game state
@@ -172,31 +178,13 @@ referee                         player (p_1) . . . player (p_n)
 
   IF LEGAL:
   | -----------------------------> |                 | 
-  |   take-turn(TurnState)         |                 | % player receives:
+  |   request-cards(TurnState)     |                 | % player receives:
   | -----------------------------> |                 | % - turn state
-  |                                |                 | % with additional pebble
-  |   trade->purchase([],cards)    |		     | 
-  | <============================= |                 | % purchases cards
-  |--+                             |                 |
-  .  |                             .                 . % if legal:
-  .  |                             .                 . % referee modifies game state
-  .  |                             .                 . % completes turn 
-  .  |                             .                 . % otherwise: 
-  .  |                             .                 . % kick player out 
-  .<-+                             .                 . % completes turn 
-  
-```
-
-#### Turn Case 2: player trades and purchases only
-
-```
-
-referee                         player (p_1) . . . player (p_n)
-  |                                |                 |
-  |   take-turn(TurnState)         |                 | % player receives:
-  | -----------------------------> |                 | % - turn state            
-  |                                |                 |   
-  |   trade->purchase(eqs,cards)   |		     | % trade by equations
+  |                                |                 | % with a revised 
+  |				   |		     | % wallet of pebbles
+  |				   |		     |
+  |				   |		     |
+  |   SequenceOf<Card>             |		     | 
   | <============================= |                 | % purchases cards
   |--+                             |                 |
   .  |                             .                 . % if legal:
