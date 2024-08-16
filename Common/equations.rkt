@@ -148,9 +148,13 @@
   #:methods gen:equal+hash
   [(define equal-proc
      (λ (x y recursive-equal?)
-       (and
-        (b:bag-equal? (1eq-left x) (1eq-left y))
-        (b:bag-equal? (1eq-right x) (1eq-right y)))))
+       (define xleft (1eq-left x))
+       (define yleft (1eq-left y))
+       (define xright (1eq-right x))
+       (define yright (1eq-right y))
+       (or
+        (and (b:bag-equal? xleft yleft) (b:bag-equal? xright yright))
+        (and (b:bag-equal? xleft yright) (b:bag-equal? xleft yright)))))
    (define (hash-proc x re-hash)
      (+ (* 1000 (re-hash (1eq-left x)))
         (* 10 (re-hash (1eq-right x)))))
@@ -310,7 +314,7 @@
   (check-true (equations-equal? lo-1-equation& lo-1-equation))
 
   (define lo-1-equation-swapped [list [1eq '[c] '[a b a]]])
-  (check-false (equations-equal? lo-1-equation& lo-1-equation-swapped)))
+  (check-true (equations-equal? lo-1-equation& lo-1-equation-swapped)))
   
 
 (module+ test ;; json testing 
