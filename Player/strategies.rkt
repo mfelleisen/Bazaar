@@ -216,7 +216,7 @@
                 [(r)  [exchange t (purchase (list c-yyrwg* c-ggggg) 3 ω)]])
     (scenario+ Tests/ (list equations cards-test w0 bank0 purchase-points) r "t 2")))
 
-(module+ examples
+(module+ examples ;; for checking tie breaking 
   (provide Extras/)
 
   (let*-values ([(e) (list r=4xg   r=4xb)]
@@ -294,12 +294,10 @@
   (define f* (list smallest-number-of-trades most-pebbles-left))
   (tie-breaker f* possibles0))
 
-;; ---------------------------------------------------------------------------------------------------
 #; {[Listof Exchange] -> [Listof Exchange]}
 (define (smallest-number-of-trades the-bests)
   (all-argmin (λ (ex) (length (exchange-trades ex))) the-bests))
 
-;; ---------------------------------------------------------------------------------------------------
 #; {[Listof Exchange] -> [Listof Exchange]}
 (define (most-pebbles-left exchanges)
   (all-argmax (compose b:bag-size purchase-walletω exchange-purchase) exchanges))
@@ -322,7 +320,7 @@
 (module+ test
   (check-true (should-the-player-request-a-random-pebble '[] b-4xb-3xg b-rg) "trades possible")
   
-  #; {Symbol Trade&BuyScenarios {#:check [Equality Thunk Any String -> Void]} -> Void}
+  #; {Symbol Trade&BuyScenarios -> Void}
   (define (run-scenario* t scenario*)
     (eprintf "--------------- ~a\n" t)
     (define count 0)
@@ -335,6 +333,7 @@
       (check-equal? (trade-then-purchase equations cards wallet bank policy) expected msg))
     (eprintf "~a tests completed\n" count))
 
+  #;{Exchange Equation* [Setof Card] Bag Bag Policy String -> Void}
   (define (show expected equations cards wallet bank policy msg)
     (define p-equations (e:render* equations))
     (define p-cards     (c:render* cards))
@@ -344,6 +343,7 @@
     (pretty-print (frame (inset (hb-append 10 p-equations p-cards p-wallet p-bank) 2)))
     (pretty-print expected))
 
+  #; {Symbol Trade&BuyScenarios -> Void}
   (define (run-ties* t scenario*)
     (eprintf "--------------- ~a\n" t)
     (define count 0)
@@ -459,10 +459,11 @@
 (define (buy-cards visibles wallet which)
   (match (possible-purchases visibles wallet which)
     [(list p) p]
-    [possible (tie-breaker-for-purchases possible)]))
+    [possibles (tie-breaker-for-purchases possibles)]))
 
 #; {[Setof Card] Bag [Purchases-> Real] -> [Listof Purchases]}
 ;; imperatively accumulate all paths of cards from root to leafs, evaluate, turn into purchases
+;; this may return the "no cards can be purchased" result 
 (define (possible-purchases visibles0 wallet0 which)
   (define max-ish (new collector% [e0 (purchase '[] 0 wallet0)] [score which]))
   
