@@ -46,6 +46,7 @@
 ;; ---------------------------------------------------------------------------------------------------
 (module+ json
   (provide
+   PCards PPoints
    policy->jsexpr
    jsexpr->policy))
   
@@ -80,8 +81,7 @@
 
 (module+ examples
   (require (submod ".."))
-  (require SwDev/Testing/scenarios)
-  (require rackunit))
+  (require SwDev/Testing/scenarios))
 
 (module+ test
   (require (submod ".." examples))
@@ -104,7 +104,8 @@
 ;                                                        ;                                    
 
 (define (should-the-player-request-a-random-pebble equations wallet0 bank0)
-  (empty? (e:useful equations wallet0 bank0)))
+  (and (not (b:bag-empty? bank0))
+       (empty? (e:useful equations wallet0 bank0))))
 
 ;                                                                               
 ;                            ;                              ;                   
@@ -422,19 +423,19 @@
 ;    ;;                        
 
 (module+ json
-  (define PS (~a (object-name purchase-size)))
-  (define PP (~a (object-name purchase-points)))
+  (define PCards (~a (object-name purchase-size)))
+  (define PPoints (~a (object-name purchase-points)))
   
   (define (policy->jsexpr p)
     (cond
-      [(equal? p purchase-size) PS]
-      [(equal? p purchase-points) PP]
+      [(equal? p purchase-size) PCards]
+      [(equal? p purchase-points) PPoints]
       [else (error 'policy->jsexpr "policy expected, given ~a" p)]))
 
   (define (jsexpr->policy p)
     (cond
-      [(equal? p PS) purchase-size]
-      [(equal? p PP) purchase-points]
+      [(equal? p PCards) purchase-size]
+      [(equal? p PPoints) purchase-points]
       [else #false])))
 
 (module+ test
