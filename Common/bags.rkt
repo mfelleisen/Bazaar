@@ -17,6 +17,7 @@
  bag-add ;; bag ... bag -> bag 
  bag-minus
  bag-intersect
+ bag-pick-random 
  bag-equal?
  
  (contract-out

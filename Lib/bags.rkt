@@ -17,6 +17,7 @@
  bag-add
  bag-minus
  bag-intersect
+ bag-pick-random
  bag-equal?
  render)
 
@@ -117,6 +118,9 @@
 (define (bag-member? b x)
   (cons? (member x b)))
 
+(define (bag-pick-random b)
+  (list-ref b (random (length b))))
+
 (define (render b render-element)
   (apply hc-append 2 (map render-element b)))
 
@@ -168,4 +172,6 @@
 
   (define b1 '[1 1 2 3])
   (check-true (jsexpr? (bag->jsexpr b1 values)))
-  (check bag-equal? (jsexpr->bag (bag->jsexpr b1 values) natural? values) b1 "basic bag test"))
+  (check bag-equal? (jsexpr->bag (bag->jsexpr b1 values) natural? values) b1 "basic bag test")
+  
+  (check-true (<= 1 (bag-pick-random '[1 2 3 4]) 4)))
