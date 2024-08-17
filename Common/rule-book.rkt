@@ -13,19 +13,19 @@
    ;; (4) the bank is empty and no player can buy
    (-> (listof p:player?) (listof c:card?) b:bag? boolean?)]
 
-  [legal-buys
+  (legal-pebble-or-trade-request
+   ;; determines whether a pebble request or a requested series of trades is
+   ;; (1) legal according to the equations
+   ;; (2) feasible for the active player's wallet && the current state of the  bank
+   ;; and if so, computes the resulting pebble or wallet and bag 
+   (-> (listof e:1eq?) any/c t:turn? (or/c #false q:pebble? (list/c b:bag? b:bag?))))
+
+  [legal-purchase-request
    ;; determine whether a series of card purchases is
    ;; (1) legal accroding to the visible cards
    ;; (2) feasible for the active player's wallet
    ;; and if so, computes the resulting score, wallet, and state of the bank 
    (-> (listof c:card?) t:turn? (or/c #false (list/c natural? b:bag? b:bag?)))]
-
-  [legal-trades
-   ;; determines whether a requested series of trades is
-   ;; (1) legal according to the equations
-   ;; (2) feasible for the active player's wallet and the current state of the  bank
-   ;; and if so, computes the resulting wallet and bag 
-   (-> (listof e:1eq?) (listof e:1eq?) t:turn? (or/c #false (list/c b:bag? b:bag?)))]
 
   [calculate-points
    ;; determine the number of points that the purchase of a card yields 
@@ -58,11 +58,15 @@
 
 (require Bazaar/scribblings/spec)
 
+(require (prefix-in a: Bazaar/Common/actions))
 (require (prefix-in b: Bazaar/Common/bags))
 (require (prefix-in c: Bazaar/Common/cards))
 (require (prefix-in e: Bazaar/Common/equations))
 (require (prefix-in p: Bazaar/Common/player))
+(require (prefix-in q: Bazaar/Common/pebbles))
 (require (prefix-in t: Bazaar/Common/turn-state))
+
+(require SwDev/Lib/should-be-racket)
 
 (module+ examples
   (require (submod Bazaar/Common/bags examples))
@@ -76,6 +80,7 @@
   (require (submod Bazaar/Common/bags examples))
   (require (submod Bazaar/Common/cards examples))
   (require (submod Bazaar/Common/equations examples))
+  (require (submod Bazaar/Common/pebbles examples))
   (require rackunit))
 
 ;                                                                                      
@@ -93,6 +98,22 @@
 ;                  ;  ;                                                                
 ;                   ;;                                                                 
 
+(define (legal-pebble-or-trade-request equations request ts)
+  (cond
+    [(a:want-pebble? request)
+     (legal-pebble-request ts)]
+    [(a:trades? request)
+     (legal-trades equations request ts)]
+    [else
+     #false]))
+
+#; {Turn -> (U False Pebble)}
+(define (legal-pebble-request ts)
+  (define bank (t:turn-bank ts))
+  (if (b:bag-empty? bank) #false (b:bag-pick-random bank)))
+
+#; (-> (listof e:1eq?) (listof e:1eq?) t:turn? (or/c #false (list/c b:bag? b:bag?)))
+;; check legality of a trades relative to the equations and state of the wallet/bank
 (define (legal-trades equations trades ts)
   (define bank0 (t:turn-bank ts))
   (define wallet0 (p:player-wallet (t:turn-active ts)))
@@ -137,8 +158,14 @@
 (module+ test
   (check-equal? (list r-g=4xb) (list r-g=4xb-) "regression")
 
+  ;; tests for the major entry point 
+  (check-equal? (legal-pebble-or-trade-request '() #f (t:turn b-r '[] (p:player b-r 9) '[])) RED)
+  (check-false (legal-pebble-or-trade-request '() #f (t:turn (b:bag) '[] (p:player b-r 9) '[])))
+  (check-false (legal-pebble-or-trade-request '() #t (t:turn (b:bag) '[] (p:player b-r 9) '[])))
+
   #; {Symbol LegalScenarios -> Void}
   (define (run-trades* t scenario*)
+    (define legal-trades legal-pebble-or-trade-request)
     (eprintf "--------------- ~a\n" t)
     (for ([s scenario*] [i (in-naturals)])
       (match-define (list args expected msg) s)
@@ -169,7 +196,7 @@
 ;                  ;  ;                                      ;           
 ;                   ;;                                      ;;           
 
-(define (legal-buys cards ts)
+(define (legal-purchase-request cards ts)
   (define bank0    (t:turn-bank ts))
   (define visibles (t:turn-cards ts))
   (define wallet0  (p:player-wallet (t:turn-active ts)))
@@ -218,11 +245,11 @@
       (show i equations trades turn expected)
       (match expected
         [(? boolean? expected)
-         (check-false (legal-buys cards turn) msg)]
+         (check-false (legal-purchase-request cards turn) msg)]
         [(list score wallet bank)
-         (check-equal? (first (legal-buys cards turn)) score (~a msg "/score"))
-         (check b:bag-equal? (second (legal-buys cards turn)) wallet (~a msg "/wallet"))
-         (check b:bag-equal? (third (legal-buys cards turn)) bank (~a msg "/bank"))])))
+         (check-equal? (first (legal-purchase-request cards turn)) score (~a msg "/score"))
+         (check b:bag-equal? (second (legal-purchase-request cards turn)) wallet (~a msg "/wallet"))
+         (check b:bag-equal? (third (legal-purchase-request cards turn)) bank (~a msg "/bank"))])))
 
   (run-buy-scenario 'BuyTests BuyTests/))
 
@@ -330,7 +357,7 @@
 
 (module+ test
 
-   #; {Symbol LegalScenarios -> Void}
+  #; {Symbol LegalScenarios -> Void}
   (define (run-eog-s t scenario*)
     (eprintf "--------------- ~a\n" t)
     (for ([s scenario*] [i (in-naturals)])
@@ -339,3 +366,38 @@
       (check-equal? (game-over? player* card* bank) expected msg)))
 
   (run-eog-s 'EoG-Tests EoG/))
+
+;                                                   
+;                                                   
+;             ;                                     
+;                                                   
+;  ;     ;  ;;;   ; ;;   ; ;;    ;;;    ;;;;   ;;;  
+;  ;     ;    ;   ;;  ;  ;;  ;  ;;  ;   ;;  ; ;   ; 
+;   ; ; ;     ;   ;   ;  ;   ;  ;   ;;  ;     ;     
+;   ; ; ;     ;   ;   ;  ;   ;  ;;;;;;  ;      ;;;  
+;   ;; ;;     ;   ;   ;  ;   ;  ;       ;         ; 
+;   ;; ;;     ;   ;   ;  ;   ;  ;       ;     ;   ; 
+;    ; ;    ;;;;; ;   ;  ;   ;   ;;;;   ;      ;;;  
+;                                                   
+;                                                   
+;                                                   
+
+(define (winners player*)
+  (all-argmax p:player-score player*))
+
+(module+ examples
+  (provide Winners/)
+  (setup-scenarios win-s* Winners/)
+
+  (win-s* Winners/ `[,p-bbbbb3 ,p-rrbrr-20 ,p-rrbrr-20] `[,p-rrbrr-20 ,p-rrbrr-20] "2 winners"))
+
+(module+ test
+  (define (run-win-s t scenario*)
+    (eprintf "--------------- ~a\n" t)
+    (for ([s scenario*] [i (in-naturals)])
+      (match-define (list args expected msg) s)
+      (check-equal? (winners args) expected msg)))
+
+  (run-win-s 'Winners Winners/))
+    
+  
