@@ -7,6 +7,7 @@
  #; {Any -> Boolean?}
  ;; #false denotes the request for a random pebble 
  want-pebble?
+ want-pebble
 
  #; {Any -> Boolean}
  #; (list eq1 ...) ; is a request to trade according to these rules in order 
@@ -38,8 +39,11 @@
   (require rackunit))
 
 ;; -----------------------------------------------------------------------------
+(define want-pebble  #false)
 (define want-pebble? false?)
+
 (define trades?      (listof e:1eq?))
+
 (define buy-cards?   (listof c:card?))
 
 ;; -----------------------------------------------------------------------------
