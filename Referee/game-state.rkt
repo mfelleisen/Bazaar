@@ -7,9 +7,6 @@
  #; {type GameState}
  game?
 
- #; {GameState -> Boolean}
- game-over?
-
  #; {GameState -> GameState}
  kick
 
@@ -239,19 +236,6 @@
   (game bank visibles cards (rest players)))
 
 ;; ---------------------------------------------------------------------------------------------------
-#; {GameState -> Boolean}
-(define (game-over? gs)
-  (match-define [game _bank visibles cards players] gs)
-  (or (empty? players)
-      (winning-points? (first players))
-      (and (b:bag-empty? cards) (b:bag-empty? visibles))))
-
-#; {Player+ -> Boolean}
-(define (winning-points? p+)
-  (match-define [player+ p _] p+)
-  (p:winning-points? p))
-
-;; ---------------------------------------------------------------------------------------------------
 #; {GameState -> TurnState}
 (define (extract-turn rs)
   (match-define [game bank visibles _cards player-states] rs)
@@ -299,13 +283,7 @@
  
   (check-equal? (kick gs1) gs-no-players)
   
-  (check-equal? (update-pebbles-and-score gs1 1 b-g b-r) gs1+g-r+1)
-  
-  (check-true (game-over? gs0) "no cards left")
-  (check-true (game-over? gs-no-players) "no players left ")
-  (check-true (game-over? gs-20) "player has enough points")
-  
-  (check-false (game-over? gs1)))
+  (check-equal? (update-pebbles-and-score gs1 1 b-g b-r) gs1+g-r+1))
 
 (module+ test
   #; {Symbol UsefulScenarios {#:check [Equality Thunk Any String -> Void]} -> Void}
