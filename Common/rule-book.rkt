@@ -18,7 +18,7 @@
    ;; (1) legal according to the equations
    ;; (2) feasible for the active player's wallet && the current state of the  bank
    ;; and if so, computes the resulting pebble or wallet and bag 
-   (-> (listof e:1eq?) any/c t:turn? (or/c #false q:pebble? (list/c b:bag? b:bag?))))
+   (-> (listof e:1eq?) any/c t:turn? (or/c #f (list/c q:pebble? b:bag?) (list/c b:bag? b:bag?))))
 
   [legal-purchase-request
    ;; determine whether a series of card purchases is
@@ -103,22 +103,26 @@
     [(a:want-pebble? request)
      (legal-pebble-request ts)]
     [(a:trades? request)
-     (legal-trades equations request ts)]
+     (legal-trades-request equations request ts)]
     [else
      #false]))
 
-#; {Turn -> (U False Pebble)}
+#; {Turn -> (U False [List Pebble Bag])}
 (define (legal-pebble-request ts)
   (define bank (t:turn-bank ts))
-  (if (b:bag-empty? bank) #false (b:bag-pick-random bank)))
+  (cond
+    [(b:bag-empty? bank) #false]
+    [else
+     (define p (b:bag-pick-random bank))
+     (list p (b:bag-minus bank (b:bag p)))]))
 
-#; (-> (listof e:1eq?) (listof e:1eq?) t:turn? (or/c #false (list/c b:bag? b:bag?)))
+#; ((listof e:1eq?) (listof e:1eq?) t:turn? . -> . (or/c #false (list/c b:bag? b:bag?)))
 ;; check legality of a trades relative to the equations and state of the wallet/bank
-(define (legal-trades equations trades ts)
-  (define bank0 (t:turn-bank ts))
-  (define wallet0 (p:player-wallet (t:turn-active ts)))
+(define (legal-trades-request equations trades ts)
   (let/ec failure
     (unless (subset? trades equations) (failure #false))
+    (define bank0   (t:turn-bank ts))
+    (define wallet0 (p:player-wallet (t:turn-active ts)))
     (for/fold ([wallet wallet0] [bank bank0] #:result (list wallet bank)) ([t trades])
       (define left  (e:1eq-left t))
       (define right (e:1eq-right t))
@@ -158,10 +162,11 @@
 (module+ test
   (check-equal? (list r-g=4xb) (list r-g=4xb-) "regression")
 
-  ;; tests for the major entry point 
-  (check-equal? (legal-pebble-or-trade-request '() #f (t:turn b-r '[] (p:player b-r 9) '[])) RED)
-  (check-false (legal-pebble-or-trade-request '() #f (t:turn (b:bag) '[] (p:player b-r 9) '[])))
-  (check-false (legal-pebble-or-trade-request '() #t (t:turn (b:bag) '[] (p:player b-r 9) '[])))
+  ;; tests for the major entry point
+  (define player (p:player b-r 9))
+  (check-equal? (legal-pebble-or-trade-request '() #f (t:turn b-r '[] player '[])) `[,RED []])
+  (check-false (legal-pebble-or-trade-request '() #f (t:turn (b:bag) '[] player '[])))
+  (check-false (legal-pebble-or-trade-request '() #t (t:turn (b:bag) '[] player '[])))
 
   #; {Symbol LegalScenarios -> Void}
   (define (run-trades* t scenario*)
