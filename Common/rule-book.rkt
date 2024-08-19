@@ -39,7 +39,7 @@
 (module+ examples
   #;
   (scenario+ TradeTests/ (list equations trades turn) (or/c #false (list bag bag)))
-  (provide TradeTests/))
+  (provide TradeTests/ ForStudents/))
 
 ;                                                                                      
 ;       ;                                  ;                                           
@@ -79,7 +79,7 @@
   (require (submod ".." examples))
   (require (submod Bazaar/Common/bags examples))
   (require (submod Bazaar/Common/cards examples))
-  (require (submod Bazaar/Common/equations examples))
+  (require (except-in (submod Bazaar/Common/equations examples) ForStudents/))
   (require (submod Bazaar/Common/pebbles examples))
   (require rackunit))
 
@@ -131,7 +131,7 @@
       (b:bag-transfer wallet bank left right))))
 
 (module+ examples
-  (setup-scenarios scenario+ TradeTests/)
+  (setup-scenarios scenario+ TradeTests/ ForStudents/)
   
   (define eqs  (list r-g=4xb))
   (define eqs- (list r-g=4xb-))
@@ -139,13 +139,13 @@
   (define two  (append eqs- bad))
 
   (let ([t (t:turn b-bbbbb '[] (p:player b-rg 0) '[])])
-    (scenario+ TradeTests/ (list eqs- eqs t) (list b-bbbb (b:bag-add b-rg b-b)) "1 ok trade"))
+    (scenario+ ForStudents/ (list eqs- eqs t) (list b-bbbb (b:bag-add b-rg b-b)) "1 ok trade"))
 
   (let ([t (t:turn b-rg '[] (p:player b-ggg 9) '[])])
-    (scenario+ TradeTests/ (list eqs- '() t) (list b-ggg b-rg) "no trades"))
+    (scenario+ ForStudents/ (list eqs- '() t) (list b-ggg b-rg) "no trades"))
 
   (let ([t (t:turn b-bbbb '[] (p:player b-r 9) '[])])
-    (scenario+ TradeTests/ (list eqs- eqs t) #false "bad wallet/trade"))
+    (scenario+ ForStudents/ (list eqs- eqs t) #false "bad wallet/trade"))
 
   (scenario+ TradeTests/ (list eqs- eqs (t:turn b-r '[] (p:player b-rg 9) '[])) #f "bad bank/trade")
 
@@ -184,7 +184,8 @@
          (check b:bag-equal? (first (legal-trades equations trades turn)) wallet (~a msg "/wallet"))
          (check b:bag-equal? (second (legal-trades equations trades turn)) bank (~a msg "/bank"))])))
 
-  (run-trades* 'TradeTests/ TradeTests/))
+  (run-trades* 'TradeTests/ TradeTests/)
+  (run-trades* 'Students/ ForStudents/))
 
 ;                                                                        
 ;                                             ;                          
