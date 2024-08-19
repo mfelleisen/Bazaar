@@ -125,14 +125,15 @@ A player's turn can proceed in one of three ways:
 ]
 
 @; -----------------------------------------------------------------------------
-The referee eliminates any player that violates any rules during a turn.  It
-returns the eliminated player's pebbles to the bank.  After a player's turn is
-over, the referee replaces the acquired cards and grants the next player a
-turn.
-
 Any exchange request comes with a price.  Per such request, the referee removes
 one card from the pile of invisible ones or, if this pile is empty, it removes
 all visible cards, thus ending the game.
+
+After a player's turn is over, the referee replaces the acquired cards, if any,
+with fresh ones, if any are remaining, and grants the next player a turn.
+
+The referee eliminates any player that violates any rules during a turn.
+Elimination means that the player's pebbles disappear from the game. 
 
 @; -----------------------------------------------------------------------------
 @bold{Scoring a Turn} A player receives points after buying a card.
