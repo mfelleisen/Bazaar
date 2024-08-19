@@ -120,8 +120,7 @@ A player's turn can proceed in one of three ways:
   above.}
 
   @item{Finally, a player may choose to skip obtaining a random pebble or
-  applying any exchange equations, and instead immediately start purchasing
-  cards.}
+  applying any exchange equations, and instead purchase a card or even several.}
 
 ]
 
@@ -129,7 +128,11 @@ A player's turn can proceed in one of three ways:
 The referee eliminates any player that violates any rules during a turn.  It
 returns the eliminated player's pebbles to the bank.  After a player's turn is
 over, the referee replaces the acquired cards and grants the next player a
-turn. 
+turn.
+
+Any exchange request comes with a price.  Per such request, the referee removes
+one card from the pile of invisible ones or, if this pile is empty, it removes
+all visible cards, thus ending the game.
 
 @; -----------------------------------------------------------------------------
 @bold{Scoring a Turn} A player receives points after buying a card.
@@ -162,9 +165,9 @@ The game ends if
 
  @item{a player has @(~a PLAYER-WINS) points at the end of its turn;}
 
- @item{all cards have been bought up; or}
+ @item{no more cards are available for purchase; or}
 
- @item{the bank is empty and no player can buy.}
+ @item{the bank is empty and no player can buy a card.}
 
 ]
 @; -----------------------------------------------------------------------------
