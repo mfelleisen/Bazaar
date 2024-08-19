@@ -24,8 +24,8 @@
    ;; determine whether a series of card purchases is
    ;; (1) legal accroding to the visible cards
    ;; (2) feasible for the active player's wallet
-   ;; and if so, computes the resulting score, wallet, and state of the bank 
-   (-> (listof c:card?) t:turn? (or/c #false (list/c natural? b:bag? b:bag?)))]
+   ;; and if so, computes the resulting score, visibles, wallet, and state of the bank
+   (-> (listof c:card?) t:turn? (or/c #false (list/c natural? (listof c:card?) b:bag? b:bag?)))]
 
   [calculate-points
    ;; determine the number of points that the purchase of a card yields 
@@ -130,6 +130,7 @@
       (unless (b:subbag? right bank) (failure #false))
       (b:bag-transfer wallet bank left right))))
 
+;; ---------------------------------------------------------------------------------------------------
 (module+ examples
   (setup-scenarios scenario+ TradeTests/ ForStudents/)
   
@@ -157,16 +158,22 @@
         [bank  (b:bag-add (b:bag-add b-rg b-b) b-r)])
     (scenario+ TradeTests/ (list two (append bad eqs) 5turn) `[,wallet ,bank] "2 trades"))
   
-  (scenario+ TradeTests/ (list two (append bad eqs-) 5turn) #false "2 trades bad"))
+  (scenario+ TradeTests/ (list two (append bad eqs-) 5turn) #false "2 trades bad")
 
+  (provide t1 t2 t3)
+  (define player (p:player b-r 9))
+  (define t1 (t:turn b-r '[] player '[]))
+  (define t2 (t:turn (b:bag) '[] player '[]))
+  (define t3 (t:turn (b:bag) '[] player '[])))
+
+;; ---------------------------------------------------------------------------------------------------
 (module+ test
   (check-equal? (list r-g=4xb) (list r-g=4xb-) "regression")
 
   ;; tests for the major entry point
-  (define player (p:player b-r 9))
-  (check-equal? (legal-pebble-or-trade-request '() #f (t:turn b-r '[] player '[])) `[,RED []])
-  (check-false (legal-pebble-or-trade-request '() #f (t:turn (b:bag) '[] player '[])))
-  (check-false (legal-pebble-or-trade-request '() #t (t:turn (b:bag) '[] player '[])))
+  (check-equal? (legal-pebble-or-trade-request '() #f t1) `[,RED []])
+  (check-false (legal-pebble-or-trade-request '() #f t2))
+  (check-false (legal-pebble-or-trade-request '() #t t3))
 
   #; {Symbol LegalScenarios -> Void}
   (define (run-trades* t scenario*)
@@ -202,33 +209,39 @@
 ;                  ;  ;                                      ;           
 ;                   ;;                                      ;;           
 
-(define (legal-purchase-request cards ts)
+(define (legal-purchase-request cards0 ts)
   (define bank0    (t:turn-bank ts))
   (define visibles (t:turn-cards ts))
   (define wallet0  (p:player-wallet (t:turn-active ts)))
   (let/ec failure
-    (unless (subset? cards visibles) (failure #false))
-    (for/fold ([score 0] [wallet wallet0] [bank bank0] #:result (list score wallet bank)) ([c cards])
-      (unless (can-buy-1 c wallet) (failure #false))
-      (define-values [wallet++ bank++] (b:bag-transfer wallet bank (c:card-pebbles c) '[]))
-      (define delta (calculate-points c (b:bag-size wallet++)))
-      (values (+ score delta) wallet++ bank++))))
+    (unless (b:subbag? (apply b:bag cards0) (apply b:bag visibles)) (failure #false))
+    (for/fold ([δ 0] [c cards0] [w wallet0] [b bank0] #:result (list δ c w b)) ([1card cards0])
+      (buy-1-card 1card δ c w b failure))))
 
+#; {Card N [Setof Card] Bag Bag {} -> (values N {Setof Card} Bag Bag)}
+(define (buy-1-card c score cards wallet bank failure)
+  (unless (can-buy-1 c wallet) (failure #false))
+  (define-values [wallet++ bank++] (b:bag-transfer wallet bank (c:card-pebbles c) '[]))
+  (define delta (calculate-points c (b:bag-size wallet++)))
+  (values (+ score delta) (remove c cards) wallet++ bank++))
+
+;; ---------------------------------------------------------------------------------------------------
 (module+ examples
   (provide BuyTests/)
 
+  #; {type BuyScenaro = [List [List Cards Turn] (U False [List N Cards Bag Bag]) String]}
   (setup-scenarios buy-s+ BuyTests/)
 
   (let* ([wallet '()]
          [bank   (b:bag-add b-bbbbb b-rg)]
-         [exp `[5 ,wallet ,bank]])
+         [exp    `[5 [] ,wallet ,bank]])
     (buy-s+ BuyTests/ `[[,c-bbbbb] ,(t:turn b-rg `[,c-bbbbb] (p:player b-bbbbb 0) '[])]  exp "1"))
 
   (let* ([cards `[,c-bbbbb ,c-ggggg]]
          [pebbles (b:bag-add b-bbbbb b-ggggg)]
          [wallet '()]
          [bank    (b:bag-add (b:bag-add b-bbbbb b-rg) b-ggggg)]
-         [exp `[6 ,wallet ,bank]])
+         [exp `[6 [] ,wallet ,bank]])
     (buy-s+ BuyTests/ `[,cards ,(t:turn b-rg (reverse cards) (p:player pebbles 0) '[])] exp "2+"))
 
   (let* ([cards `[,c-bbbbb ,c-ggggg]]
@@ -236,9 +249,15 @@
          [bank   (b:bag-add b-bbbbb b-rg)])
     (buy-s+ BuyTests/ `[,cards ,(t:turn b-rg (reverse cards) (p:player b-bbbbb 0) '[])]  #false "2-"))
   
+  (let* ([cards `[,c-bbbbb ,c-ggggg]] ;; buy the same card twice 
+         [wallet '()]
+         [bank   (b:bag-add b-bbbbb b-rg)])
+    (buy-s+ BuyTests/ `[,cards ,(t:turn b-rg `[,c-bbbbb ,c-bbbbb] (p:player b-bbbbb 0) '[])]  #f "2"))
+
   (buy-s+ BuyTests/ `[,(list c-bbbbb) ,(t:turn b-bbbbb `[] (p:player b-rg 0) '[])] #f "∉visibles")
   (buy-s+ BuyTests/ `[[,c-bbbbb] ,(t:turn b-rg `[,c-bbbbb] (p:player b-rg 0) '[])] #false ""))
 
+;; ---------------------------------------------------------------------------------------------------
 (module+ test
 
   #; {Symbol LegalScenarios -> Void}
@@ -246,16 +265,21 @@
     (eprintf "--------------- ~a\n" t)
     (for ([s scenario*] [i (in-naturals)])
       (match-define (list args expected msg) s)
-      (match-define (list cards turn) args)
+      (match-define (list cards ts) args)
       #;
       (show i equations trades turn expected)
       (match expected
         [(? boolean? expected)
-         (check-false (legal-purchase-request cards turn) msg)]
-        [(list score wallet bank)
-         (check-equal? (first (legal-purchase-request cards turn)) score (~a msg "/score"))
-         (check b:bag-equal? (second (legal-purchase-request cards turn)) wallet (~a msg "/wallet"))
-         (check b:bag-equal? (third (legal-purchase-request cards turn)) bank (~a msg "/bank"))])))
+         (check-false (legal-purchase-request cards ts) msg)]
+        [(list score e-cards wallet bank)
+         (define x (legal-purchase-request cards ts))
+         (cond
+           [(false? x) 'xxx]
+           [else 
+            (check-equal? (first x) score (~a msg "/score"))
+            (check b:bag-equal? (apply b:bag (second x)) (apply b:bag e-cards) (~a msg "/cards"))
+            (check b:bag-equal? (third x) wallet (~a msg "/wallet"))
+            (check b:bag-equal? (fourth x) bank (~a msg "/bank"))])])))
 
   (run-buy-scenario 'BuyTests BuyTests/))
 

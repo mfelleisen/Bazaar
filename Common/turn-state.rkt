@@ -12,6 +12,7 @@
  turn-bank
  turn-cards
  turn-wallet
+ turn-scores
 
  render
 

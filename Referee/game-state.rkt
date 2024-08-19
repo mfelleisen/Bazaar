@@ -16,6 +16,9 @@
  #; {GameState -> TurnState}
  extract-turn
 
+ #; {GameState -> Boolean}
+ game-over?
+
  #; {GameState -> Pict}
  render)
 
@@ -60,15 +63,14 @@
 (require (submod Bazaar/Common/bags json))
 (require (submod Bazaar/Common/cards json))
 
-; (require (prefix-in b: Bazaar/Common/bags))
-; (require (prefix-in p: Bazaar/Common/player))
 (require (prefix-in c: Bazaar/Common/cards))
-
 (require (prefix-in ts: Bazaar/Common/turn-state))
 
 (require Bazaar/Lib/configuration)
 (require (prefix-in b: Bazaar/Common/bags))
 (require (prefix-in p: Bazaar/Common/player))
+(require (prefix-in pb: Bazaar/Common/pebbles))
+(require (prefix-in r: Bazaar/Common/rule-book))
 
 (require Bazaar/Lib/configuration)
 
@@ -80,10 +82,12 @@
   (require (submod ".." examples)))
 
 (module+ examples
+  (require (submod Bazaar/Common/rule-book examples))
   (require (submod Bazaar/Common/turn-state examples)))
 
 (module+ test
   (require (submod ".." examples))
+  (require (submod Bazaar/Common/pebbles examples))
   (require rackunit))
   
 ;                                                   
@@ -104,6 +108,9 @@
 (module player+ racket
   (provide
    (struct-out player+)
+   update-player+-wallet
+   update-player+-score
+   
    render*
    player+*->jsexpr
    name*
@@ -115,12 +122,22 @@
   (require pict)
 
   (struct player+ [player connection] #:prefab)
+  
+  #; {Player+ Bag -> Player+}
+  (define (update-player+-wallet active wallet)
+    (match-define [player+ p c] active)
+    (struct-copy player+ active [player (p:update-player-wallet p wallet)]))
+
+  #; {Player N -> Player}
+  (define (update-player+-score active delta)
+    (match-define [player+ p c] active)
+    (struct-copy player+ active [player (p:update-player-score p delta)]))
 
   #; {[Listof Player+] -> Pict}
   (define (render* player+*) (-> (listof player+?) (listof pict?))
     (for/fold ([p (blank 1 1)]) ([q player+*])
       (hb-append 5 p (render q))))
-
+  
   #; {Player+ -> Pict}
   (define (render q)
     (match-define [player+ p o] q)
@@ -193,7 +210,188 @@
   (scenario+ Tests/ gs-6-players ts-6-players "six players")
   (scenario+ Tests/ gs-3-zeros   ts-3-zeros "six players"))
 
+;                                                                        
+;      ;;                                                                
+;     ;                                              ;;;                 
+;     ;                                                ;                 
+;   ;;;;;   ;;;;   ;;;  ;;;;;;          ;;;;  ;   ;    ;     ;;;    ;;;  
+;     ;     ;;  ; ;; ;; ;  ;  ;         ;;  ; ;   ;    ;    ;;  ;  ;   ; 
+;     ;     ;     ;   ; ;  ;  ;         ;     ;   ;    ;    ;   ;; ;     
+;     ;     ;     ;   ; ;  ;  ;         ;     ;   ;    ;    ;;;;;;  ;;;  
+;     ;     ;     ;   ; ;  ;  ;         ;     ;   ;    ;    ;          ; 
+;     ;     ;     ;; ;; ;  ;  ;         ;     ;   ;    ;    ;      ;   ; 
+;     ;     ;      ;;;  ;  ;  ;         ;      ;;;;     ;;   ;;;;   ;;;  
+;                                                                        
+;                                                                        
+;                                                                        
+;;    
+#; {Game -> Boolean}
+(define (game-over? gs)
+  (define players (map player+-player (game-players gs)))
+  (r:game-over? players (append (game-cards gs) (game-cards gs)) (game-bank gs)))
 
+;; ---------------------------------------------------------------------------------------------------
+#; {Equations Action GameState -> (U False [list Pebble GameState] GameState)}
+(define (legal-pebble-or-trade-request equations a gs)
+  (define ts (extract-turn gs))
+  (match (r:legal-pebble-or-trade-request equations a ts)
+    [#false #false]
+    [(list (? pb:pebble? p) (? b:bag? bank))
+     (define gs++ (struct-copy game gs [bank bank]))
+     (list p gs++)]
+    [(list (? b:bag? wallet) (? b:bag? bank))
+     (define p (update-player-wallet gs wallet))
+     (struct-copy game p [bank bank])]))
+
+;; ---------------------------------------------------------------------------------------------------
+#; {[Listof Card] Turn -> }
+(define (legal-purchase-request cards gs)
+  (define ts (extract-turn gs))
+  (match (r:legal-purchase-request cards ts)
+    [#false #false]
+    [(list delta visibles wallet bank)
+     (let* ([gs (update-player-score gs delta)]
+            [gs (update-player-wallet gs wallet)]
+            [gs (replenish-visibles gs visibles)]
+            [gs (struct-copy game gs [bank bank])])
+       gs)]))
+
+;; ---------------------------------------------------------------------------------------------------
+#; {GameState Bag -> GameState}
+(define (update-player-wallet gs wallet)
+  (match-define [cons active others] (game-players gs))
+  (struct-copy game gs [players (cons (update-player+-wallet active wallet) others)]))
+
+#; {GameState N -> GameState}
+(define (update-player-score gs delta)
+  (match-define [cons active others] (game-players gs))
+  (struct-copy game gs [players (cons (update-player+-score active delta) others)]))
+
+#; {GameState [Lustof Card] -> GameState}
+(define (replenish-visibles gs visibles0)
+  (define-values (cards visibles) (transfer-cards (game-cards gs) visibles0))
+  (struct-copy game gs [cards cards] [visibles visibles]))
+
+#; {[Listof Card] [Listof Card] -> (values [Listof Card] [Listof Card])}
+(define (transfer-cards cards visibles0)
+  (define N (min (- VISIBLE# (length visibles0)) (length cards)))
+  (values (drop cards N) (append visibles0 (take cards N))))
+
+;                                                                 
+;                                                                 
+;                                                ;                
+;                                                                 
+;    ;;;    ;;;    ;;;   ; ;;   ;;;;    ;;;;   ;;;    ;;;    ;;;  
+;   ;   ;  ;;  ;  ;;  ;  ;;  ;      ;   ;;  ;    ;   ;; ;;  ;   ; 
+;   ;      ;      ;   ;; ;   ;      ;   ;        ;   ;   ;  ;     
+;    ;;;   ;      ;;;;;; ;   ;   ;;;;   ;        ;   ;   ;   ;;;  
+;       ;  ;      ;      ;   ;  ;   ;   ;        ;   ;   ;      ; 
+;   ;   ;  ;;     ;      ;   ;  ;   ;   ;        ;   ;; ;;  ;   ; 
+;    ;;;    ;;;;   ;;;;  ;   ;   ;;;;   ;      ;;;;;  ;;;    ;;;  
+;                                                                 
+;                                                                 
+;                                                                 
+
+(module+ examples ;; for buying cards; incomplete tests -- assumes active player starts with 0 score 
+  (provide GameBuyTests/ GameTradeTests/ hidden-cards)
+
+  (define (lift-trades s cards)
+    (match-define (list args expected msg) s)
+    (match-define (list equations trades ts) args)
+    (define gs (lift-ts ts cards))
+    (list (list equations trades gs) expected msg))
+
+  #; {BuyScenario/Turn [Listof Card] ->  BuyScenario/Game}
+  (define (lift-buy s new-cards)
+    (match-define (list args expected msg) s)
+    (match-define (list cards ts) args)
+    (list (list cards (lift-ts ts new-cards)) expected msg))
+
+  #; {Turn [Listof Card] -> Game}
+  (define (lift-ts ts cards)
+    (define players (cons (ts:turn-active ts) (map (λ (s) (p:player (b:bag) s)) (ts:turn-scores ts))))
+    (define +player (map (λ (p) (player+ p 'connection)) players))
+    (game (ts:turn-bank ts) (append (ts:turn-cards ts)) cards +player))
+
+  (define hidden-cards `[,c-ggggg* ,c-rrbrr])
+  (define GameTradeTests/ (map (λ (t) (lift-trades t hidden-cards)) TradeTests/))
+  #;
+  (define GameStudentTests/ (map (λ (t) (lift-trades t hidden-cards)) ForStudents/))
+  (define GameBuyTests/ (map (λ (t) (lift-buy t hidden-cards)) BuyTests/))
+
+  (provide g1 g2 g3)
+  (define g1 (lift-ts t1 hidden-cards))
+  (define g2 (lift-ts t2 hidden-cards))
+  (define g3 (lift-ts t3 hidden-cards)))
+
+;                                     
+;                                     
+;     ;                    ;          
+;     ;                    ;          
+;   ;;;;;   ;;;    ;;;   ;;;;;   ;;;  
+;     ;    ;;  ;  ;   ;    ;    ;   ; 
+;     ;    ;   ;; ;        ;    ;     
+;     ;    ;;;;;;  ;;;     ;     ;;;  
+;     ;    ;          ;    ;        ; 
+;     ;    ;      ;   ;    ;    ;   ; 
+;     ;;;   ;;;;   ;;;     ;;;   ;;;  
+;                                     
+;                                     
+;                                     
+
+(module+ test
+  ;; test game over for two cases 
+  (check-false (game-over? g1))
+  (check-true (game-over? g2))
+
+  ;; tests for the major entry point
+  (define player (p:player b-r 9))
+  (check-equal? (first (legal-pebble-or-trade-request '() #f g1)) RED)
+  (check-false (legal-pebble-or-trade-request '() #f g2))
+  (check-false (legal-pebble-or-trade-request '() #t g3))
+  
+  #; {Symbol TradesScenarios -> Void}
+  (define (run-trades* t scenario*)
+    (eprintf "--------------- ~a\n" t)
+    (for ([s scenario*] [i (in-naturals)])
+      (match-define (list args expected msg) s)
+      (match-define (list equations trades gs) args)
+
+      (match (legal-pebble-or-trade-request equations trades gs)
+        [(? false?) (check-false #false expected )~a msg "/illegal"]
+        [(list (? pb:pebble? p) (? game? gs))
+         #;
+         (game a-bank a-visibles _cards (cons (player+ a-active 'connection) others))
+         (error 'run-trades-scenarios "not tested yet")]
+        [(game a-bank a-visibles _cards (cons (player+ a-active 'connection) others))
+         (match expected
+           [(? false?) 'xyz]
+           [(list wallet bank)
+            (check b:bag-equal? (p:player-wallet a-active) wallet (~a msg "/wallet"))
+            (check b:bag-equal? a-bank bank (~a msg "/bank"))])])))
+      
+  (run-trades* 'TradeTests/ GameTradeTests/)
+
+  #; {Symbol LegalScenarios -> Void}
+  (define (run-buy-scenario t scenario*)
+    (eprintf "--------------- ~a\n" t)
+    (for ([s scenario*] [i (in-naturals)])
+      (match-define (list args expected msg) s)
+      (match-define (list cards gs) args)
+      (match expected
+        [(? boolean? expected)
+         (check-false (legal-purchase-request cards gs) msg)]
+        [(list score e-cards wallet bank)
+         (match (legal-purchase-request cards gs)
+           [(? false?) (check-false #false expected )~a msg "/illegal"]
+           [(game a-bank a-visibles _cards (cons (player+ a-active 'connection) others))
+            (check-equal? (p:player-score a-active) score (~a msg "/score"))
+            (define cards (append e-cards hidden-cards))
+            (check b:bag-equal? (apply b:bag a-visibles) (apply b:bag cards) (~a msg "/cards"))
+            (check b:bag-equal? (p:player-wallet a-active) wallet (~a msg "/wallet"))
+            (check b:bag-equal? a-bank bank (~a msg "/bank"))])])))
+
+  (run-buy-scenario 'GameBuyTests GameBuyTests/))
 
 ;                                                                                             
 ;      ;;                                                                                     
@@ -210,19 +408,6 @@
 ;                                                                                        ;    
 ;                                                                                       ;;    
 
-
-#; {GameState -> GameState}
-;; update active player: add `delta` to score, add `plus` its pebbles, subtract `minus` 
-(define (update-pebbles-and-score gs delta plus minus)
-  (match-define [game bank visibles cards players] gs)
-  (let* ([s (first players)]
-         [o (player+-connection s)]
-         [s (player+-player s)]
-         [s (p:update-score s delta)]
-         [s (p:update-pebbles s plus minus)])
-    (game bank visibles cards (cons (player+ s o) (rest players)))))
-
-;; ---------------------------------------------------------------------------------------------------
 #; {GameState -> GameState}
 (define (rotate gs)
   (match-define [game bank visibles cards players] gs)
@@ -281,9 +466,7 @@
 
   (check-equal? (rotate gs-20) gs-20-rotate)
  
-  (check-equal? (kick gs1) gs-no-players)
-  
-  (check-equal? (update-pebbles-and-score gs1 1 b-g b-r) gs1+g-r+1))
+  (check-equal? (kick gs1) gs-no-players))
 
 (module+ test
   #; {Symbol UsefulScenarios {#:check [Equality Thunk Any String -> Void]} -> Void}

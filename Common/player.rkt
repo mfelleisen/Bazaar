@@ -11,6 +11,8 @@
  player-wallet
  (contract-out
   [player (-> b:bag? natural? player?)])
+ update-player-wallet
+ update-player-score
  
  #; {Player -> Boolean}
  winning-points?
@@ -109,6 +111,12 @@
  player
  [wallet #:to-jsexpr bag->jsexpr     #:from-jsexpr jsexpr->bag     #:is-a "*Pebbles"]
  [score  #:to-jsexpr natural->jsexpr #:from-jsexpr jsexpr->natural #:is-a "Natural"])
+
+(define (update-player-wallet p wallet)
+  (struct-copy player p [wallet wallet]))
+
+(define (update-player-score p delta)
+  (struct-copy player p [score (+ (player-score p) delta)]))
 
 (module+ examples
   (define p-rg1 (player b-rg 1))
