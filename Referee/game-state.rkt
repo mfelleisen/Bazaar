@@ -3,6 +3,9 @@
 ;; the referee's game state representation, including "connections" to the actual players
 ;; ---------------------------------------------------------------------------------------------------
 
+;; TODO:
+;; -- subtract a card from invisible per trade 
+
 (provide
  #; {type GameState}
  game?
@@ -267,10 +270,7 @@
     [(list (? b:bag? wallet) (? b:bag? bank))
      (let* ([gs (struct-copy game gs [bank bank])]
             [gs (update-player-wallet gs wallet)])
-       gs)]
-    [(list (? b:bag? wallet) (? b:bag? bank))
-     (define p (update-player-wallet gs wallet))
-     (struct-copy game p [bank bank])]))
+       gs)]))
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {[Listof Card] Turn -> }
@@ -376,7 +376,14 @@
   
   ;; tests for the major entry point
   (define player (p:player b-r 9))
-  (check-equal? (first (legal-pebble-or-trade-request '() #f g1)) RED)
+  (check-equal? (game-bank (legal-pebble-or-trade-request '() #f g1)) (b:bag))
+  (check-equal? (let* ([s (legal-pebble-or-trade-request '() #f g1)]
+                       [s (game-players s)]
+                       [s (first s)]
+                       [s (player+-player s)]
+                       [s (p:player-wallet s)])
+                  s)
+                (b:bag RED RED))
   (check-false (legal-pebble-or-trade-request '() #f g2))
   (check-false (legal-pebble-or-trade-request '() #t g3))
   
