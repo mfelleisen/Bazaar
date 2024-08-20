@@ -113,8 +113,8 @@
   (cond
     [(b:bag-empty? bank) #false]
     [else
-     (define p (b:bag-pick-random bank))
-     (list p (b:bag-minus bank (b:bag p)))]))
+     (define p (b:bag (b:bag-pick-random bank)))
+     (list (b:bag-add (p:player-wallet (t:turn-active ts)) p) (b:bag-minus bank p))]))
 
 #; ((listof e:1eq?) (listof e:1eq?) t:turn? . -> . (or/c #false (list/c b:bag? b:bag?)))
 ;; check legality of a trades relative to the equations and state of the wallet/bank
@@ -171,7 +171,7 @@
   (check-equal? (list r-g=4xb) (list r-g=4xb-) "regression")
 
   ;; tests for the major entry point
-  (check-equal? (legal-pebble-or-trade-request '() #f t1) `[,RED []])
+  (check-equal? (legal-pebble-or-trade-request '() #f t1) `[,(b:bag RED RED) []])
   (check-false (legal-pebble-or-trade-request '() #f t2))
   (check-false (legal-pebble-or-trade-request '() #t t3))
 
@@ -214,8 +214,8 @@
   (define visibles (t:turn-cards ts))
   (define wallet0  (p:player-wallet (t:turn-active ts)))
   (let/ec failure
-    (unless (b:subbag? (apply b:bag cards0) (apply b:bag visibles)) (failure #false))
-    (for/fold ([δ 0] [c cards0] [w wallet0] [b bank0] #:result (list δ c w b)) ([1card cards0])
+    (for/fold ([δ 0] [c visibles] [w wallet0] [b bank0] #:result (list δ c w b)) ([1card cards0])
+      (unless (b:subbag? (apply b:bag c) (apply b:bag visibles)) (failure #false))
       (buy-1-card 1card δ c w b failure))))
 
 #; {Card N [Setof Card] Bag Bag {} -> (values N {Setof Card} Bag Bag)}
@@ -253,12 +253,23 @@
          [wallet '()]
          [bank   (b:bag-add b-bbbbb b-rg)])
     (buy-s+ BuyTests/ `[,cards ,(t:turn b-rg `[,c-bbbbb ,c-bbbbb] (p:player b-bbbbb 0) '[])]  #f "2"))
-
+  
   (buy-s+ BuyTests/ `[,(list c-bbbbb) ,(t:turn b-bbbbb `[] (p:player b-rg 0) '[])] #f "∉visibles")
-  (buy-s+ BuyTests/ `[[,c-bbbbb] ,(t:turn b-rg `[,c-bbbbb] (p:player b-rg 0) '[])] #false ""))
+  (buy-s+ BuyTests/ `[[,c-bbbbb] ,(t:turn b-rg `[,c-bbbbb] (p:player b-rg 0) '[])] #false "")
+  (let* ([cards `(,c-ggggg)]
+         [turn  (t:turn b-rrbrr (list c-wyrbb c-ggggg)  p-ggggg (list 0 0))]
+         [exp  `[5 [,c-wyrbb] [] ,(b:bag-add b-rrbrr b-ggggg)]])
+    (buy-s+ BuyTests/ `[,cards ,turn] exp "regression")))
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ test
+
+  (let*-values ([(delta cards wallet bank)
+                 (buy-1-card c-ggggg 0 (list c-wyrbb c-ggggg) b-ggggg b-rrbrr values)])
+    (check-equal? delta 5)
+    (check-equal? cards [list c-wyrbb])
+    (check-equal? wallet (b:bag))
+    (check-equal? bank (b:bag-add b-rrbrr b-ggggg)))
 
   #; {Symbol LegalScenarios -> Void}
   (define (run-buy-scenario t scenario*)
@@ -348,6 +359,7 @@
 ;                                                     ;  ;                      
 ;                                                      ;;                       
 
+(require SwDev/Debugging/spy)
 
 (define (game-over? player* card* bank)
   (or (all-players-eliminated? player*)
