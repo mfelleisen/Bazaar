@@ -82,6 +82,7 @@
 (require (submod Bazaar/Common/bags json))
 (require (submod Bazaar/Common/cards json))
 
+(require (prefix-in a: Bazaar/Common/actions))
 (require (prefix-in c: Bazaar/Common/cards))
 (require (prefix-in ts: Bazaar/Common/turn-state))
 
@@ -92,7 +93,6 @@
 
 (require Bazaar/Lib/configuration)
 
-(require (only-in SwDev/Lib/list list-rotate+))
 (require SwDev/Lib/should-be-racket)
 
 (require pict)
@@ -269,7 +269,8 @@
     [#false #false]
     [(list (? b:bag? wallet) (? b:bag? bank))
      (let* ([gs (struct-copy game gs [bank bank])]
-            [gs (update-player-wallet gs wallet)])
+            [gs (update-player-wallet gs wallet)]
+            [gs (if (a:want-pebble? a) gs (update-cards gs))])
        gs)]))
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -286,6 +287,14 @@
        gs)]))
 
 ;; ---------------------------------------------------------------------------------------------------
+
+#; {GameState -> GameState}
+(define (update-cards gs)
+  (match-define [game bank visibles cards players] gs)
+  (cond
+    [(empty? cards) (game bank '() '() players)]
+    [else (game bank visibles (rdc cards) players)]))
+
 #; {GameState Bag -> GameState}
 (define (update-player-wallet gs wallet)
   (match-define [cons active others] (game-players gs))

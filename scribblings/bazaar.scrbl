@@ -125,9 +125,9 @@ A player's turn can proceed in one of three ways:
 ]
 
 @; -----------------------------------------------------------------------------
-Any exchange request comes with a price.  Per such request, the referee removes
-the bottom-most card from the pile of invisible ones or, if this pile is empty,
-it removes all visible cards, thus ending the game.
+Any legal exchange request comes with a price.  Per such request, the referee
+removes the bottom-most card from the pile of invisible ones or, if this pile is
+empty, it removes all visible cards, thus ending the game.
 
 After a player's turn is over, the referee replaces the acquired cards, if any,
 with fresh ones, if any are remaining, and grants the next player a turn.
