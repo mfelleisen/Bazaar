@@ -6,6 +6,13 @@
 (provide
  #; {type GameState}
  game?
+ game-players
+
+ #; {GameState -> PlayerObject}
+ game-active 
+
+ #; {GameState [Listof PlayerObject] -> GameState}
+ connect
 
  #; {GameState -> GameState}
  kick
@@ -15,9 +22,18 @@
 
  #; {GameState -> TurnState}
  extract-turn
+ 
+ #; {GameState -> [List [Listof PlayerObject] [Listof PlayerObject]] }
+ determine-winners-and-losers
 
  #; {GameState -> Boolean}
  game-over?
+
+ #; {Equations Action GameState -> GameState}
+ legal-pebble-or-trade-request
+
+ #; {[Listof Card] GameState -> GameState}
+ legal-purchase-request
 
  #; {GameState -> Pict}
  render)
@@ -27,7 +43,7 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ examples
-  (provide gs0 gs1 gs-no-players gs-20 gs-20-rotate gs1+g-r+1)
+  (provide gs0 gs1 gs-no-players gs-20 gs-20-rotate gs1+g-r+1 gs-3-zeros)
 
   #; {type GameTurnScenarios = [Listof 1Scenario]}
   #; {type 1Scenario         = [List GameState TurnState]}
@@ -69,12 +85,12 @@
 (require Bazaar/Lib/configuration)
 (require (prefix-in b: Bazaar/Common/bags))
 (require (prefix-in p: Bazaar/Common/player))
-(require (prefix-in pb: Bazaar/Common/pebbles))
 (require (prefix-in r: Bazaar/Common/rule-book))
 
 (require Bazaar/Lib/configuration)
 
-(require SwDev/Lib/list)
+(require (only-in SwDev/Lib/list list-rotate+))
+(require SwDev/Lib/should-be-racket)
 
 (require pict)
 
@@ -178,6 +194,18 @@
 #; {type GameState = (game Bag [Listof Card] [Listof Card] [Listof Player+])}
 #; {type Player+   = (player+ Player {Object with name method take-turn method setup win})}
 
+(define (connect gs lop)
+  (match-define [game bank visibles cards players-] gs)
+  (define players 
+    (for/list ([p+ players-] [p lop])
+      (match p+
+        {[player+ proper _] (player+ proper p)}
+        {_                  (player+ p+ p)})))
+  (game bank visibles cards players))
+
+(define (game-active gs)
+  (player+-connection (first (game-players gs))))
+
 (module+ examples
   (define gs0 (game b-ggggg (list) (list) (list (player+ p-r6 'unknown))))
   (define gs1 (game b-ggggg [list c-ggggg c-rrbrr c-rgbrg] (list) (list (player+ p-r6 'x))))
@@ -228,7 +256,7 @@
 #; {Game -> Boolean}
 (define (game-over? gs)
   (define players (map player+-player (game-players gs)))
-  (r:game-over? players (append (game-cards gs) (game-cards gs)) (game-bank gs)))
+  (r:game-over? players (append (game-visibles gs) (game-cards gs)) (game-bank gs)))
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {Equations Action GameState -> (U False [list Pebble GameState] GameState)}
@@ -236,9 +264,10 @@
   (define ts (extract-turn gs))
   (match (r:legal-pebble-or-trade-request equations a ts)
     [#false #false]
-    [(list (? pb:pebble? p) (? b:bag? bank))
-     (define gs++ (struct-copy game gs [bank bank]))
-     (list p gs++)]
+    [(list (? b:bag? wallet) (? b:bag? bank))
+     (let* ([gs (struct-copy game gs [bank bank])]
+            [gs (update-player-wallet gs wallet)])
+       gs)]
     [(list (? b:bag? wallet) (? b:bag? bank))
      (define p (update-player-wallet gs wallet))
      (struct-copy game p [bank bank])]))
@@ -343,7 +372,8 @@
   ;; test game over for two cases 
   (check-false (game-over? g1))
   (check-true (game-over? g2))
-
+  (check-false (game-over? gs-3-zeros))
+  
   ;; tests for the major entry point
   (define player (p:player b-r 9))
   (check-equal? (first (legal-pebble-or-trade-request '() #f g1)) RED)
@@ -359,10 +389,6 @@
 
       (match (legal-pebble-or-trade-request equations trades gs)
         [(? false?) (check-false #false expected )~a msg "/illegal"]
-        [(list (? pb:pebble? p) (? game? gs))
-         #;
-         (game a-bank a-visibles _cards (cons (player+ a-active 'connection) others))
-         (error 'run-trades-scenarios "not tested yet")]
         [(game a-bank a-visibles _cards (cons (player+ a-active 'connection) others))
          (match expected
            [(? false?) 'xyz]
@@ -433,6 +459,14 @@
   (map (compose p:player-score player+-player) players+))
 
 ;; ---------------------------------------------------------------------------------------------------
+ #; {GameState -> [List [Listof PlayerObject] [Listof PlayerObject]] }
+(define (determine-winners-and-losers gs)
+  (define players (game-players gs))
+  (define winners (all-argmax (compose p:player-score player+-player) players))
+  (define losers  (set-subtract players winners))
+  (list (map player+-connection winners) (map player+-connection losers)))
+
+;; ---------------------------------------------------------------------------------------------------
 #; {GameState -> Pict}
 (define (render gs)
   (match-define [game bank visibles cards player+*] gs)
@@ -465,8 +499,10 @@
   (check-equal? (parameterize ([name* 'x]) (jsexpr->game (game->jsexpr gs1))) gs1)
 
   (check-equal? (rotate gs-20) gs-20-rotate)
+
+  (check-equal? (kick gs1) gs-no-players)
  
-  (check-equal? (kick gs1) gs-no-players))
+  (check-equal? (determine-winners-and-losers gs-20) (list '[x] '[y])))
 
 (module+ test
   #; {Symbol UsefulScenarios {#:check [Equality Thunk Any String -> Void]} -> Void}
