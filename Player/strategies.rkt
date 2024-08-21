@@ -71,21 +71,26 @@
 (require (prefix-in c: Bazaar/Common/cards))
 (require (prefix-in e: Bazaar/Common/equations))
 (require (prefix-in c: Bazaar/Common/rule-book))
-
-(require (submod Bazaar/Common/bags examples))
-(require (submod Bazaar/Common/cards examples))
-(require (submod Bazaar/Common/equations examples))
+(require (prefix-in p: Bazaar/Common/player))
+(require (prefix-in t: Bazaar/Common/turn-state))
 
 (require SwDev/Lib/should-be-racket)
 (require pict)
 
 (module+ examples
   (require (submod ".."))
+  (require (submod Bazaar/Common/bags examples))
+  (require (submod Bazaar/Common/cards examples))
+  (require (submod Bazaar/Common/equations examples))
+  (require (submod Bazaar/Common/turn-state examples))
+
   (require SwDev/Testing/scenarios))
 
 (module+ test
   (require (submod ".." examples))
   (require (submod ".." json))
+  (require (submod Bazaar/Common/bags examples))
+  (require (submod Bazaar/Common/cards examples))
   (require rackunit))
 
 ;                                                                                             
@@ -161,14 +166,13 @@
 ;                                                                 
 
 (module+ examples
-  (setup-scenarios scenario+ Tests/ ForStudents/ Extras/)
+  (setup-scenarios scenario+ Tests/ ForStudents/)
   
   (define equations (list rg=bbbb ggg=r ggb=rw))
-  (define cards0    (list c-rrbrr* c-ggggg))
-  (define bank0     (b:bag-add b-bbbbb b-ggggg b-rrbrr b-rg b-rg))
-
+  
   #;{Bag 1Eq ... -> (values Equation* Bag)}
-  (define (create-wallet-from-transfers w0 . e...)
+  ;; assume all turns are created from bank0 except for strat-t1
+  (define (wallet-<--->-bank0 w0 . e...)
     (let*-values ([(e1) ggg=r-]
                   [(e2) ggg=r-]
                   [(ω _)
@@ -180,73 +184,69 @@
 
 (module+ examples ;; for students
   ;; even though trades are possible, none will yield a wallet that allows card purchases
-  (define wallet0 (b:bag-add b-rg b-rg b-rg b-4xb-3xg))
-  
   (let*-values ([(r) (exchange '[] (purchase '[] 0 b-4xb-3xg))])
-    (scenario+ ForStudents/ (list equations cards0 b-4xb-3xg b-rg purchase-points) r "no trades"))
+    (scenario+ ForStudents/ (list equations strat-t1 purchase-points) r "no trades"))
 
   ;; the player can buy a card for 1 point w/o trading
-  (let*-values ([(r) (exchange '() (purchase (list c-ggggg) 1 (b:bag-minus wallet0 b-ggggg)))])
-    (scenario+ ForStudents/ (list equations cards0 wallet0 bank0 purchase-size) r "cards 1"))
+  (let*-values ([(r) (exchange '() (purchase `[,(cadr cards0)] 1 (b:bag-minus b-6g-3r-4b b-ggggg)))])
+    (scenario+ ForStudents/ (list equations strat-t2 purchase-size) r "cards 1"))
 
   ;; the player must trade once to buy a card for 2 points
-  (let*-values ([(t w) (create-wallet-from-transfers wallet0 ggg=r)]
-                [(r) (exchange t (purchase (list c-rrbrr*) 2 (b:bag-minus w b-rrbrr)))])
-    (scenario+ ForStudents/ (list equations cards0 wallet0 bank0 purchase-points) r "points 2")))
+  (let*-values ([(t ω) (wallet-<--->-bank0 b-6g-3r-4b ggg=r)]
+                [(r) (exchange t (purchase `[,(first cards0)] 2 (b:bag-minus ω b-rrbrr)))])
+    (scenario+ ForStudents/ (list equations strat-t2 purchase-points) r "points 2")))
 
 (module+ examples ;; for testing students
   ;; the player must make 2 trades to buy a card for 1 point
-  (define cards-test  (list c-rbbbb c-yyrwg* c-ggggg))
   (define wallet-test (b:bag-add b-rr b-yyw))
  
-  (let*-values ([(w0) wallet-test]
-                [(t ω) (create-wallet-from-transfers w0 ggg=r- ggg=r-)]
-                [(r) [exchange t (purchase (list c-ggggg) 1 (b:bag-minus ω b-ggggg))]])
-    (scenario+ Tests/ (list equations cards-test w0 bank0 purchase-points) r "t 1"))
+  (let*-values ([(t ω) (wallet-<--->-bank0 wallet-test ggg=r- ggg=r-)]
+                [(r) [exchange t (purchase `[,(third cards1)] 1 (b:bag-minus ω b-ggggg))]])
+    (scenario+ Tests/ (list equations strat-t5 purchase-points) r "t 1"))
 
   ;; the player must make 2 trades to buy a card for 2 points; an alterantive would yield only 1 point
-  (let*-values ([(w0) (b:bag-add wallet-test b-r)]
-                [(t ω) (create-wallet-from-transfers w0 ggg=r- rg=bbbb)]
-                [(r) [exchange t (purchase (list c-yyrwg*) 2 (b:bag-minus ω b-yyrwb))]])
-    (scenario+ Tests/ (list equations cards-test w0 bank0 purchase-points) r "x 2"))
+  (let*-values ([(t ω) (wallet-<--->-bank0 (b:bag-add wallet-test b-r) ggg=r- rg=bbbb)]
+                [(r) [exchange t (purchase `[,(second cards1)] 2 (b:bag-minus ω b-yyrwb))]])
+    (scenario+ Tests/ (list equations strat-t3 purchase-points) r "x 2"))
 
   ;; a player can buy 2 cards for 3 points if it makes three trades
-  (let*-values ([(w0) (b:bag-add wallet-test b-rr)]
-                [(t w1) (create-wallet-from-transfers w0  ggg=r- rg=bbbb ggg=r-)]
+  (let*-values ([(t w1) (wallet-<--->-bank0 (b:bag-add wallet-test b-rr) ggg=r- rg=bbbb ggg=r-)]
                 [(ω) (b:bag-minus (b:bag-minus w1 b-yyrwb) b-ggggg)]
-                [(r)  [exchange t (purchase (list c-yyrwg* c-ggggg) 3 ω)]])
-    (scenario+ Tests/ (list equations cards-test w0 bank0 purchase-points) r "t 2")))
+                [(r) [exchange t (purchase (rest cards1) 3 ω)]])
+    (scenario+ Tests/ (list equations strat-t4 purchase-points) r "t 2")))
 
 (module+ examples ;; for checking tie breaking 
   (provide Extras/)
+
+  (setup-scenarios extra+ Extras/)
 
   (let*-values ([(e) (list r=gggg r=bbbb)]
                 [(c) (list c-bbbbb c-ggggg)]
                 [(w) (b:bag-add (b:bag-add b-rr b-b) b-g)]
                 [(b) (b:bag-add b-ggggg b-rbbbb)])
-    (scenario+ Extras/ (list e c w b purchase-points) 1 "2 rules, 2 cards, score 6, wallet: 0"))
+    (extra+ Extras/ (list e c w b purchase-points) 1 "2 rules, 2 cards, score 6, wallet: 0"))
 
   (let*-values ([(e) (list ggg=r- rg=bbbb)]
                 [(c) (list c-yyrwg* c-ggggg)]
                 [(w) (b:bag-add wallet-test b-rr)])
     (define e1 (exchange (list ggg=r- rg=bbbb ggg=r-) (purchase (list c-yyrwg* c-ggggg) 3 w)))
     (define e2 (exchange (list ggg=r- ggg=r- rg=bbbb) (purchase (list c-yyrwg* c-ggggg) 3 w)))
-    (scenario+ Extras/ (list e c w bank0 purchase-points) 1 "3 rules, 2 cards, score 3, wallet 3b")))
+    (extra+ Extras/ (list e c w bank0 purchase-points) 1 "3 rules, 2 cards, score 3, wallet 3b")))
 
-;                                                                                             
-;      ;;                                                                                     
-;     ;                           ;       ;                        ;;;       ;     ;          
-;     ;                           ;                                  ;             ;          
-;   ;;;;;  ;   ;  ; ;;    ;;;   ;;;;;   ;;;    ;;;   ; ;;   ;;;;     ;     ;;;   ;;;;;  ;   ; 
-;     ;    ;   ;  ;;  ;  ;;  ;    ;       ;   ;; ;;  ;;  ;      ;    ;       ;     ;    ;   ; 
-;     ;    ;   ;  ;   ;  ;        ;       ;   ;   ;  ;   ;      ;    ;       ;     ;     ; ;  
-;     ;    ;   ;  ;   ;  ;        ;       ;   ;   ;  ;   ;   ;;;;    ;       ;     ;     ; ;  
-;     ;    ;   ;  ;   ;  ;        ;       ;   ;   ;  ;   ;  ;   ;    ;       ;     ;     ; ;  
-;     ;    ;   ;  ;   ;  ;;       ;       ;   ;; ;;  ;   ;  ;   ;    ;       ;     ;     ;;   
-;     ;     ;;;;  ;   ;   ;;;;    ;;;   ;;;;;  ;;;   ;   ;   ;;;;     ;;   ;;;;;   ;;;    ;   
-;                                                                                         ;   
-;                                                                                        ;    
-;                                                                                       ;;    
+;                                                                               
+;                            ;                              ;                   
+;     ;                      ;                  ;;;         ;                   
+;     ;                      ;                 ;            ;                   
+;   ;;;;;   ;;;;  ;;;;    ;;;;   ;;;           ;            ;;;;   ;   ;  ;   ; 
+;     ;     ;;  ;     ;  ;; ;;  ;;  ;          ;;           ;; ;;  ;   ;  ;   ; 
+;     ;     ;         ;  ;   ;  ;   ;;         ;;           ;   ;  ;   ;   ; ;  
+;     ;     ;      ;;;;  ;   ;  ;;;;;;        ;  ; ;        ;   ;  ;   ;   ; ;  
+;     ;     ;     ;   ;  ;   ;  ;             ;  ;;;        ;   ;  ;   ;   ; ;  
+;     ;     ;     ;   ;  ;; ;;  ;             ;;  ;         ;; ;;  ;   ;   ;;   
+;     ;;;   ;      ;;;;   ;;;;   ;;;;          ;;; ;        ;;;;    ;;;;    ;   
+;                                                                           ;   
+;                                                                          ;    
+;                                                                         ;;    
 
 (define (trade-then-purchase equations visibles wallet0 bank0 which)
   (match (possible-trades equations wallet0 bank0 visibles which)
@@ -328,7 +328,10 @@
     (for ([s scenario*] [i (in-naturals)])
       (set! count (+ count 1))
       (match-define (list args expected msg) s)
-      (match-define (list equations cards wallet bank policy) args)
+      (match-define (list equations turn policy) args)
+      (define bank   (t:turn-bank turn))
+      (define cards  (t:turn-cards turn))
+      (define wallet (p:player-wallet (t:turn-active turn)))
       #;
       (show expected equations cards wallet bank policy msg)
       (check-equal? (trade-then-purchase equations cards wallet bank policy) expected msg))
@@ -407,55 +410,20 @@
 (define (purchase-size p)
   (length (purchase-cards p)))
 
-;                              
-;      ;                       
-;                              
-;                              
-;    ;;;    ;;;    ;;;   ; ;;  
-;      ;   ;   ;  ;; ;;  ;;  ; 
-;      ;   ;      ;   ;  ;   ; 
-;      ;    ;;;   ;   ;  ;   ; 
-;      ;       ;  ;   ;  ;   ; 
-;      ;   ;   ;  ;; ;;  ;   ; 
-;      ;    ;;;    ;;;   ;   ; 
-;      ;                       
-;      ;                       
-;    ;;                        
-
-(module+ json
-  (define PCards (~a (object-name purchase-size)))
-  (define PPoints (~a (object-name purchase-points)))
-  
-  (define (policy->jsexpr p)
-    (cond
-      [(equal? p purchase-size) PCards]
-      [(equal? p purchase-points) PPoints]
-      [else (error 'policy->jsexpr "policy expected, given ~a" p)]))
-
-  (define (jsexpr->policy p)
-    (cond
-      [(equal? p PCards) purchase-size]
-      [(equal? p PPoints) purchase-points]
-      [else #false])))
-
-(module+ test
-  (check-equal? (jsexpr->policy (policy->jsexpr purchase-size)) purchase-size)
-  (check-equal? (jsexpr->policy (policy->jsexpr purchase-points)) purchase-points))
-
-;                                                                                             
-;      ;;                                                                                     
-;     ;                           ;       ;                        ;;;       ;     ;          
-;     ;                           ;                                  ;             ;          
-;   ;;;;;  ;   ;  ; ;;    ;;;   ;;;;;   ;;;    ;;;   ; ;;   ;;;;     ;     ;;;   ;;;;;  ;   ; 
-;     ;    ;   ;  ;;  ;  ;;  ;    ;       ;   ;; ;;  ;;  ;      ;    ;       ;     ;    ;   ; 
-;     ;    ;   ;  ;   ;  ;        ;       ;   ;   ;  ;   ;      ;    ;       ;     ;     ; ;  
-;     ;    ;   ;  ;   ;  ;        ;       ;   ;   ;  ;   ;   ;;;;    ;       ;     ;     ; ;  
-;     ;    ;   ;  ;   ;  ;        ;       ;   ;   ;  ;   ;  ;   ;    ;       ;     ;     ; ;  
-;     ;    ;   ;  ;   ;  ;;       ;       ;   ;; ;;  ;   ;  ;   ;    ;       ;     ;     ;;   
-;     ;     ;;;;  ;   ;   ;;;;    ;;;   ;;;;;  ;;;   ;   ;   ;;;;     ;;   ;;;;;   ;;;    ;   
-;                                                                                         ;   
-;                                                                                        ;    
-;                                                                                       ;;    
+;                                                          
+;      ;                               ;                   
+;                          ;           ;                   
+;                          ;           ;                   
+;    ;;;   ;   ;   ;;;   ;;;;;         ;;;;   ;   ;  ;   ; 
+;      ;   ;   ;  ;   ;    ;           ;; ;;  ;   ;  ;   ; 
+;      ;   ;   ;  ;        ;           ;   ;  ;   ;   ; ;  
+;      ;   ;   ;   ;;;     ;           ;   ;  ;   ;   ; ;  
+;      ;   ;   ;      ;    ;           ;   ;  ;   ;   ; ;  
+;      ;   ;   ;  ;   ;    ;           ;; ;;  ;   ;   ;;   
+;      ;    ;;;;   ;;;     ;;;         ;;;;    ;;;;    ;   
+;      ;                                               ;   
+;      ;                                              ;    
+;    ;;                                              ;;    
 
 (define (buy-cards visibles wallet which)
   (match (possible-purchases visibles wallet which)
@@ -599,3 +567,39 @@
         [(= v1 *best-score)
          (set! *possibles (set-add *possibles e1))]
         [else (void)]))))
+
+
+;                              
+;      ;                       
+;                              
+;                              
+;    ;;;    ;;;    ;;;   ; ;;  
+;      ;   ;   ;  ;; ;;  ;;  ; 
+;      ;   ;      ;   ;  ;   ; 
+;      ;    ;;;   ;   ;  ;   ; 
+;      ;       ;  ;   ;  ;   ; 
+;      ;   ;   ;  ;; ;;  ;   ; 
+;      ;    ;;;    ;;;   ;   ; 
+;      ;                       
+;      ;                       
+;    ;;                        
+
+(module+ json
+  (define PCards (~a (object-name purchase-size)))
+  (define PPoints (~a (object-name purchase-points)))
+  
+  (define (policy->jsexpr p)
+    (cond
+      [(equal? p purchase-size) PCards]
+      [(equal? p purchase-points) PPoints]
+      [else (error 'policy->jsexpr "policy expected, given ~a" p)]))
+
+  (define (jsexpr->policy p)
+    (cond
+      [(equal? p PCards) purchase-size]
+      [(equal? p PPoints) purchase-points]
+      [else #false])))
+
+(module+ test
+  (check-equal? (jsexpr->policy (policy->jsexpr purchase-size)) purchase-size)
+  (check-equal? (jsexpr->policy (policy->jsexpr purchase-points)) purchase-points))

@@ -163,6 +163,23 @@
   (define ts1-card-swap (turn b-ggggg [list c-rrbrr c-ggggg c-rgbrg] p-r6 '[]))
   (define ts1-wallet    (turn (b:bag-add b-g b-gggg) [list c-rrbrr c-ggggg c-rgbrg] p-r6 '[])))
 
+(module+ examples
+  (provide strat-t1 strat-t2 strat-t3 strat-t4 strat-t5 bank0 cards0 cards1)
+
+  (define bank0  (b:bag-add b-bbbbb b-ggggg b-rrbrr b-rg b-rg))
+  (define cards0 (list c-rrbrr* c-ggggg))
+  (define cards1 (list c-rbbbb c-yyrwg* c-ggggg))
+ 
+  (define strat-t1 (turn b-rg  cards0 p-4xb-3xg4 '[]))
+  (define strat-t2 (turn bank0 cards0 p-6g-3r-4b '[]))
+  (define strat-t5 (turn bank0 cards1 p-2r-2y-1w '[]))
+  (define strat-t3 (turn bank0 cards1 p-3r-2y-1w '[]))
+  (define strat-t4 (turn bank0 cards1 p-4r-2y-1w '[]))
+
+  )
+
+  
+
 (module+ test
   (check-equal? ts1 ts1-wallet "construct wallet")
   (check-equal? ts1 ts1-card-swap "cards swapped")

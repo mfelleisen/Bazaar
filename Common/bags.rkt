@@ -39,6 +39,8 @@
 ;; ---------------------------------------------------------------------------------------------------
 (module+ examples
   (provide b-rg b-bbbb b-4xb-3xg b-ggg b-r b-g b-ggb b-gw b-rr b-gg b-yyw b-gggg b-b
+           ;; for strategies
+           b-6g-3r-4b b-2r-2y-1w b-3r-2y-1w b-4r-2y-1w
            ;; for cards 
            b-bbbbb b-ggggg b-rgbrg b-wyrbb b-rrbrr b-rbbbb b-yyrwb))
 
@@ -123,7 +125,10 @@
   (define b-4xb-3xg [bag p:BLUE p:BLUE p:BLUE p:BLUE p:GREEN p:GREEN p:GREEN])
   (define b-rg      [bag p:RED p:GREEN])
 
-  )
+  (define b-6g-3r-4b (bag-add b-rg b-rg b-rg b-4xb-3xg))
+  (define b-2r-2y-1w (bag-add b-rr b-yyw))
+  (define b-3r-2y-1w (bag-add b-rr b-r b-yyw))
+  (define b-4r-2y-1w (bag-add b-rr b-rr b-yyw)))
 
 ;                                                                                             
 ;      ;;                                                                                     
