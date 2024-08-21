@@ -111,6 +111,39 @@
 
 (define turn-wallet (compose p:player-wallet turn-active))
 
+(module+ test ;; Ben's failure 21 Aug
+  (define expected
+    (jsexpr->turn
+     '#hasheq((active
+                .
+                #hasheq((score . 4)
+                        (wallet
+                         .
+                         ("blue" "blue" "blue" "blue" "green" "green" "green"))))
+               (bank . ("red"))
+               (cards
+                .
+                (#hasheq((face? . #f)
+                         (pebbles . ("green" "green" "green" "green" "green")))))
+               (scores . (5 6 7 8 9)))))
+
+  (define received
+    (jsexpr->turn 
+     '#hasheq((active
+                .
+                #hasheq((score . 4)
+                        (wallet
+                         .
+                         ("green" "green" "green" "blue" "blue" "blue" "blue"))))
+               (bank . ("red"))
+               (cards
+                .
+                (#hasheq((face? . #f)
+                         (pebbles . ("green" "green" "green" "green" "green")))))
+               (scores . (5 6 7 8 9)))))
+
+  (check-equal? expected received "ben's failure"))
+
 (module+ examples
 
   (provide t1 t2 t3)

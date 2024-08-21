@@ -108,7 +108,36 @@
 (struct/description
  player
  [wallet #:to-jsexpr bag->jsexpr     #:from-jsexpr jsexpr->bag     #:is-a "*Pebbles"]
- [score  #:to-jsexpr natural->jsexpr #:from-jsexpr jsexpr->natural #:is-a "Natural"])
+ [score  #:to-jsexpr natural->jsexpr #:from-jsexpr jsexpr->natural #:is-a "Natural"]
+ #:transparent
+ #:methods gen:equal+hash
+ [(define equal-proc
+    (λ (x y recursive-equal?)
+      (match-define [player x-wallet x-score] x)
+      (match-define [player y-wallet y-score] y)
+      (and (= x-score y-score) (b:bag-equal? x-wallet y-wallet))))
+  (define (hash-proc x re-hash)
+    (+ (* 1000 (re-hash (player-wallet x)))
+       (* 10 (re-hash (player-score x)))))
+  (define (hash2-proc x re-hash)
+    (+ (* 1000 (re-hash (player-wallet x)))
+       (* 10 (re-hash (player-score x)))))])
+
+(module+ test
+  (define e-wallet (b:bag "blue" "blue" "blue" "blue" "green" "green" "green"))
+  (define a-wallet (b:bag "green" "green" "green" "blue" "blue" "blue" "blue"))
+
+  (check-true (b:bag-equal? e-wallet a-wallet) "ben's failure for wallets")
+
+   (define e-active
+    (jsexpr->player 
+     #hasheq((score . 4) (wallet . ("blue" "blue" "blue" "blue" "green" "green" "green")))))
+
+  (define a-active
+    (jsexpr->player
+     #hasheq((score . 4) (wallet . ("green" "green" "green" "blue" "blue" "blue" "blue")))))
+
+  (check-equal? e-active a-active "ben's failure for players"))
 
 (define (update-player-wallet p wallet)
   (struct-copy player p [wallet wallet]))
