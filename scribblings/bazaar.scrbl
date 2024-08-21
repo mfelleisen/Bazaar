@@ -74,7 +74,7 @@ circular manner, optionally decorated with a happy face in the center.
 &
 @element-join[(map c:render (list c:c-rrbrr c:c-rrbrr*)) "      "] |
 @; ----------------------
-There are @(~a CARDS#) cards overall, pairwise distinct. & | 
+There are @(~a CARDS#) cards overall. & | 
 @; ----------------------
 An equation shows two collections of pebbles on the sides of
 an @tt{=} sign; each side has at least one and at most @(~a [MAX-EQ-SIDE])
