@@ -56,6 +56,7 @@
   (provide
    r=4xb
    r=4xg
+   ggg=b
    r-g=4xb r-g=4xb-
    3xg=r   3xg=r-
    ggb=rw  ggb=rw-)
@@ -175,7 +176,9 @@
   (define 3xg=r-   (1eq-flip 3xg=r))
   (define 3xg=g    (1eq b-ggg b-g)) ;; bad equation
   (define ggb=rw   (1eq b-ggb b-gw))
-  (define ggb=rw-  (1eq-flip ggb=rw)))
+  (define ggb=rw-  (1eq-flip ggb=rw))
+
+  (define ggg=b    (1eq b-ggg b-b)))
 
 
 ;                                                                 

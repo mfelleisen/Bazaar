@@ -116,7 +116,7 @@
   (define ts1          (turn b-ggggg [list c-ggggg c-rrbrr c-rgbrg] p-r6 '[]))
   (define ts-20        (turn b-r     [list c-ggggg]         p-rrbrr-20 '(6)))
   (define ts-20-rotate (turn b-r     [list c-ggggg]         p-r6       '(20)))
-  (define ts-6-players (turn b-r     (list c-ggggg)         p-4xb-3xg4 '(5 6 7 8 9)))
+  (define ts-6-players (turn b-ggg   (list c-ggggg)         p-ggb8     '(5 6 7 9 4)))
   (define ts-3-zeros   (turn b-rrbrr (list c-wyrbb c-ggggg) p-ggggg     '[0 0]))
 
   ;; for equality testing

@@ -46,7 +46,7 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ examples
-  (provide gs0 gs1 gs-no-players gs-20 gs-20-rotate gs1+g-r+1 gs-3-zeros)
+  (provide gs0 gs1 gs-no-players gs-20 gs-20-rotate gs1+g-r+1 gs-3-zeros gs-6-players)
 
   #; {type GameTurnScenarios = [Listof 1Scenario]}
   #; {type 1Scenario         = [List GameState TurnState]}
@@ -219,8 +219,8 @@
   (define gs-20-rotate ;; a final state shouldn't be rotated 
     (game b-r [list c-ggggg] (list) (list (player+ p-r6 'y) (player+ p-rrbrr-20 'x))))
 
-  (define 6-players (map player+ (list p-4xb-3xg4 p-ggg5 p-r6 p-g7 p-ggb8 p-gw9) '[x y z a b c]))
-  (define gs-6-players (game b-r (list c-ggggg) (list) 6-players))
+  (define 6-players (map player+ (list p-ggb8 p-ggg5 p-r6 p-g7 p-gw9 p-4xb-3xg4) '[x y z a b c]))
+  (define gs-6-players (game b-ggg (list c-ggggg) (list) 6-players))
 
   (define 3-0-players (map player+ (list p-ggggg p-rgbrg p-wyrbb) '[k l m]))
   (define gs-3-zeros (game b-rrbrr (list c-wyrbb c-ggggg) '[] 3-0-players)))
@@ -287,14 +287,6 @@
        gs)]))
 
 ;; ---------------------------------------------------------------------------------------------------
-
-#; {GameState -> GameState}
-(define (update-cards gs)
-  (match-define [game bank visibles cards players] gs)
-  (cond
-    [(empty? cards) (game bank '() '() players)]
-    [else (game bank visibles (rdc cards) players)]))
-
 #; {GameState Bag -> GameState}
 (define (update-player-wallet gs wallet)
   (match-define [cons active others] (game-players gs))
@@ -314,6 +306,13 @@
 (define (transfer-cards cards visibles0)
   (define N (min (- VISIBLE# (length visibles0)) (length cards)))
   (values (drop cards N) (append visibles0 (take cards N))))
+
+#; {GameState -> GameState}
+(define (update-cards gs)
+  (match-define [game bank visibles cards players] gs)
+  (cond
+    [(empty? cards) (game bank '() '() players)]
+    [else (game bank visibles (rdc cards) players)]))
 
 ;                                                                 
 ;                                                                 
@@ -353,8 +352,6 @@
 
   (define hidden-cards `[,c-ggggg* ,c-rrbrr])
   (define GameTradeTests/ (map (λ (t) (lift-trades t hidden-cards)) TradeTests/))
-  #;
-  (define GameStudentTests/ (map (λ (t) (lift-trades t hidden-cards)) ForStudents/))
   (define GameBuyTests/ (map (λ (t) (lift-buy t hidden-cards)) BuyTests/))
 
   (provide g1 g2 g3)

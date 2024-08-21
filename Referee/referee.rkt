@@ -7,6 +7,8 @@
 
 (module+ test
   (require (submod Bazaar/Referee/game-state examples))
+  (require (submod Bazaar/Common/player examples))
+  (require (except-in (submod Bazaar/Common/equations examples) ForStudents/ Tests/))
   (require Bazaar/Player/mechanism)
   (require rackunit))
 
@@ -81,6 +83,10 @@
   (check-equal? (w+do->names (referee 2players '[] gs-20)) '[["Adam"] []] "1 winner")
 
   (define 3players (append 2players (list (new player% [my-name "Carl"]))))
-  (check-equal? (w+do->names (referee 3players `[] gs-3-zeros)) '[["Carl" "Adam"] []]) "2 buys, wins")
+  (check-equal? (w+do->names (referee 3players `[] gs-3-zeros)) '[["Carl" "Adam"] []] "2 buys, wins")
+
+  '-----
+  (define 6players (append 3players (map (λ (n) (new player% [my-name n])) '["Dan" "Felix" "Grace"])))
+  (check-equal? (w+do->names (referee 6players (list ggg=b) gs-6-players)) '[["Adam"] []]))
   
   
