@@ -27,6 +27,7 @@
 ;                 ;                                                                    
 
 (require Bazaar/Player/strategies)
+(require Bazaar/Common/actions)
 (require Bazaar/Common/player-interface)
 (require Bazaar/Common/turn-state)
 (require (prefix-in p: Bazaar/Common/player))
@@ -61,8 +62,9 @@
   (class object% 
     (init-field
      [my-name  #; String "Adam"]
-     [strategy #; {Purchase -> Natural} purchase-size])
+     [which    #; {Purchase -> Natural} purchase-size])
 
+    (field [strategy (new strategy% [equations '()] [which which])])
     (field [equations '()])
     
     (super-new)
@@ -71,13 +73,14 @@
       my-name)
     
     (define/public (description)
-      `[,my-name ,(policy->jsexpr strategy)])
+      `[,my-name ,(policy->jsexpr which)])
 
     (define/public (reset)
       (void))
 
     (define/public (setup equations0)
       (reset)
+      (set! strategy (new strategy% [equations equations0] [which which]))
       (set! equations equations0))
     
     #; {Turn -> [Option Equation*]}
@@ -87,11 +90,11 @@
       (define bank   (turn-bank t))
       (define wallet (turn-wallet t))
       (cond
-        [(should-the-player-request-a-random-pebble equations wallet bank)
-         #false]
+        [(send strategy should-the-player-request-a-random-pebble t)
+         want-pebble]
         [else
          (define visibles (turn-cards t))
-         (define trades&buys (trade-then-purchase equations visibles wallet bank strategy))
+         (define trades&buys (send strategy trade-then-purchase t))
          (set! *to-be-bought (exchange-cards trades&buys))
          (exchange-trades trades&buys)]))
 
@@ -101,7 +104,7 @@
     ;; the catds that the player wishes to buy, in order 
     (define/public (request-cards t)
       (when (boolean? *to-be-bought)
-        (set! *to-be-bought [purchase-cards (buy-cards (turn-cards t) (turn-wallet t) strategy)]))
+        (set! *to-be-bought [purchase-cards (send strategy buy-cards t)]))
       (begin0
         *to-be-bought
         (set! *to-be-bought #false)))
@@ -160,5 +163,6 @@
 
   (begin
     (send sample setup (list rg=bbbb ggg=r ggb=rw))
-    (check-equal? (send sample request-pebble-or-trades ts0) '[])
-    (check-equal? (send sample request-cards ts0) '[])))
+    (render ts0)
+    (check-equal? (send sample request-pebble-or-trades ts0) '[] "a trade is possible, but useless")
+    (check-equal? (send sample request-cards ts0) '[])) "the player can't buy anything")

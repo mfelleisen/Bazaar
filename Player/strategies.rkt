@@ -7,15 +7,12 @@
 ;; ---------------------------------------------------------------------------------------------------
 
 (provide
- #; {Equation* Bag Bag -> Boolean}
- should-the-player-request-a-random-pebble
-
- #; {Equation* [Setof Card] Bag Bag {Purchase -> Natural} -> Exchange}
- trade-then-purchase
-
- #; {[Setof Card] Bag [Purchase -> Natural] -> Purchases}
- ;; the player wishes to purchase the cards in the specified list order 
- buy-cards
+ #; {(class/c
+      (init-field (equations Equations) (which [Purchase -> Natural]))
+      (should-the-player-request-a-random-pebble (->m Turn Boolean))
+      (trade-then-purchase (->m Turn (or/c #false Exchange)))
+      (buy-cards (->m Turn Purchases)))}
+ strategy%
 
  #; {type Exchange}
  exchange?
@@ -93,6 +90,46 @@
   (require (submod Bazaar/Common/cards examples))
   (require rackunit))
 
+;                                                                 
+;          ;                                                      
+;     ;    ;                           ;;;                        
+;     ;    ;                             ;                        
+;   ;;;;;  ; ;;    ;;;           ;;;     ;    ;;;;    ;;;    ;;;  
+;     ;    ;;  ;  ;;  ;         ;;  ;    ;        ;  ;   ;  ;   ; 
+;     ;    ;   ;  ;   ;;        ;        ;        ;  ;      ;     
+;     ;    ;   ;  ;;;;;;        ;        ;     ;;;;   ;;;    ;;;  
+;     ;    ;   ;  ;             ;        ;    ;   ;      ;      ; 
+;     ;    ;   ;  ;             ;;       ;    ;   ;  ;   ;  ;   ; 
+;     ;;;  ;   ;   ;;;;          ;;;;     ;;   ;;;;   ;;;    ;;;  
+;                                                                 
+;                                                                 
+;                                                                 
+
+(define strategy%
+  (class object%
+    (init-field equations which)
+    (super-new)
+    
+    (define/public (should-the-player-request-a-random-pebble turn)
+      (define bank0   (t:turn-bank turn))
+      (define wallet0 (p:player-wallet (t:turn-active turn)))
+      (f-should-the-player-request-a-random-pebble equations wallet0 bank0))
+
+    (define/public (trade-then-purchase turn)
+      (define bank0    (t:turn-bank turn))
+      (define visibles (t:turn-cards turn))
+      (define wallet0  (p:player-wallet (t:turn-active turn)))
+      (f-trade-then-purchase equations visibles wallet0 bank0 which))
+
+    (define/public (buy-cards turn)
+      (define visibles (t:turn-cards turn))
+      (define wallet   (p:player-wallet (t:turn-active turn)))
+      (f-buy-cards visibles wallet which))))
+
+(module+ test
+  (new strategy% [equations '()] [which purchase-points]))
+      
+
 ;                                                                                             
 ;                 ;                                                                           
 ;                 ;                                                                ;      ;;; 
@@ -108,7 +145,7 @@
 ;                                                        ;                                    
 ;                                                        ;                                    
 
-(define (should-the-player-request-a-random-pebble equations wallet0 bank0)
+(define (f-should-the-player-request-a-random-pebble equations wallet0 bank0)
   (and (not (b:bag-empty? bank0))
        (empty? (e:useful equations wallet0 bank0))))
 
@@ -248,7 +285,7 @@
 ;                                                                          ;    
 ;                                                                         ;;    
 
-(define (trade-then-purchase equations visibles wallet0 bank0 which)
+(define (f-trade-then-purchase equations visibles wallet0 bank0 which)
   (match (possible-trades equations wallet0 bank0 visibles which)
     [(list ex) ex]
     [possibles (tie-breaker-trade-then-purchase possibles)]))
@@ -263,7 +300,7 @@
 ;; -- maximize the number of cards that player can get with a particular sequencing of card purchases
 
 (define (possible-trades equations wallet0 bank0 visibles which)
-  (define buy-with-wallet (λ (w) (buy-cards visibles w which)))
+  (define buy-with-wallet (λ (w) (f-buy-cards visibles w which)))
   #; [Listof [Listof Exchange]]
   (define ex0 (exchange '() (buy-with-wallet wallet0)))
   (define best-which-es (new collector% [e0 ex0] [score (compose which exchange-purchase)]))
@@ -319,7 +356,7 @@
 ;                                     
 
 (module+ test
-  (check-true (should-the-player-request-a-random-pebble '[] b-4xb-3xg b-rg) "trades possible")
+  (check-true (f-should-the-player-request-a-random-pebble '[] b-4xb-3xg b-rg) "trades possible")
   
   #; {Symbol Trade&BuyScenarios -> Void}
   (define (run-scenario* t scenario*)
@@ -334,7 +371,7 @@
       (define wallet (p:player-wallet (t:turn-active turn)))
       #;
       (show expected equations cards wallet bank policy msg)
-      (check-equal? (trade-then-purchase equations cards wallet bank policy) expected msg))
+      (check-equal? (f-trade-then-purchase equations cards wallet bank policy) expected msg))
     (eprintf "~a tests completed\n" count))
 
   #;{Exchange Equation* [Setof Card] Bag Bag Policy String -> Void}
@@ -425,7 +462,7 @@
 ;      ;                                              ;    
 ;    ;;                                              ;;    
 
-(define (buy-cards visibles wallet which)
+(define (f-buy-cards visibles wallet which)
   (match (possible-purchases visibles wallet which)
     [(list p) p]
     [possibles (tie-breaker-for-purchases possibles)]))
@@ -487,18 +524,18 @@
 ;                                     
 
 (module+ test
-  (check-equal? (buy-cards (list) (b:bag) purchase-size)
+  (check-equal? (f-buy-cards (list) (b:bag) purchase-size)
                 (purchase '() 0 (b:bag)))
-  (check-equal? (buy-cards (list c-ggggg c-ggggg) b-ggggg purchase-size)
+  (check-equal? (f-buy-cards (list c-ggggg c-ggggg) b-ggggg purchase-size)
                 (purchase (list c-ggggg) 5 (b:bag)))
   
   (check-equal? (possible-purchases (list c-ggggg c-ggggg) b-ggggg purchase-points)
                 (list (purchase (list c-ggggg) 5 (b:bag)) #; (purchase (list c-ggggg) 5 (b:bag))))
 
-  (check-equal? (buy-cards (list c-ggggg c-ggggg) b-ggggg purchase-points)
+  (check-equal? (f-buy-cards (list c-ggggg c-ggggg) b-ggggg purchase-points)
                 (purchase (list c-ggggg) 5 (b:bag)))
 
-  (check-equal? (buy-cards (list c-ggggg c-ggggg) (b:bag-add b-ggggg  b-ggggg) purchase-points)
+  (check-equal? (f-buy-cards (list c-ggggg c-ggggg) (b:bag-add b-ggggg  b-ggggg) purchase-points)
                 (purchase (list c-ggggg c-ggggg) 6 (b:bag))))
 
 ;                                                                               

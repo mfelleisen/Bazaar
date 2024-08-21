@@ -48,10 +48,14 @@
 (define (one-turn equations gs)
   (define active  (gs:game-active gs))
   (define action1 (xsend active request-pebble-or-trades (gs:extract-turn gs)))
+  #;
+  (eprintf "~a is trading ~a\n" (xsend active name) action1)
   (match (gs:legal-pebble-or-trade-request equations action1 gs)
     [#false (list (gs:kick gs) active)]
     [gs
      (define action2 (xsend active request-cards (gs:extract-turn gs)))
+     #;
+     (eprintf "~a is buying ~a\n" (xsend active name) action2)
      (match (gs:legal-purchase-request action2 gs)
        [#false (list (gs:kick gs) active)]
        [gs (gs:rotate gs)])]))
