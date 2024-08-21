@@ -54,16 +54,16 @@
 ;; ---------------------------------------------------------------------------------------------------
 (module+ examples
   (provide
-   r=4xb
-   r=4xg
+   r=bbbb
+   r=gggg
    ggg=b
-   r-g=4xb r-g=4xb-
-   3xg=r   3xg=r-
+   rg=bbbb rg=bbbb-
+   ggg=r   ggg=r-
    ggb=rw  ggb=rw-)
   
   (provide
    #; {type UsefulScenarios = [Listof 1Scenario]}
-   #; {type 1Scenario       =  [List [List [Listof 1Equation] Bag Bag] [Listof 1Equation] String]}
+   #; {type 1Scenario       = [List [List [Listof 1Equation] Bag Bag] [Listof 1Equation] String]}
   
    #; UsefulScenarios
    ForStudents/
@@ -164,16 +164,16 @@
 #; {type Side     = b:Bag || (<= 1 (bag-size b) 4)}
 
 (module+ examples
-  (define r-g=4xb (1eq b-rg b-bbbb))
-  (define r-g=4xb- (1eq-flip r-g=4xb))
-  (define g-r=4xb (1eq (reverse b-rg) b-bbbb))
+  (define rg=bbbb (1eq b-rg b-bbbb))
+  (define rg=bbbb- (1eq-flip rg=bbbb))
+  (define g-r=bbbb (1eq (reverse b-rg) b-bbbb))
   (define 4xb=r-g (1eq b-bbbb b-rg))
 
-  (define r=4xb    (1eq b-r b-bbbb))
-  (define r=4xg    (1eq b-r b-gggg))
+  (define r=bbbb    (1eq b-r b-bbbb))
+  (define r=gggg    (1eq b-r b-gggg))
 
-  (define 3xg=r    (1eq b-ggg b-r))
-  (define 3xg=r-   (1eq-flip 3xg=r))
+  (define ggg=r    (1eq b-ggg b-r))
+  (define ggg=r-   (1eq-flip ggg=r))
   (define 3xg=g    (1eq b-ggg b-g)) ;; bad equation
   (define ggb=rw   (1eq b-ggb b-gw))
   (define ggb=rw-  (1eq-flip ggb=rw))
@@ -199,15 +199,15 @@
 (module+ examples ;; make scenarios
   (setup-scenarios scenario+ Tests/ ForStudents/ Exns/)
   
-  (scenario+ ForStudents/ `[,(list r-g=4xb) ,b-rg ,b-bbbb] (list r-g=4xb) "left2right, not vv")
-  (scenario+ ForStudents/ `[,(list r-g=4xb) ,b-rg ,b-bbbb] (list g-r=4xb) "left2right, permute")
-  (scenario+ ForStudents/ `[,(list r-g=4xb 3xg=r) ,b-rg ,b-bbbb] (list g-r=4xb) "left2right/permute")
+  (scenario+ ForStudents/ `[,(list rg=bbbb) ,b-rg ,b-bbbb] (list rg=bbbb) "left2right, not vv")
+  (scenario+ ForStudents/ `[,(list rg=bbbb) ,b-rg ,b-bbbb] (list g-r=bbbb) "left2right, permute")
+  (scenario+ ForStudents/ `[,(list rg=bbbb ggg=r) ,b-rg ,b-bbbb] (list g-r=bbbb) "left2right/permute")
   
-  (scenario+ Tests/ `[,(list r-g=4xb) [] ,b-bbbb] (list) "emoty wallet")
-  (scenario+ Tests/ `[,(list r-g=4xb) ,b-bbbb []] (list) "emoty bank")
-  (scenario+ Tests/ `[,(list r-g=4xb ggb=rw 3xg=r) ,b-rg ,b-4xb-3xg] (list 3xg=r- r-g=4xb) "3 -> 2")
+  (scenario+ Tests/ `[,(list rg=bbbb) [] ,b-bbbb] (list) "emoty wallet")
+  (scenario+ Tests/ `[,(list rg=bbbb) ,b-bbbb []] (list) "emoty bank")
+  (scenario+ Tests/ `[,(list rg=bbbb ggb=rw ggg=r) ,b-rg ,b-4xb-3xg] (list ggg=r- rg=bbbb) "3 -> 2")
   
-  (scenario+ Exns/ `[,(list r-g=4xb 4xb=r-g) ,b-rg ,b-bbbb] #px"distinct-equations" "repeated eq")
+  (scenario+ Exns/ `[,(list rg=bbbb 4xb=r-g) ,b-rg ,b-bbbb] #px"distinct-equations" "repeated eq")
   (scenario+ Exns/ `[,(list 3xg=g 4xb=r-g) ,b-rg ,b-bbbb]   #px"good-equations" "1 bad eq"))
 
 ;                                                                                             
@@ -315,7 +315,7 @@
 ;                                     
 
 (module+ pict
-  (render r-g=4xb))
+  (render rg=bbbb))
 
 (module+ test ;; basic testing 
   (define my-wallet '[a a b c])
@@ -333,7 +333,7 @@
   
 
 (module+ test ;; json testing 
-  (check-equal? (jsexpr->equations (equations->jsexpr (list r-g=4xb))) (list r-g=4xb)))
+  (check-equal? (jsexpr->equations (equations->jsexpr (list rg=bbbb))) (list rg=bbbb)))
 
 (module+ test ;; scenario testing
   #; {Symbol UsefulScenarios {#:check [Equality Thunk Any String -> Void]} -> Void}

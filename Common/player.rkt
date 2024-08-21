@@ -9,8 +9,6 @@
  player?
  player-score
  player-wallet
- (contract-out
-  [player (-> b:bag? natural? player?)])
  update-player-wallet
  update-player-score
  
@@ -129,10 +127,22 @@
   (define p-g7 (player b-g 7))
   (define p-ggb8 (player b-ggb 8))
   (define p-gw9 (player b-gw 9))
+  
   (define p-ggggg (player b-ggggg 0))
   (define p-rgbrg (player b-rgbrg 0))
   (define p-wyrbb (player b-wyrbb 0))
+  
   (define p-rrbrr-20 (player b-rrbrr PLAYER-WINS)))
+
+(module+ examples
+  (provide p-rg-0 p-ggg-9 p-r-9 p-rg-9 p-rr-9 p-bbbbb-0 p-5b-5g-0)
+  (define p-5b-5g-0 (player (b:bag-add b-bbbbb b-ggggg) 0))
+  (define p-bbbbb-0 (player b-bbbbb 0))
+  (define p-rr-9 (player (b:bag-add b-r b-r) 9))
+  (define p-rg-9 (player b-rg 9))
+  (define p-r-9 (player b-r 9))
+  (define p-rg-0 (player b-rg 0))
+  (define p-ggg-9 (player b-ggg 9)))
 
 ;                                                                                             
 ;      ;;                                                                                     

@@ -112,6 +112,12 @@
 (define turn-wallet (compose p:player-wallet turn-active))
 
 (module+ examples
+
+  (provide t1 t2 t3)
+  (define t1 (turn b-r '[] p-r-9 '[]))
+  (define t2 (turn (b:bag) '[] p-r-9 '[]))
+  (define t3 (turn (b:bag) '[] p-r-9 '[]))
+
   (define ts0          (turn b-ggggg (list)                         p-r6 '[]))
   (define ts1          (turn b-ggggg [list c-ggggg c-rrbrr c-rgbrg] p-r6 '[]))
   (define ts-20        (turn b-r     [list c-ggggg]         p-rrbrr-20 '(6)))

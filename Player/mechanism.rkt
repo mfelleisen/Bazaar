@@ -159,6 +159,6 @@
   (check-equal? (send sample request-cards ts0) '())
 
   (begin
-    (send sample setup (list r-g=4xb 3xg=r ggb=rw))
+    (send sample setup (list rg=bbbb ggg=r ggb=rw))
     (check-equal? (send sample request-pebble-or-trades ts0) '[])
     (check-equal? (send sample request-cards ts0) '[])))

@@ -84,7 +84,7 @@
 
 (require (prefix-in a: Bazaar/Common/actions))
 (require (prefix-in c: Bazaar/Common/cards))
-(require (prefix-in ts: Bazaar/Common/turn-state))
+(require (prefix-in t: Bazaar/Common/turn-state))
 
 (require Bazaar/Lib/configuration)
 (require (prefix-in b: Bazaar/Common/bags))
@@ -346,9 +346,9 @@
 
   #; {Turn [Listof Card] -> Game}
   (define (lift-ts ts cards)
-    (define players (cons (ts:turn-active ts) (map (λ (s) (p:player (b:bag) s)) (ts:turn-scores ts))))
+    (define players (cons (t:turn-active ts) '[]))
     (define +player (map (λ (p) (player+ p 'connection)) players))
-    (game (ts:turn-bank ts) (append (ts:turn-cards ts)) cards +player))
+    (game (t:turn-bank ts) (append (t:turn-cards ts)) cards +player))
 
   (define hidden-cards `[,c-ggggg* ,c-rrbrr])
   (define GameTradeTests/ (map (λ (t) (lift-trades t hidden-cards)) TradeTests/))
@@ -381,7 +381,7 @@
   (check-false (game-over? gs-3-zeros))
   
   ;; tests for the major entry point
-  (define player (p:player b-r 9))
+  (define player p-r-9)
   (check-equal? (game-bank (legal-pebble-or-trade-request '() #f g1)) (b:bag))
   (check-equal? (let* ([s (legal-pebble-or-trade-request '() #f g1)]
                        [s (game-players s)]
@@ -465,7 +465,7 @@
   (match-define [game bank visibles _cards player-states] rs)
   (define active (first player-states))
   (define others (rest player-states))
-  (ts:turn bank visibles (player+-player active) (extract-score others)))
+  (t:turn bank visibles (player+-player active) (extract-score others)))
 
 #; {[Listof Player+] -> [Listof Score]}
 (define (extract-score players+)
@@ -487,7 +487,7 @@
   (define p-visibles (c:render* visibles))
   (define p-cards    (c:render* cards))
   (define p-players  (render* player+*))
-  (ts:combine p-bank p-visibles p-cards p-players))
+  (t:combine p-bank p-visibles p-cards p-players))
 
 ;                                     
 ;                                     
@@ -528,7 +528,7 @@
 
   (define (show gs ts msg)
     (define p-gs  (render gs))
-    (define p-ts  (ts:render ts))
+    (define p-ts  (t:render ts))
     (define is (text "---->" "roman" 12))
     (define all (ht-append 5 p-gs is p-ts))
     (eprintf "~a\n" msg)

@@ -79,6 +79,7 @@
   (require (submod ".." examples))
   (require (submod Bazaar/Common/bags examples))
   (require (submod Bazaar/Common/cards examples))
+  (require (submod Bazaar/Common/turn-state examples))
   (require (except-in (submod Bazaar/Common/equations examples) ForStudents/))
   (require (submod Bazaar/Common/pebbles examples))
   (require rackunit))
@@ -134,41 +135,36 @@
 (module+ examples
   (setup-scenarios scenario+ TradeTests/ ForStudents/)
   
-  (define eqs  (list r-g=4xb))
-  (define eqs- (list r-g=4xb-))
-  (define bad  (list r=4xg))
+  (define eqs  (list rg=bbbb))
+  (define eqs- (list rg=bbbb-))
+  (define bad  (list r=gggg))
   (define two  (append eqs- bad))
-
-  (let ([t (t:turn b-bbbbb '[] (p:player b-rg 0) '[])])
-    (scenario+ ForStudents/ (list eqs- eqs t) (list b-bbbb (b:bag-add b-rg b-b)) "1 ok trade"))
-
-  (let ([t (t:turn b-rg '[] (p:player b-ggg 9) '[])])
-    (scenario+ ForStudents/ (list eqs- '() t) (list b-ggg b-rg) "no trades"))
-
-  (let ([t (t:turn b-bbbb '[] (p:player b-r 9) '[])])
-    (scenario+ ForStudents/ (list eqs- eqs t) #false "bad wallet/trade"))
-
-  (scenario+ TradeTests/ (list eqs- eqs (t:turn b-r '[] (p:player b-rg 9) '[])) #f "bad bank/trade")
-
-  (let ([t (t:turn b-r '[] (p:player b-r 9) '[])])
-    (scenario+ TradeTests/ (list eqs- bad t) #false "trade not covered by equations"))
-
-  (define 5turn  (t:turn (b:bag-add b-gggg b-bbbbb) '[] (p:player (b:bag-add b-r b-r) 9) '[]))
-  (let ([wallet (b:bag-add b-ggg b-bbbb)]
-        [bank  (b:bag-add (b:bag-add b-rg b-b) b-r)])
-    (scenario+ TradeTests/ (list two (append bad eqs) 5turn) `[,wallet ,bank] "2 trades"))
   
-  (scenario+ TradeTests/ (list two (append bad eqs-) 5turn) #false "2 trades bad")
+  (let ([turn (t:turn b-bbbbb '[] p-rg-0 '[])])
+    (scenario+ ForStudents/ (list eqs- eqs turn) (list b-bbbb (b:bag-add b-rg b-b)) "1 ok trade"))
+  
+  (let ([turn (t:turn b-rg '[] p-ggg-9 '[])])
+    (scenario+ ForStudents/ (list eqs- '() turn) (list b-ggg b-rg) "no trades"))
 
-  (provide t1 t2 t3)
-  (define player (p:player b-r 9))
-  (define t1 (t:turn b-r '[] player '[]))
-  (define t2 (t:turn (b:bag) '[] player '[]))
-  (define t3 (t:turn (b:bag) '[] player '[])))
+  (let ([turn (t:turn b-bbbb '[] p-r-9 '[])])
+    (scenario+ ForStudents/ (list eqs- eqs turn) #false "bad wallet/trade"))
+
+  (let ([turn (t:turn b-r '[] p-rg-9 '[])])
+    (scenario+ TradeTests/ (list eqs- eqs turn) #false "bad bank/trade"))
+
+  (let ([turn (t:turn b-r '[] p-r-9 '[])])
+    (scenario+ TradeTests/ (list eqs- bad turn) #false "trade not covered by equations"))
+  
+  (let ([turn (t:turn (b:bag-add b-gggg b-bbbbb) '[] p-rr-9 '[])]
+        [exp `[,(b:bag-add b-ggg b-bbbb) ,(b:bag-add (b:bag-add b-rg b-b) b-r)]])
+    (scenario+ TradeTests/ (list two (append bad eqs) turn) exp "2 trades"))
+
+  (let ([turn (t:turn (b:bag-add b-gggg b-bbbbb) '[] p-rr-9 '[])])
+    (scenario+ TradeTests/ (list two (append bad eqs-) turn) #false "2 trades bad")))
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ test
-  (check-equal? (list r-g=4xb) (list r-g=4xb-) "regression")
+  (check-equal? (list rg=bbbb) (list rg=bbbb-) "regression")
 
   ;; tests for the major entry point
   (check-equal? (legal-pebble-or-trade-request '() #f t1) `[,(b:bag RED RED) []])
@@ -232,34 +228,42 @@
   #; {type BuyScenaro = [List [List Cards Turn] (U False [List N Cards Bag Bag]) String]}
   (setup-scenarios buy-s+ BuyTests/)
 
-  (let* ([wallet '()]
+  (let* ([cards `[,c-bbbbb]]
+         [turn (t:turn b-rg cards p-bbbbb-0 '[])]
+         [exp    `[5 [] [] ,(b:bag-add b-bbbbb b-rg)]])
+    (buy-s+ BuyTests/ `[,cards ,turn]  exp "1"))
+
+  (let* ([cards `[,c-bbbbb ,c-ggggg]]
+         [turn   (t:turn b-rg (reverse cards) p-5b-5g-0 '[])]
+         [exp `[6 [] [] ,(b:bag-add (b:bag-add b-bbbbb b-rg) b-ggggg)]])
+    (buy-s+ BuyTests/ `[,cards ,turn] exp "2+"))
+
+  (let* ([cards `[,c-bbbbb ,c-ggggg]]
          [bank   (b:bag-add b-bbbbb b-rg)]
-         [exp    `[5 [] ,wallet ,bank]])
-    (buy-s+ BuyTests/ `[[,c-bbbbb] ,(t:turn b-rg `[,c-bbbbb] (p:player b-bbbbb 0) '[])]  exp "1"))
-
-  (let* ([cards `[,c-bbbbb ,c-ggggg]]
-         [pebbles (b:bag-add b-bbbbb b-ggggg)]
-         [wallet '()]
-         [bank    (b:bag-add (b:bag-add b-bbbbb b-rg) b-ggggg)]
-         [exp `[6 [] ,wallet ,bank]])
-    (buy-s+ BuyTests/ `[,cards ,(t:turn b-rg (reverse cards) (p:player pebbles 0) '[])] exp "2+"))
-
-  (let* ([cards `[,c-bbbbb ,c-ggggg]]
-         [wallet '()]
-         [bank   (b:bag-add b-bbbbb b-rg)])
-    (buy-s+ BuyTests/ `[,cards ,(t:turn b-rg (reverse cards) (p:player b-bbbbb 0) '[])]  #false "2-"))
+         [turn (t:turn b-rg (reverse cards) p-bbbbb-0 '[])])
+    (buy-s+ BuyTests/ `[,cards ,turn]  #false "2-"))
   
-  (let* ([cards `[,c-bbbbb ,c-ggggg]] ;; buy the same card twice 
-         [wallet '()]
-         [bank   (b:bag-add b-bbbbb b-rg)])
-    (buy-s+ BuyTests/ `[,cards ,(t:turn b-rg `[,c-bbbbb ,c-bbbbb] (p:player b-bbbbb 0) '[])]  #f "2"))
+  (let* ([cards `[,c-bbbbb ,c-ggggg]] ;; buy a card that exists twice 
+         [bank   (b:bag-add b-bbbbb b-rg)]
+         [turn (t:turn b-rg `[,c-bbbbb ,c-bbbbb] p-bbbbb-0 '[])])
+    (buy-s+ BuyTests/ `[,cards ,turn]  #f "2"))
+
+  (let* ([cards `[,c-bbbbb ,c-bbbbb]] ;; buy the sane card twice
+         [bank   (b:bag-add b-bbbbb b-rg)]
+         [turn (t:turn b-rg `[,c-bbbbb ,c-bbbbb] p-bbbbb-0 '[])])
+    (buy-s+ BuyTests/ `[,cards ,turn]  #f "2"))
+
+  (let* ([turn (t:turn b-bbbbb `[] p-rg-0 '[])])
+    (buy-s+ BuyTests/ `[,(list c-bbbbb) ,turn] #f "∉visibles"))
+
+  (let* ([cards `[,c-bbbbb]]
+         [turn (t:turn b-rg cards p-rg-0 '[])])
+    (buy-s+ BuyTests/ `[,cards ,turn] #false ""))
   
-  (buy-s+ BuyTests/ `[,(list c-bbbbb) ,(t:turn b-bbbbb `[] (p:player b-rg 0) '[])] #f "∉visibles")
-  (buy-s+ BuyTests/ `[[,c-bbbbb] ,(t:turn b-rg `[,c-bbbbb] (p:player b-rg 0) '[])] #false "")
-  (let* ([cards `(,c-ggggg)]
-         [turn  (t:turn b-rrbrr (list c-wyrbb c-ggggg)  p-ggggg (list 0 0))]
+  (let* ([cards (list c-wyrbb c-ggggg)]
+         [turn  (t:turn b-rrbrr cards p-ggggg (list 0 0))]
          [exp  `[5 [,c-wyrbb] [] ,(b:bag-add b-rrbrr b-ggggg)]])
-    (buy-s+ BuyTests/ `[,cards ,turn] exp "regression")))
+    (buy-s+ BuyTests/ `[(,(second cards)) ,turn] exp "regression")))
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ test

@@ -65,4 +65,4 @@
 (module+ test
   (check-equal? (jsexpr->action (action->jsexpr #false)) #false)
   (check-equal? (jsexpr->action (action->jsexpr `[,c-ggggg])) `[,c-ggggg])
-  (check-equal? (jsexpr->action (action->jsexpr `[,3xg=r-])) `[,3xg=r-]))
+  (check-equal? (jsexpr->action (action->jsexpr `[,ggg=r-])) `[,ggg=r-]))

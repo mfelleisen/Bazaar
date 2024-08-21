@@ -163,14 +163,14 @@
 (module+ examples
   (setup-scenarios scenario+ Tests/ ForStudents/ Extras/)
   
-  (define equations (list r-g=4xb 3xg=r ggb=rw))
+  (define equations (list rg=bbbb ggg=r ggb=rw))
   (define cards0    (list c-rrbrr* c-ggggg))
   (define bank0     (b:bag-add b-bbbbb b-ggggg b-rrbrr b-rg b-rg))
 
   #;{Bag 1Eq ... -> (values Equation* Bag)}
   (define (create-wallet-from-transfers w0 . e...)
-    (let*-values ([(e1) 3xg=r-]
-                  [(e2) 3xg=r-]
+    (let*-values ([(e1) ggg=r-]
+                  [(e2) ggg=r-]
                   [(ω _)
                    (for/fold ([w w0] [bank bank0]) ([e e...])
                      (b:bag-transfer w bank (e:1eq-left e) (e:1eq-right e)))])
@@ -190,7 +190,7 @@
     (scenario+ ForStudents/ (list equations cards0 wallet0 bank0 purchase-size) r "cards 1"))
 
   ;; the player must trade once to buy a card for 2 points
-  (let*-values ([(t w) (create-wallet-from-transfers wallet0 3xg=r)]
+  (let*-values ([(t w) (create-wallet-from-transfers wallet0 ggg=r)]
                 [(r) (exchange t (purchase (list c-rrbrr*) 2 (b:bag-minus w b-rrbrr)))])
     (scenario+ ForStudents/ (list equations cards0 wallet0 bank0 purchase-points) r "points 2")))
 
@@ -200,19 +200,19 @@
   (define wallet-test (b:bag-add b-rr b-yyw))
  
   (let*-values ([(w0) wallet-test]
-                [(t ω) (create-wallet-from-transfers w0 3xg=r- 3xg=r-)]
+                [(t ω) (create-wallet-from-transfers w0 ggg=r- ggg=r-)]
                 [(r) [exchange t (purchase (list c-ggggg) 1 (b:bag-minus ω b-ggggg))]])
     (scenario+ Tests/ (list equations cards-test w0 bank0 purchase-points) r "t 1"))
 
   ;; the player must make 2 trades to buy a card for 2 points; an alterantive would yield only 1 point
   (let*-values ([(w0) (b:bag-add wallet-test b-r)]
-                [(t ω) (create-wallet-from-transfers w0 3xg=r- r-g=4xb)]
+                [(t ω) (create-wallet-from-transfers w0 ggg=r- rg=bbbb)]
                 [(r) [exchange t (purchase (list c-yyrwg*) 2 (b:bag-minus ω b-yyrwb))]])
     (scenario+ Tests/ (list equations cards-test w0 bank0 purchase-points) r "x 2"))
 
   ;; a player can buy 2 cards for 3 points if it makes three trades
   (let*-values ([(w0) (b:bag-add wallet-test b-rr)]
-                [(t w1) (create-wallet-from-transfers w0  3xg=r- r-g=4xb 3xg=r-)]
+                [(t w1) (create-wallet-from-transfers w0  ggg=r- rg=bbbb ggg=r-)]
                 [(ω) (b:bag-minus (b:bag-minus w1 b-yyrwb) b-ggggg)]
                 [(r)  [exchange t (purchase (list c-yyrwg* c-ggggg) 3 ω)]])
     (scenario+ Tests/ (list equations cards-test w0 bank0 purchase-points) r "t 2")))
@@ -220,17 +220,17 @@
 (module+ examples ;; for checking tie breaking 
   (provide Extras/)
 
-  (let*-values ([(e) (list r=4xg   r=4xb)]
+  (let*-values ([(e) (list r=gggg r=bbbb)]
                 [(c) (list c-bbbbb c-ggggg)]
                 [(w) (b:bag-add (b:bag-add b-rr b-b) b-g)]
                 [(b) (b:bag-add b-ggggg b-rbbbb)])
     (scenario+ Extras/ (list e c w b purchase-points) 1 "2 rules, 2 cards, score 6, wallet: 0"))
 
-  (let*-values ([(e) (list 3xg=r- r-g=4xb)]
+  (let*-values ([(e) (list ggg=r- rg=bbbb)]
                 [(c) (list c-yyrwg* c-ggggg)]
                 [(w) (b:bag-add wallet-test b-rr)])
-    (define e1 (exchange (list 3xg=r- r-g=4xb 3xg=r-) (purchase (list c-yyrwg* c-ggggg) 3 w)))
-    (define e2 (exchange (list 3xg=r- 3xg=r- r-g=4xb) (purchase (list c-yyrwg* c-ggggg) 3 w)))
+    (define e1 (exchange (list ggg=r- rg=bbbb ggg=r-) (purchase (list c-yyrwg* c-ggggg) 3 w)))
+    (define e2 (exchange (list ggg=r- ggg=r- rg=bbbb) (purchase (list c-yyrwg* c-ggggg) 3 w)))
     (scenario+ Extras/ (list e c w bank0 purchase-points) 1 "3 rules, 2 cards, score 3, wallet 3b")))
 
 ;                                                                                             

@@ -10,10 +10,3 @@ $ raco doc Bazaar
 ```
 
 ### IMMEDIATE TODO
-
-- move examples of turns into Common/turn-state.rkt
-- move examples of players into Common/player.rkt
-- in general try to eliminate construction of values outsode of module
-
-
-
