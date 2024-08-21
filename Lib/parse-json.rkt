@@ -73,7 +73,8 @@
          (λ (j)
            (match j
              [pat body ...]
-             [_ (eprintf "~a : object does not match ~a schema\n ~a\n" 'name 'to (jsexpr->string/ j))
+             [_ (define x (if (jsexpr? j) (jsexpr->string/ j) j))
+                (eprintf "~a : object does not match ~a schema\n ~a\n" 'name 'to x)
                 #false])))]
     
     [(_ to #:object {{key (~optional parse #:defaults ([parse #'id])) pat} ...} body ...)
