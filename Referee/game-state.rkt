@@ -218,12 +218,18 @@
   (define gs-20 (game b-r [list c-ggggg] (list) (list (player+ p-rrbrr-20 'x) (player+ p-r6 'y))))
   (define gs-20-rotate ;; a final state shouldn't be rotated 
     (game b-r [list c-ggggg] (list) (list (player+ p-r6 'y) (player+ p-rrbrr-20 'x))))
-
+  
   (define 6-players (map player+ (list p-ggb8 p-ggg5 p-r6 p-g7 p-gw9 p-4xb-3xg4) '[x y z a b c]))
   (define gs-6-players (game b-ggg (list c-ggggg) (list) 6-players))
 
+  (provide gs-6-players++ gs-3-zeros++)
+
+  (define cards2 (b:bag-add cards0 cards1 cards1 cards0 cards1))
+  (define gs-6-players++ (game bank0 (take cards2 4) (drop cards2 4) 6-players))
+
   (define 3-0-players (map player+ (list p-ggggg p-rgbrg p-wyrbb) '[k l m]))
-  (define gs-3-zeros (game b-rrbrr (list c-wyrbb c-ggggg) '[] 3-0-players)))
+  (define gs-3-zeros (game b-rrbrr (list c-wyrbb c-ggggg) '[] 3-0-players))
+  (define gs-3-zeros++ (game b-rrbrr (take cards2 4) (drop cards2 4) 3-0-players)))
 
 (module+ examples ;; test scenarios
 
@@ -233,7 +239,7 @@
 
   (define ForStudents/ '[])
   (scenario+ ForStudents/ gs0 ts0 "even end of game states can be serialized to JSON")
-  (scenario+ ForStudents/ gs1 ts1 "a one-palayer non-final state")
+  (scenario+ ForStudents/ gs1 ts1 "a one-player non-final state")
   (scenario+ ForStudents/ gs-20 ts-20 "a two-palayer state")
 
   (define Tests/ '[])
@@ -475,9 +481,11 @@
  #; {GameState -> [List [Listof PlayerObject] [Listof PlayerObject]] }
 (define (determine-winners-and-losers gs)
   (define players (game-players gs))
-  (define winners (all-argmax (compose p:player-score player+-player) players))
-  (define losers  (set-subtract players winners))
+  (define winners (if (empty? players) '[] (all-argmax player+-score players)))
+  (define losers  (if (empty? players) '[] (set-subtract players winners)))
   (list (map player+-connection winners) (map player+-connection losers)))
+
+(define player+-score (compose p:player-score player+-player))
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {GameState -> Pict}
