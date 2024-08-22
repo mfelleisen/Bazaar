@@ -22,8 +22,8 @@
 
  #; {type Purchase}
  purchase?
- purchase-cards
- purchase-walletω
+ ; purchase-cards
+ ; purchase-walletω
 
  #; {Purchase -> Natural}
  ;; the value of the cards purchased 
@@ -124,7 +124,7 @@
     (define/public (buy-cards turn)
       (define visibles (t:turn-cards turn))
       (define wallet   (p:player-wallet (t:turn-active turn)))
-      (f-buy-cards visibles wallet which))))
+      (purchase-cards (f-buy-cards visibles wallet which)))))
 
 (module+ test
   (new strategy% [equations '()] [which purchase-points]))
