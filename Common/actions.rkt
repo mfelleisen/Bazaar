@@ -4,6 +4,8 @@
 ;; -----------------------------------------------------------------------------
 
 (provide
+ action?
+ 
  #; {Any -> Boolean?}
  ;; #false denotes the request for a random pebble 
  want-pebble?
@@ -45,6 +47,8 @@
 (define trades?      (listof e:1eq?))
 
 (define buy-cards?   (listof c:card?))
+
+(define action? (or/c want-pebble? trades? buy-cards?))
 
 ;; -----------------------------------------------------------------------------
 (module+ json
