@@ -1,10 +1,11 @@
 #lang racket
 
-;; a primitive addition to rackunit that checks whether an expression prints an error message matching some regular expression
+;; a primitive addition to rackunit that checks whether an expression prints an error message
+;; matching some regular expression
 
 (provide
  ;; SYNTAX
- #; (check-message port re body ...)
+ #; (check-message msg port re body ...)
  ;; returns the result of `body ...`
  ;; captures all output of `body ...` on `port` and regexp-matches against `re`
  check-message)
@@ -22,18 +23,21 @@
         (with-handlers ([exn:fail? (λ (xn) (set! err xn))])
           body ...))
       (close-output-port os)
-      (when err
-        (eprintf "WARNING: check-message: exn intercepted:\n")
-        (fprintf (current-error-port) (exn-message err))
-        (eprintf "\n------------------\n")
-        (raise err))
       (let* ([out (get-output-string os)]
              [ok? (cons? (regexp-match rgxp out))])
-        (check-true ok? mg)
+        (check-true ok? (~a "pattern matches: " msg))
         (unless ok?
           (eprintf "output string is: \n")
           (fprintf (current-error-port) out)
-          (eprintf "\n------------------\n"))))))
+          (eprintf "instead of: \n")
+          (fprintf (current-error-port) rgxp)
+          (eprintf "\n------------------\n")))
+      (when err
+        (unless (regexp-match #px"div" msg)
+          (eprintf "WARNING: check-message: exn intercepted in ~a:\n" msg)
+          (fprintf (current-error-port) (exn-message err))
+          (eprintf "\n------------------\n"))
+        (raise err)))))
 
 (module+ test
   (check-message "xxx" current-output-port #px"hello" (printf "hello")))
