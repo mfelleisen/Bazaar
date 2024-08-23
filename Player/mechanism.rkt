@@ -30,6 +30,9 @@
 (module+ examples
   (provide sample))
 
+(module+ json
+  (provide player->jsexpr jsexpr->player player*->jsexpr jsexpr->player*))
+
 ;                                                                                      
 ;       ;                                  ;                                           
 ;       ;                                  ;                          ;                
@@ -45,6 +48,7 @@
 ;                 ;                                                                    
 ;                 ;                                                                    
 
+(require (only-in (submod Bazaar/Common/cards examples) ALL-CARDS))
 (require Bazaar/Player/strategies)
 (require Bazaar/Common/actions)
 (require Bazaar/Common/player-interface)
@@ -55,17 +59,20 @@
 
 (require (for-syntax syntax/parse))
 
-(module+ test
-  (require (submod ".."))
-  (require (submod ".." examples))
-  (require (submod Bazaar/Common/equations examples))
-  (require (submod Bazaar/Common/turn-state examples))
-  (require SwDev/Lib/should-be-racket)
-  (require rackunit))
-
 (module+ json
   (require (submod ".."))
   (require Bazaar/Lib/parse-json))
+
+(module+ test
+  (require (submod ".."))
+  (require (submod ".." examples))
+  (require (submod ".." json))
+  (require (submod Bazaar/Common/equations examples))
+  (require (submod Bazaar/Common/turn-state examples))
+  (require Bazaar/Lib/check-message)
+  (require SwDev/Lib/should-be-racket)
+  (require racket/sandbox)
+  (require rackunit))
 
 ;                                                   
 ;                                                   
@@ -187,7 +194,45 @@
     (send sample setup (list rg=bbbb ggg=r ggb=rw))
     (render ts0)
     (check-equal? (send sample request-pebble-or-trades ts0) '[] "a trade is possible, but useless")
-    (check-equal? (send sample request-cards ts0) '[])) "the player can't buy anything")
+    (check-equal? (send sample request-cards ts0) '[] "the player can't buy anything")))
+;                                                                          
+;                                                                          
+;     ;                                                ;                   
+;     ;                       ;                                            
+;     ;                       ;                                            
+;   ;;;;;     ;;;     ;;;   ;;;;;;   ;;;;    ;;;;    ;;;     ;;;;    ;;;;  
+;     ;      ;   ;   ;   ;    ;     ;;  ;;   ;;  ;     ;    ;    ;  ;    ; 
+;     ;          ;  ;         ;     ;    ;   ;         ;    ;;;;;;  ;      
+;     ;      ;;;;;  ;         ;     ;    ;   ;         ;    ;        ;;;;  
+;     ;     ;    ;  ;         ;     ;    ;   ;         ;    ;            ; 
+;     ;     ;   ;;   ;   ;    ;     ;;  ;;   ;         ;    ;;   ;  ;    ; 
+;     ;      ;;; ;    ;;;      ;;;   ;;;;    ;       ;;;;;   ;;;;;   ;;;;  
+;                                                                          
+;                                                                          
+;                                                                          
+;                                                                          
+
+(define (create-player name [which purchase-size] #:bad (F (retrieve-factory "good" good-for-6)))
+  (F name which))
+
+(define (retrieve-factory name table+)
+  (define maker (assoc name table+))
+  (unless maker
+    (error 'retrieve-factory "cannot retrieve ~a in ~v\n" name table+))
+  (and maker (second maker)))
+
+(define good-for-6 `[["good" ,(λ (n s) (new player% [my-name n] [which s]))]])
+
+(module+ test
+  (check-true (is-a? (create-player "hello" purchase-points) player%))
+
+  (define bsetup-factory (retrieve-factory "setup" exn-raising-table-for-7))
+  (define bsetup (create-player "hello" purchase-points #:bad bsetup-factory))
+  (check-true (is-a? bsetup player%))
+  (check-equal? (object-name bsetup) 'object:setup%)
+
+  (check-exn #px"cannot" (λ () (retrieve-factory "boo" factory-all))))
+
 
 
 ;                                                                        
@@ -235,43 +280,6 @@
               (begin ;; call super to get the effects (it either times out or goes bad)
                 (super method-that-goes-bad . args)
                 (let () body ...))])))]))
-;                                                                          
-;                                                                          
-;     ;                                                ;                   
-;     ;                       ;                                            
-;     ;                       ;                                            
-;   ;;;;;     ;;;     ;;;   ;;;;;;   ;;;;    ;;;;    ;;;     ;;;;    ;;;;  
-;     ;      ;   ;   ;   ;    ;     ;;  ;;   ;;  ;     ;    ;    ;  ;    ; 
-;     ;          ;  ;         ;     ;    ;   ;         ;    ;;;;;;  ;      
-;     ;      ;;;;;  ;         ;     ;    ;   ;         ;    ;        ;;;;  
-;     ;     ;    ;  ;         ;     ;    ;   ;         ;    ;            ; 
-;     ;     ;   ;;   ;   ;    ;     ;;  ;;   ;         ;    ;;   ;  ;    ; 
-;     ;      ;;; ;    ;;;      ;;;   ;;;;    ;       ;;;;;   ;;;;;   ;;;;  
-;                                                                          
-;                                                                          
-;                                                                          
-;                                                                          
-
-(define (create-player name [which purchase-size] #:bad (F (retrieve-factory "good" good-for-6)))
-  (F name which))
-
-(define (retrieve-factory name table+)
-  (define maker (assoc name table+))
-  (unless maker
-    (error 'retrieve-factory "cannot retrieve ~a in ~v\n" name table+))
-  (and maker (second maker)))
-
-(define good-for-6 `[["good" ,(λ (n s) (new player% [my-name n] [which s]))]])
-
-(module+ test
-  (check-true (is-a? (create-player "hello" purchase-points) player%))
-
-  (define bsetup-factory (retrieve-factory "setup" exn-raising-table-for-7))
-  (define bsetup (create-player "hello" purchase-points #:bad bsetup-factory))
-  (check-true (is-a? bsetup player%))
-  (check-equal? (object-name bsetup) 'object:setup%)
-
-  (check-exn #px"cannot" (λ () (retrieve-factory "boo" factory-all))))
 
 ;                                                                                                    
 ;                                                                                                    
@@ -295,10 +303,10 @@
   (class/fail failure-timing [(setup _) [th]]))
 
 (define (request-pebble-or-trades% th [failure-timing 1])
-  (class/fail failure-timing [(setup _) [th]]))
+  (class/fail failure-timing [(request-pebble-or-trades _) [th]]))
 
 (define (request-cards% th [failure-timing 1])
-  (class/fail failure-timing [(setup _) [th]]))
+  (class/fail failure-timing [(request-cards _) [th]]))
 
 (define (win% th [failure-timing 1])
   (class/fail failure-timing [(win _) [th]]))
@@ -334,6 +342,27 @@
     (list (format "~a-~a" name-% k)
           (λ (n s) (new class% [badfm `(,name-% ,k)] [my-name n] [which s])))))
 
+(module+ test ;; players that raise exns 
+  (define cep current-error-port)
+
+  (let* ([new-exn-setup    (retrieve-factory "setup" exn-raising-table-for-7)]
+         [name             "bad"]
+         [exn-setup-player (create-player "bad" purchase-points #:bad new-exn-setup)])
+    (check-equal? (check-message "div" cep (~a name " won") (send exn-setup-player win #t)) (void))
+    (check-exn #px"division" (λ () (send exn-setup-player setup '[]))))
+
+  (let* ([new-exn-rc    (retrieve-factory "request-pebble-or-trades" exn-raising-table-for-7)]
+         [exn-nt-player (create-player "bad" purchase-size #:bad new-exn-rc)])
+    (check-exn #px"division" (λ () (send exn-nt-player request-pebble-or-trades ts0))))
+
+  (let* ([new-exn-rc    (retrieve-factory "request-cards" exn-raising-table-for-7)]
+         [exn-nt-player (create-player "bad" purchase-size #:bad new-exn-rc)])
+    (check-exn #px"division" (λ () (send exn-nt-player request-cards ts0))))
+
+  (let* ([new-exn-win    (retrieve-factory "win" exn-raising-table-for-7)]
+         [exn-win-player (create-player "bad" #:bad new-exn-win)])
+    (check-exn #px"div" (λ () (check-message "div2" cep #px"bad" (send exn-win-player win #f))))))
+
 ;                                                          
 ;          ;                                               
 ;          ;                      ;                        
@@ -349,13 +378,29 @@
 ;                                                          
 ;                                                          
 
+(define buy-invisible-card%
+  (class/fail
+   1
+   [(request-cards t)
+    (define visibles (turn-cards t))
+    (for/first ([c ALL-CARDS] #:unless (member c visibles))
+      (list c))]))
+      
+(define all-cheater-classes
+  `[[,buy-invisible-card% "attempt to buy a card that is not visible"]]
+  #;
+  `[
+    [,tile-not-owned%          "the placement of a tile that it does not own."]
+    [,not-a-line%              "placements that are not in one line (row, column)."]
+    [,bad-ask-for-tiles%       "a tile replacement but it owns more tiles than the referee has left."]
+    [,no-fit%                  "the placement of a tile that does not match its adjacent tiles."]])
+
 (define ACHEAT "a cheat")
 
-(define cheater-table-for-8 '[]
-  #;
+(define cheater-table-for-8
   (for*/list ([c% (map first all-cheater-classes)])
     (define name (class-name c%))
-    (list (format "~a" name) (λ (n s) (new c% [badfm `(,ACHEAT ,name)] [my-name n] [strategy s])))))
+    (list (format "~a" name) (λ (n s) (new c% [badfm `(,ACHEAT ,name)] [my-name n] [which s])))))
 
 ;                       
 ;                       
@@ -444,3 +489,29 @@
     (define s (jsexpr->string/ j))
     (eprintf "~a does not match JActorSpec schema [~a] \n ~a\n" 'jsexpr->player n s)
     #false))
+
+(module+ test
+  
+  (check-false (check-message "a" cep #px"schema" (jsexpr->player 1)) "bad JSexpr 1")
+  (check-false (check-message "b" cep #px"schema" (jsexpr->player '["a" "dag" 1])) "bad JSexpr 2")
+  (check-false (check-message "c" cep #px"not match" (jsexpr->player `["a" "dag" "setup" 1])) "BAD")
+
+  (check-equal? (send (jsexpr->player (player->jsexpr sample)) setup `[]) (void) "normal player")
+
+  (let* ([new-exn-setup (retrieve-factory "setup" exn-raising-table-for-7)]
+         [exn-setup     (create-player "bad" purchase-points #:bad new-exn-setup)])
+    (check-exn #px"div" (λ () (send (jsexpr->player (player->jsexpr exn-setup)) setup '[])) "j exn"))
+
+
+  (let* ([new-exn-setup (retrieve-factory "setup-1" infinite-loop-table-for-9)]
+         [setup-1       (create-player "bad" purchase-points #:bad new-exn-setup)])
+    (check-exn #px"out of time"
+               (λ ()
+                 (with-deep-time-limit 1
+                   (send (jsexpr->player (player->jsexpr setup-1) #:loops 'yes) setup '[]))) "j inf"))
+
+  (let* ([buy-invisible-card-factory (retrieve-factory "buy-invisible-card" cheater-table-for-8)]
+         [players (list (create-player "A" purchase-points #:bad buy-invisible-card-factory))]
+         [j (player*->jsexpr players)]
+         [p (jsexpr->player* j #:cheating 'yes!) ]) 
+    (check-true (andmap (λ (p) (is-a? p player%)) p) "cheating player")))
