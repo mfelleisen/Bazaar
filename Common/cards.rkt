@@ -22,6 +22,8 @@
 ;; ---------------------------------------------------------------------------------------------------
 (module+ examples
   (require (submod ".."))
+
+  (provide ALL-CARDS)
      
   (provide c-rrbrr  c-rgbrg  c-wyrbb  c-ggggg  c-rbbbb c-rbbbb* c-bbbbb
            c-rrbrr* c-rgbrg* c-wyrbb* c-ggggg* c-yyrwg c-yyrwg* c-bbbbb*))
@@ -130,7 +132,14 @@
   (define c-rgbrg  (card b-rgbrg #false))
   (define c-rgbrg* (card b-rgbrg #true))
   (define c-wyrbb  (card b-wyrbb #false))
-  (define c-wyrbb* (card b-wyrbb #true)))
+  (define c-wyrbb* (card b-wyrbb #true))
+
+
+  (define ALL-CARDS
+    (list
+      c-rbbbb c-rbbbb* c-yyrwg c-yyrwg* c-rrbrr
+      c-rrbrr* c-ggggg c-ggggg* c-bbbbb c-bbbbb*
+      c-rgbrg c-rgbrg* c-wyrbb c-wyrbb*)))
 
 ;                                                                                             
 ;      ;;                                                                                     
