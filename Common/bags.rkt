@@ -17,6 +17,9 @@
  bag-add ;; bag ... bag -> bag 
  bag-minus
  bag-intersect
+ ;; deterministically pick a pebble from a bag, using the ordering of the colors
+ bag-pick
+ ;; randomly pick a pebble from a bag 
  bag-pick-random 
  bag-equal?
  
@@ -59,6 +62,8 @@
 ;                 ;                                                                    
 ;                 ;                                                                    
 ;                 ;                                                                    
+
+(require Bazaar/scribblings/spec)
 
 (require (prefix-in p: (submod Bazaar/Common/pebbles examples)))
 (require (prefix-in p: Bazaar/Common/pebbles))
@@ -156,6 +161,10 @@
           (bag-add (bag-minus bank right) left)))
 
 (define (render b) (lib:render b p:render))
+
+(define (bag-pick bank)
+  (for/first ([p p:PEBBLES]  #:when (member p bank))
+    p))
 
 ;                              
 ;      ;                       

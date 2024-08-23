@@ -108,13 +108,15 @@
     [else
      #false]))
 
+(define testing (make-parameter #true))
+
 #; {Turn -> (U False [List Pebble Bag])}
 (define (legal-pebble-request ts)
   (define bank (t:turn-bank ts))
   (cond
     [(b:bag-empty? bank) #false]
     [else
-     (define p (b:bag (b:bag-pick-random bank)))
+     (define p (b:bag (if (testing) (b:bag-pick bank) (b:bag-pick-random bank))))
      (list (b:bag-add (p:player-wallet (t:turn-active ts)) p) (b:bag-minus bank p))]))
 
 #; ((listof e:1eq?) (listof e:1eq?) t:turn? . -> . (or/c #false (list/c b:bag? b:bag?)))
