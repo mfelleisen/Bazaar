@@ -8,7 +8,7 @@
  referee/state)
 
 (module+ examples
-  (provide Simple/))
+  (provide Simple/ Complex/))
 
 ;                                                                                      
 ;       ;                                  ;                                           
@@ -186,7 +186,7 @@
   (define 3players (append 2players (list (create-player "Carl"))))
   (define 6players (append 3players (map create-player '["Dan" "Felix" "Grace"])))
 
-  (setup-scenarios simple+ Simple/)
+  (setup-scenarios simple+ Simple/ Complex/)
 
   (define adam `[["Adam"] []])
   
@@ -195,10 +195,11 @@
   (simple+ Simple/ (list 6players `[,ggg=b] gs-6-players) adam "1 trade, 1 buy, 1 winner")
 
   (define eq++ `[,ggg=b ,r=bbbb ,r=gggg])
-  (simple+ Simple/ (list '[] '[] gs-no-players) `[[] []] "no players, stop immediately")
-  (simple+ Simple/ (list 3players eq++ gs-3-zeros++) `[["Carl" "Adam"] []] "2 buys, 2 winners")
-  (simple+ Simple/ (list 6players eq++ gs-6-players++) adam "all get turns")
+  (simple+ Complex/ (list '[] '[] gs-no-players) `[[] []] "no players, stop immediately")
+  (simple+ Complex/ (list 3players eq++ gs-3-zeros++) `[["Carl" "Adam"] []] "2 buys, 2 winners")
+  (simple+ Complex/ (list 6players eq++ gs-6-players++) adam "all get turns")
 
+  #;
   (referee/state 3players eq++ gs-3-zeros++))
 
 ;                                     
@@ -223,8 +224,6 @@
     (for ([s scenario*] [i (in-naturals)])
       (match-define (list args expected msg) s)
       (match-define (list players equations gs) args)
-      #;
-      (show i equations wallet bank expected)
       (dev/null
        (check-equal? (w+do->names (referee/state players equations gs)) expected msg))))
 
