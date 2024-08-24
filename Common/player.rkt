@@ -165,6 +165,7 @@
 
 (module+ examples ;; from turn 
   (provide p-rg-0 p-ggg-9 p-r-9 p-rg-9 p-rr-9 p-bbbbb-0 p-5b-5g-0)
+  
   (define p-5b-5g-0 (player (b:bag-add b-bbbbb b-ggggg) 0))
   (define p-bbbbb-0 (player b-bbbbb 0))
   (define p-rr-9 (player (b:bag-add b-r b-r) 9))
@@ -174,14 +175,19 @@
   (define p-ggg-9 (player b-ggg 9)))
 
 (module+ examples ;; for strategies
-  (provide p-6g-3r-4b p-3r-2y-1w p-4r-2y-1w p-2r-2y-1w)
+  (provide p-6g-3r-4b p-3r-2y-1w p-4r-2y-1w p-2r-2y-1w px-1 px-2)
+
+  (require (submod Bazaar/Common/pebbles examples))
 
   (define wallet-test (b:bag-add b-rr b-yyw))
   
   (define p-2r-2y-1w (player b-2r-2y-1w 0))
   (define p-3r-2y-1w (player b-3r-2y-1w 0))
   (define p-4r-2y-1w (player b-4r-2y-1w 0))
-  (define p-6g-3r-4b (player b-6g-3r-4b 0)))
+  (define p-6g-3r-4b (player b-6g-3r-4b 0))
+
+  (define px-1 (player (b:bag-add (b:bag WHITE GREEN) b-bbbb b-gggg) 0))
+  (define px-2 (player (b:bag-add (b:bag-add b-rr b-b) b-g) 0)))
 
 
 ;                                                                                             

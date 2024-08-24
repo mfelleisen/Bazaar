@@ -23,12 +23,12 @@
  #; {type Purchase}
  purchase?
  ; purchase-cards
- ; purchase-walletω
+ purchase-walletω
 
  #; {Purchase -> Natural}
  ;; the value of the cards purchased 
  purchase-points
-
+ 
  #; {Purchase -> Natural}
  ;; the number of cards purchased 
  purchase-size)
@@ -257,18 +257,28 @@
 
   (setup-scenarios extra+ Extras/)
 
-  (let*-values ([(e) (list r=gggg r=bbbb)]
-                [(c) (list c-bbbbb c-ggggg)]
-                [(w) (b:bag-add (b:bag-add b-rr b-b) b-g)]
-                [(b) (b:bag-add b-ggggg b-rbbbb)])
-    (extra+ Extras/ (list e c w b purchase-points) 1 "2 rules, 2 cards, score 6, wallet: 0"))
+  (require (submod Bazaar/Common/pebbles examples))
+  
+  ;; failure in tie breaking: using `first`
+  #;
+  (let*-values ([(e) (list r=gggg)]
+                [(r) (exchange '[] (purchase (list c-ggggg) 1 (b:bag-add b-bbbb (b:bag WHITE))))])
+    (extra+ Extras/ (list e xstrat-1 purchase-size) r "same number of cards, cards differ in face"))
 
+  ;; failure in tie breaking: using `second`
+  (let*-values ([(e) (list r=gggg)]
+                [(r) (exchange '[] (purchase (list c-ggggg*) 2 (b:bag-add b-bbbb (b:bag WHITE))))])
+    (extra+ Extras/ (list e xstrat-1 purchase-size) r "same number of cards, cards differ in face"))
+    
+  (let*-values ([(e) (list r=gggg r=bbbb)]
+                [(w) b-4r-2y-1w]
+                [(r) (exchange (list r=bbbb r=gggg) (purchase (list c-bbbbb c-ggggg) 6 (b:bag)))])
+    (extra+ Extras/ (list e xstrat-2 purchase-points) r "2 rules, 2 cards, score 6, wallet: 0"))
+  
   (let*-values ([(e) (list ggg=r- rg=bbbb)]
-                [(c) (list c-yyrwg* c-ggggg)]
-                [(w) (b:bag-add wallet-test b-rr)])
-    (define e1 (exchange (list ggg=r- rg=bbbb ggg=r-) (purchase (list c-yyrwg* c-ggggg) 3 w)))
-    (define e2 (exchange (list ggg=r- ggg=r- rg=bbbb) (purchase (list c-yyrwg* c-ggggg) 3 w)))
-    (extra+ Extras/ (list e c w bank0 purchase-points) 1 "3 rules, 2 cards, score 3, wallet 3b")))
+                [(w) (b:bag-add b-b b-b b-b)]
+                [(r) (exchange (list ggg=r- rg=bbbb ggg=r-) (purchase (list c-yyrwg* c-ggggg) 3 w))])
+    (extra+ Extras/ (list e xstrat-3 purchase-points) r "3 rules, 2 cards, score 3, wallet 3b")))
 
 ;                                                                               
 ;                            ;                              ;                   
@@ -392,6 +402,11 @@
       (set! count (+ count 1))
       (match-define (list args expected msg) s)
       (match-define (list equations cards wallet bank policy) args)
+
+      (eprintf "~a ~a\n" msg i)
+      (pretty-print (list (b:render bank) (c:render* cards) (b:render wallet)) (current-error-port))
+      
+
       (check-equal? (let* ([s (possible-trades equations wallet bank cards policy)]
                            [s (tie-breaker-trade-then-purchase s)]
                            [s (if (exchange? s) 1 (length s))])
@@ -403,7 +418,7 @@
   (run-scenario* 'ForStudents ForStudents/)
   (run-scenario* 'Tests Tests/)
   
-  (run-ties* 'Extras Extras/))
+  (run-scenario* 'Extras Extras/))
 
 
 ;                       
@@ -426,8 +441,9 @@
   [(define equal-proc
      (λ (x y recursive-equal?)
        (and
+        
         (b:bag-equal? (apply b:bag (purchase-cards x)) (apply b:bag (purchase-cards y)))
-        (= (purchase-points x) (purchase-points y))
+        (= ([equality-selector] x) ([equality-selector] y))
         (b:bag-equal? (purchase-walletω x) (purchase-walletω y)))))
    (define (hash-proc x re-hash)
      (+ (* 1000 (re-hash (purchase-cards x)))
@@ -435,17 +451,28 @@
    (define (hash2-proc x re-hash2)
      (+ (* 891 (re-hash2 (purchase-cards x)))
         (* 999 (re-hash2 (purchase-cards x)))))])
+
+(define equality-selector (make-parameter purchase-points))
+
 #; {type Purchases = (purchase [Listof Card] Natural Bag)}
 #; (node (list c ...) n w)
 ;; represents the purchase of cards `c` .. in order with `n` points for all purchases, final wallet w
 ;; NOTE two different orderings of `cards` are equivalent _if_ they yield the same number of points &
 ;; result in the same wallet
 
-(module+ test
-  (check-equal? (purchase `[,c-ggggg ,c-yyrwg] 3 b-bbbb) (purchase `[,c-yyrwg ,c-ggggg] 3 b-bbbb)))
-
 (define (purchase-size p)
   (length (purchase-cards p)))
+
+(module+ test
+  (let ()
+    (equality-selector purchase-size)
+    (check-equal? (purchase (list c-ggggg) 1 (b:bag)) (purchase (list c-ggggg) 2 (b:bag))))
+
+   (let ()
+     (equality-selector purchase-size)
+     (set (purchase (list c-ggggg) 1 (b:bag)) (purchase (list c-ggggg) 2 (b:bag))))
+
+  (check-equal? (purchase `[,c-ggggg ,c-yyrwg] 3 b-bbbb) (purchase `[,c-yyrwg ,c-ggggg] 3 b-bbbb)))
 
 ;                                                          
 ;      ;                               ;                   
@@ -463,6 +490,7 @@
 ;    ;;                                              ;;    
 
 (define (f-buy-cards visibles wallet which)
+  [equality-selector which]
   (match (possible-purchases visibles wallet which)
     [(list p) p]
     [possibles (tie-breaker-for-purchases possibles)]))
@@ -501,12 +529,10 @@
 #; {[NEListof Purchases] -> Purchases}
 ;; pick the list of cards that is best according to some whimsical ordering of card sequences
 (define (tie-breaker-for-purchases lop)
-  (tie-breaker (list #;wallet-index) lop))
+  (tie-breaker (list also-point-max) lop))
 
-#; {Purchase -> Natural}
-;; would compute some polynomial over the colors in a player's wallet 
-(define (wallet-index p)
-  (all-argmin (λ (x) (for/sum ([w p]) (values (purchase-walletω w)))) p))
+(define (also-point-max lop)
+  (all-argmax purchase-points lop))
 
 ;                                     
 ;                                     
@@ -560,7 +586,7 @@
 ;; yields singleton list; otherwise error 
 (define (tie-breaker f*0 lox0)
   (let while ([lox lox0] [f* f*0])
-    (match lox 
+    (match lox
       [(list one) one]
       [_ (if (empty? f*)
              [error 'tie-breakder "given ~a\n" (with-output-to-string (λ () (pretty-print lox0)))]
@@ -598,6 +624,23 @@
 
     (define/public (add-if-better e1)
       (define v1 (score e1))
+
+      #;
+      (pretty-print `[adding
+                      ,e1
+                      at score
+                      ,v1
+                      prior
+                      ,*best-score
+                      which
+                      ,[equality-selector]
+                      resulting set
+                      ,(when (= *best-score v1)
+                         (list
+                          (equal? e1 (set-first *possibles))
+                          (set-add *possibles e1)))]
+                    (current-error-port))
+
       (cond
         [(> v1 *best-score)
          (set!-values (*best-score *possibles) (values v1 `[,e1]))]

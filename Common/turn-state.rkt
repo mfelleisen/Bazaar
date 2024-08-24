@@ -165,7 +165,7 @@
 
 (module+ examples
   (provide strat-t1 strat-t2 strat-t3 strat-t4 strat-t5 bank0 cards0 cards1)
-
+  
   (define bank0  (b:bag-add b-bbbbb b-ggggg b-rrbrr b-rg b-rg))
   (define cards0 (list c-rrbrr* c-ggggg))
   (define cards1 (list c-rbbbb c-yyrwg* c-ggggg))
@@ -174,11 +174,20 @@
   (define strat-t2 (turn bank0 cards0 p-6g-3r-4b '[]))
   (define strat-t5 (turn bank0 cards1 p-2r-2y-1w '[]))
   (define strat-t3 (turn bank0 cards1 p-3r-2y-1w '[]))
-  (define strat-t4 (turn bank0 cards1 p-4r-2y-1w '[]))
+  (define strat-t4 (turn bank0 cards1 p-4r-2y-1w '[])))
 
-  )
+(module+ examples
+  (provide xstrat-1 xstrat-2 xstrat-3)
 
+  (require (submod Bazaar/Common/pebbles examples))
   
+  (define xstrat-1
+    (let* ([c (list c-ggggg* c-ggggg c-wgwgw* c-wgwgw)]
+           [b (b:bag-add b-gg (b:bag YELLOW)(b:bag-minus b-yyw (b:bag WHITE)))])
+      (turn b c px-1 '[])))
+
+  (define xstrat-2 (turn (b:bag-add b-ggggg b-rbbbb) (list c-bbbbb c-ggggg) px-2 '[]))
+  (define xstrat-3 (turn bank0 (list c-yyrwg* c-ggggg) p-4r-2y-1w '[])))
 
 (module+ test
   (check-equal? ts1 ts1-wallet "construct wallet")
