@@ -16,6 +16,7 @@ for an explanation of how code files are organized in Racket.
 | file | purpose |
 |--------------------- | ------- |
 | [game-state.rkt](game-state.rkt) | the referee's game state representation, including "connections" to the actual players | 
+| [referee.rkt](referee.rkt) | the referee: a state machine that sets up a GameState, iterates over it by granting turns, | 
 
 
 

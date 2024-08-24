@@ -53,6 +53,6 @@ for an explanation of how code files are organized in Racket.
 
 | file | purpose |
 |--------------------- | ------- |
-| [mechanism.rkt](mechanism.rkt) | the player mechanism | 
+| [mechanism.rkt](mechanism.rkt) | a class representation of the player mechanism, including subclasses whose methods | 
 | [strategies.rkt](strategies.rkt) | two strategies for a Bazaar player for choosing | 
 
