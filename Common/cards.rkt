@@ -25,8 +25,8 @@
 
   (provide ALL-CARDS)
      
-  (provide c-rrbrr  c-rgbrg  c-wyrbb  c-ggggg  c-rbbbb c-rbbbb* c-bbbbb
-           c-rrbrr* c-rgbrg* c-wyrbb* c-ggggg* c-yyrwg c-yyrwg* c-bbbbb*))
+  (provide c-rrbrr  c-rgbrg  c-wyrbb  c-ggggg  c-rbbbb c-rbbbb* c-bbbbb  c-ywywy c-ywywy*
+           c-rrbrr* c-rgbrg* c-wyrbb* c-ggggg* c-yyrwg c-yyrwg* c-bbbbb* c-wgwgw c-wgwgw*))
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ json
@@ -134,12 +134,18 @@
   (define c-wyrbb  (card b-wyrbb #false))
   (define c-wyrbb* (card b-wyrbb #true))
 
+  (define c-ywywy  (card b-ywywy #false))
+  (define c-ywywy* (card b-ywywy #true))
+  (define c-wgwgw  (card b-wgwgw #false))
+  (define c-wgwgw* (card b-wgwgw #true))
+
 
   (define ALL-CARDS
     (list
-      c-rbbbb c-rbbbb* c-yyrwg c-yyrwg* c-rrbrr
-      c-rrbrr* c-ggggg c-ggggg* c-bbbbb c-bbbbb*
-      c-rgbrg c-rgbrg* c-wyrbb c-wyrbb*)))
+     c-ywywy c-ywywy* c-wgwgw c-wgwgw*
+     c-rbbbb c-rbbbb* c-yyrwg c-yyrwg* c-rrbrr
+     c-rrbrr* c-ggggg c-ggggg* c-bbbbb c-bbbbb*
+     c-rgbrg c-rgbrg* c-wyrbb c-wyrbb*)))
 
 ;                                                                                             
 ;      ;;                                                                                     
