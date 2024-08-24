@@ -46,7 +46,8 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ examples
-  (provide gs0 gs1 gs-no-players gs-20 gs-20-rotate gs1+g-r+1 gs-3-zeros gs-6-players)
+  (provide gs0 gs1 gs-no-players gs-20 gs-20-rotate gs1+g-r+1 gs-3-zeros
+           gs-6-players gs-10 gs-10++ gs-10--)
 
   #; {type GameTurnScenarios = [Listof 1Scenario]}
   #; {type 1Scenario         = [List GameState TurnState]}
@@ -219,6 +220,21 @@
   (define gs-20-rotate ;; a final state shouldn't be rotated 
     (game b-r [list c-ggggg] (list) (list (player+ p-r6 'y) (player+ p-rrbrr-20 'x))))
   
+  (define gs-10
+    (let ([cards3 [list c-ggggg* c-wgwgw c-wgwgw* c-ggggg c-ywywy c-ywywy*]]
+          [bank   (b:bag-add b-r b-r)])
+      (game bank (take cards3 4) (drop cards3 4) `(,(player+ p-bbbb3 'x) ,(player+ p-r6 'y)))))
+
+  (define gs-10++
+    (let ([cards3 [list c-ggggg* c-wgwgw c-wgwgw* c-ggggg c-ywywy c-ywywy*]]
+          [bank   (b:bag-add b-bbbb b-bbbbb b-r b-r b-r)])
+      (game bank (take cards3 4) (drop cards3 4) `(,(player+ p-bbbb3 'x) ,(player+ p-bbbb3 'y)))))
+
+  (define gs-10--
+    (let ([cards3 [list c-ggggg* c-wgwgw c-wgwgw* c-ggggg c-ywywy c-ywywy*]]
+          [bank   (b:bag-add b-ggggg b-ggggg b-r b-ywywy)])
+      (game bank (take cards3 4) (drop cards3 4) `(,(player+ p-bbbb3 'x) ,(player+ p-bbbb3 'y)))))
+
   (define 6-players (map player+ (list p-ggb8 p-ggg5 p-r6 p-g7 p-gw9 p-4xb-3xg4) '[x y z a b c]))
   (define gs-6-players (game b-ggg (list c-ggggg) (list) 6-players))
 

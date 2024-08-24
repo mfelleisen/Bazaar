@@ -8,6 +8,9 @@
  referee/state)
 
 (module+ examples
+  #; {RefScenarios  = [Listof 1RefScenario]}
+  #; {1RefScenario = [List [List [Listof PlayerObject] Equations GameState] Result]}
+  #; {Result       = [List [Listof Player] [Listof Player]]} 
   (provide Simple/ Complex/))
 
 ;                                                                                      
@@ -25,6 +28,7 @@
 ;                 ;                                                                    
 ;                 ;                                                                    
 
+(require (prefix-in e: Bazaar/Common/equations))
 (require (prefix-in gs: Bazaar/Referee/game-state))
 (require Bazaar/Lib/xsend)
 
@@ -36,6 +40,7 @@
 
 (module+ test
   (require (submod ".." examples))
+  (require (submod Bazaar/Player/mechanism json))
   (require SwDev/Lib/should-be-racket)
   (require rackunit))
 
@@ -56,7 +61,7 @@
 
 #;
 (define (referee player*)
-  (define gs0 (gs:create-random-game-state))
+  (define gs0 (gs:create-random-game-state (length players)))
   (define eq0 (e:create-random-equations))
   (referee/state player* eq0 gs0))
 
@@ -112,8 +117,7 @@
 #; {Equations GameState -> [List GameState [Listof PlayerObject]]}
 (define (run-turns equations gs-post-setup)
   (let until-end ([gs gs-post-setup] [kicked '()])
-
-    (pretty-print (gs:render gs) (current-error-port))
+    (when [observe] (pretty-print (list (e:render* equations) (gs:render gs)) (current-error-port)))
     (cond
       [(gs:game-over? gs) (list gs kicked)]
       [else
@@ -125,17 +129,20 @@
 (define (one-turn equations gs)
   (define active  (gs:game-active gs))
   (define action1 (xsend active request-pebble-or-trades (gs:extract-turn gs)))
-  ;#;
-  (eprintf "~a is trading ~a\n" (xsend active name) action1)
+  (when [observe] (eprintf "~a is trading ~a\n" (xsend active name) action1))
   (match (gs:legal-pebble-or-trade-request equations action1 gs)
     [#false (list (gs:kick gs) active)]
     [gs
      (define action2 (xsend active request-cards (gs:extract-turn gs)))
-     ;#;
-     (eprintf "~a is buying ~a\n" (xsend active name) action2)
-     (match (gs:legal-purchase-request action2 gs)
-       [#false (list (gs:kick gs) active)]
-       [gs (gs:rotate gs)])]))
+     (when [observe] (eprintf "~a is buying ~a\n" (xsend active name) action2))
+     (cond
+       [(failed? action2) (list (gs:kick gs) active)]
+       [else 
+        (match (gs:legal-purchase-request action2 gs)
+          [#false  (list (gs:kick gs) active)]
+          [gs (gs:rotate gs)])])]))
+
+(define observe (make-parameter #false))
 
 ;                                                   
 ;                                                   
@@ -189,18 +196,21 @@
   (setup-scenarios simple+ Simple/ Complex/)
 
   (define adam `[["Adam"] []])
+  (define adam-eve `[["Adam" "Eve"] []])
+  (define eve `[["Eve"] []])
   
   (simple+ Simple/ (list 2players '[] gs-20) adam "no action, 1 winner")
   (simple+ Simple/ (list 3players '[] gs-3-zeros) `[["Carl" "Adam"] []] "2 buys, 2 winners")
   (simple+ Simple/ (list 6players `[,ggg=b] gs-6-players) adam "1 trade, 1 buy, 1 winner")
-
+  
   (define eq++ `[,ggg=b ,r=bbbb ,r=gggg])
+  (simple+ Complex/ (list 2players `[,r=bbbb] gs-10++) adam-eve "players can trade but can't buy")
   (simple+ Complex/ (list '[] '[] gs-no-players) `[[] []] "no players, stop immediately")
-  (simple+ Complex/ (list 3players eq++ gs-3-zeros++) `[["Carl" "Adam"] []] "2 buys, 2 winners")
+  (simple+ Complex/ (list 3players eq++ gs-3-zeros++) `[["Adam"] []] "2 buys, 2 winners")
   (simple+ Complex/ (list 6players eq++ gs-6-players++) adam "all get turns")
-
-  #;
-  (referee/state 3players eq++ gs-3-zeros++))
+  
+  [observe #true] (referee/state 2players `[] gs-10--)
+  )
 
 ;                                     
 ;                                     
@@ -224,8 +234,17 @@
     (for ([s scenario*] [i (in-naturals)])
       (match-define (list args expected msg) s)
       (match-define (list players equations gs) args)
-      (dev/null
-       (check-equal? (w+do->names (referee/state players equations gs)) expected msg))))
+      #;
+      (show t i msg equations players gs)
+      (check-equal?  (dev/null (w+do->names (referee/state players equations gs))) expected msg)))
+
+  #; {Symbol N Equations* [Listof OlayerObject] GameState -> Void}
+  (define (show t i  msg equations players gs)
+    (eprintf "~a ~a ~a\n" t msg i)
+    (pretty-print (e:render* equations) (current-error-port))
+    (pretty-print (gs:render (gs:connect gs players)) (current-error-port))
+    (pretty-print (player*->jsexpr players) (current-error-port))
+    (eprintf "--------------------------------------------------------\n"))
 
   #; {[List [Listof PlayerObject] [Listof PlayerObject]] -> [List [Listof String] [Listof String]]}
   (define (w+do->names p)
@@ -234,4 +253,5 @@
            [u (map (λ (player) (xsend player name)) (second s))])
       (list t u)))
 
-  (run-scenario* 'simple Simple/))
+  (run-scenario* 'simple Simple/)
+  (run-scenario* 'complex Complex/))
