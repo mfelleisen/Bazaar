@@ -1,19 +1,19 @@
-	
+        
 referee                         player (p_1) . . . player (p_n)
   |                                |                 |
   |                                |                 | % call only if game
   |                                |                 | % is not finished
   |   requestPebbleortrades(       |                 | % player receives:
   | -----------------------------> |                 | % - turn state            
-  | 		TurnState)         |		     |
-  | 				   |		     |
+  |             TurnState)         |                 |
+  |                                |                 |
   |                                |                 |
   |     EitherPebbleOrExchanges    |                 | % requests a pebble 
   | <============================  |                 | % or 
   |                                |                 | % an exchange of pebbles
-  |				   |		     |
-  |				   |		     |
-  |				   |		     |
+  |                                |                 |
+  |                                |                 |
+  |                                |                 |
   |--+                             |                 |
   .  |                             .                 . % if legal:
   .  |                             .                 . % referee modifies game state
@@ -27,10 +27,10 @@ referee                         player (p_1) . . . player (p_n)
   |   requestCards(TurnState)      |                 | % player receives:
   | -----------------------------> |                 | % - turn state
   |                                |                 | % with a revised 
-  |				   |		     | % wallet of pebbles
-  |				   |		     |
-  |				   |		     |
-  |   SequenceOf<Card>             |		     | 
+  |                                |                 | % wallet of pebbles
+  |                                |                 |
+  |                                |                 |
+  |   SequenceOf<Card>             |                 | 
   | <============================= |                 | % purchases cards
   |--+                             |                 |
   .  |                             .                 . % if legal:
