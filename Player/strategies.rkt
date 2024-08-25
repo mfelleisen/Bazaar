@@ -127,7 +127,7 @@
       (purchase-cards (f-buy-cards visibles wallet which)))))
 
 (module+ test
-  (new strategy% [equations '()] [which purchase-points]))
+  (check-true (is-a? (new strategy% [equations '()] [which purchase-points]) strategy%) "just new"))
       
 
 ;                                                                                             
@@ -467,11 +467,7 @@
   (let ()
     (equality-selector purchase-size)
     (check-equal? (purchase (list c-ggggg) 1 (b:bag)) (purchase (list c-ggggg) 2 (b:bag))))
-
-   (let ()
-     (equality-selector purchase-size)
-     (set (purchase (list c-ggggg) 1 (b:bag)) (purchase (list c-ggggg) 2 (b:bag))))
-
+   
   (check-equal? (purchase `[,c-ggggg ,c-yyrwg] 3 b-bbbb) (purchase `[,c-yyrwg ,c-ggggg] 3 b-bbbb)))
 
 ;                                                          
@@ -624,23 +620,6 @@
 
     (define/public (add-if-better e1)
       (define v1 (score e1))
-
-      #;
-      (pretty-print `[adding
-                      ,e1
-                      at score
-                      ,v1
-                      prior
-                      ,*best-score
-                      which
-                      ,[equality-selector]
-                      resulting set
-                      ,(when (= *best-score v1)
-                         (list
-                          (equal? e1 (set-first *possibles))
-                          (set-add *possibles e1)))]
-                    (current-error-port))
-
       (cond
         [(> v1 *best-score)
          (set!-values (*best-score *possibles) (values v1 `[,e1]))]

@@ -29,6 +29,7 @@
 ;                 ;                                                                    
 
 (require (prefix-in e: Bazaar/Common/equations))
+(require Bazaar/Player/strategies)
 (require (prefix-in gs: Bazaar/Referee/game-state))
 (require Bazaar/Lib/xsend)
 
@@ -189,28 +190,54 @@
 ;                                                                 
 
 (module+ examples
-  (define 2players [list (create-player "Adam") (create-player "Eve")])
+  (setup-scenarios simple+ Simple/ Complex/)
+  
+  (define 2players [list (create-player "Adam" purchase-points) (create-player "Eve" purchase-size)])
   (define 3players (append 2players (list (create-player "Carl"))))
   (define 6players (append 3players (map create-player '["Dan" "Felix" "Grace"])))
-
-  (setup-scenarios simple+ Simple/ Complex/)
 
   (define adam `[["Adam"] []])
   (define adam-eve `[["Adam" "Eve"] []])
   (define eve `[["Eve"] []])
-  
+
+  [observe #true] (referee/state 2players `[,ggb=rw] gs-10--))
+
+(module+ examples ;; ForStudents/
   (simple+ Simple/ (list 2players '[] gs-20) adam "no action, 1 winner")
   (simple+ Simple/ (list 3players '[] gs-3-zeros) `[["Carl" "Adam"] []] "2 buys, 2 winners")
-  (simple+ Simple/ (list 6players `[,ggg=b] gs-6-players) adam "1 trade, 1 buy, 1 winner")
+  (simple+ Simple/ (list 6players `[,ggg=b] gs-6-players) adam "1 trade, 1 buy, 1 winner"))
+
+(module+ examples ;; Tests/
   
+  (define strange-1
+    #<< here
+  scenario 1:
+    cards all display colors 1 and 2
+    players get colors 3 and 4
+    equations use colors 3 and 4
+    bank has plenty of colors 3 and 4
+     --> players continue to make exchanges unti all cards disappear
+ here
+    )
+  (simple+ Complex/ (list 2players `[,r=bbbb] gs-10++) adam-eve "strange-1")
+
+  (define strange-2
+    #<< here
+   scenario 2: 
+    bank has no colors showing up in any of the equations 
+    card has only colors from bank 
+    players cannot trade, cannot buy
+    players can request pebbles until bank is exchausted 
+     --> referee terminates game per force 
+ here
+    )
+
   (define eq++ `[,ggg=b ,r=bbbb ,r=gggg])
-  (simple+ Complex/ (list 2players `[,r=bbbb] gs-10++) adam-eve "players can trade but can't buy")
+
+  (simple+ Complex/ (list 2players `[,ggb=rw] gs-10--) adam-eve "strange-2")
   (simple+ Complex/ (list '[] '[] gs-no-players) `[[] []] "no players, stop immediately")
   (simple+ Complex/ (list 3players eq++ gs-3-zeros++) `[["Adam"] []] "2 buys, 2 winners")
-  (simple+ Complex/ (list 6players eq++ gs-6-players++) adam "all get turns")
-  
-  [observe #true] (referee/state 2players `[] gs-10--)
-  )
+  (simple+ Complex/ (list 6players eq++ gs-6-players++) adam "all get turns"))
 
 ;                                     
 ;                                     

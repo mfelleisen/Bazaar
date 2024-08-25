@@ -232,7 +232,7 @@
 
   (define gs-10--
     (let ([cards3 [list c-ggggg* c-wgwgw c-wgwgw* c-ggggg c-ywywy c-ywywy*]]
-          [bank   (b:bag-add b-ggggg b-ggggg b-r b-ywywy)])
+          [bank   (b:bag-add b-g b-gw)])
       (game bank (take cards3 4) (drop cards3 4) `(,(player+ p-bbbb3 'x) ,(player+ p-bbbb3 'y)))))
 
   (define 6-players (map player+ (list p-ggb8 p-ggg5 p-r6 p-g7 p-gw9 p-4xb-3xg4) '[x y z a b c]))
