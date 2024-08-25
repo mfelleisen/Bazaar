@@ -4,8 +4,30 @@
 ;; until the game is over. It then informs the winners and losers of the outcome. 
 ;; ---------------------------------------------------------------------------------------------------
 
+#; {Configuration [Listof Player] -> Boolean}
+(define (matching-number state0 players)
+  (let* ([sop#    (gs:player-count state0)]
+         [player# (length players)])
+    (cond
+      #;
+      [(unit-test-mode) #true]
+      [(not (= sop# player#))
+       (eprintf "player counts dont match:\n in state:   ~a\n in players: ~a\n" sop# player#)
+       #false]
+      [(not (<= #; MIN-PLAYERS sop# MAX-PLAYERS))
+       (eprintf "player count doesn't match Bazaar rules: ~a\n" sop#)
+       #false]
+      [else #true])))
+
 (provide
- referee/state)
+ (contract-out
+  [referee/state
+   (->i ([players (listof player/c)] [eqs (listof e:1eq?)] [gs gs:game?])
+        #:pre/name (players) "players must have distince names"
+        (distinct? (map (λ (p) (send p name)) players))
+        #:pre/name (gs players) "matching number of players"
+        (matching-number gs players)
+        (r [list/c [listof player/c] [listof player/c]]))]))
 
 (module+ examples
   #; {RefScenarios  = [Listof 1RefScenario]}
@@ -28,18 +50,26 @@
 ;                 ;                                                                    
 ;                 ;                                                                    
 
+(require Bazaar/scribblings/spec)
+
 (require (prefix-in e: Bazaar/Common/equations))
+(require Bazaar/Common/player-interface)
 (require Bazaar/Player/strategies)
 (require (prefix-in gs: Bazaar/Referee/game-state))
+
 (require Bazaar/Lib/xsend)
 
+(require SwDev/Contracts/unique)
+
 (module+ examples
+  (require (submod ".."))
   (require (except-in (submod Bazaar/Common/equations examples) ForStudents/ Tests/))
   (require (submod Bazaar/Referee/game-state examples))
   (require Bazaar/Player/mechanism)
   (require SwDev/Testing/scenarios))
 
 (module+ test
+  (require (submod ".."))
   (require (submod ".." examples))
   (require (submod Bazaar/Player/mechanism json))
   (require SwDev/Lib/should-be-racket)
@@ -96,7 +126,9 @@
 
 #;{Equations PlayerObject GameState [Listof PlayerObject] -> (values GameState [Listof PlayerObject])}
 (define (setup-1-player equations active gs kicked)
-  (match (xsend active setup equations)
+  (define return (xsend active setup equations))
+  (match return
+    [(? failed?) (values (gs:kick gs) (cons active kicked))]
     [(? string?) (values (gs:kick gs) (cons active kicked))]
     [_           (values (gs:rotate gs) kicked)]))
 
@@ -171,7 +203,8 @@
 (define (final-inform players msg)
   (for/fold ([winners '()] [kicked '()] #:result (list winners kicked)) ([p players])
     (match (xsend p win msg)
-      [#false (values winners (cons p kicked))]
+      [(? failed?) (values winners (cons p kicked))]
+      [(? string?) (values winners (cons p kicked))]
       [_      (values (cons p winners) kicked)])))
 
 ;                                                                 
@@ -191,25 +224,54 @@
 
 (module+ examples
   (setup-scenarios simple+ Simple/ Complex/)
+
+  (define eq++ `[,ggg=b ,r=bbbb ,r=gggg])
   
   (define 2players [list (create-player "Adam" purchase-points) (create-player "Eve" purchase-size)])
   (define 3players (append 2players (list (create-player "Carl"))))
   (define 6players (append 3players (map create-player '["Dan" "Felix" "Grace"])))
 
+  #;{String [Purchase -> Natural] String -> PlayerObject}
+  (define (create-exn-player name which xn)
+    (define factory (retrieve-factory xn exn-raising-table-for-7))
+    (create-player name which #:bad factory))
+  
+  (define z (create-exn-player "Zeina" purchase-points "setup"))
+  (define 2p+setup-exn (cons z 2players))
+  
+  (define y (create-exn-player "Yolanda" purchase-points "request-pebble-or-trades"))
+  (define 1p-setup-rpt-exn (list z y (first 2players)))
+  
+  (define x (create-exn-player "Xena" purchase-size "request-cards"))
+  (define 3exn-players (list x y z))
+  
+  (define w (create-exn-player "Willhelmina" purchase-size "win"))
+  (define 2+4-players (list* x y z w 2players))
+
+  (define v (create-exn-player "Veronica" purchase-size "win"))
+  (define a-1+5-players (list v x y z w (first 2players)))
+  (define b-1+5-players (list (second 2players) v x y z w))
+  
+  (define u (create-exn-player "Uria" purchase-size "request-cards"))
+  (define 6-exn-players (list v x y z w u))
+
   (define adam `[["Adam"] []])
   (define adam-eve `[["Adam" "Eve"] []])
   (define eve `[["Eve"] []])
 
-  [observe #true] (referee/state 2players `[,ggb=rw] gs-10--))
+  #;
+  [observe #true] (referee/state b-1+5-players eq++ gs-6-players++))
 
 (module+ examples ;; ForStudents/
   (simple+ Simple/ (list 2players '[] gs-20) adam "no action, 1 winner")
   (simple+ Simple/ (list 3players '[] gs-3-zeros) `[["Carl" "Adam"] []] "2 buys, 2 winners")
-  (simple+ Simple/ (list 6players `[,ggg=b] gs-6-players) adam "1 trade, 1 buy, 1 winner"))
+  (simple+ Simple/ (list 2p+setup-exn `[,ggb=rw] gs-3-zeros) `[["Eve"] ["Zeina"]] "setup exn")
+  (simple+ Simple/ (list 6players `[,ggg=b] gs-6-players) adam "1 trade, 1 buy, 1 winner")
+  (simple+ Simple/ (list 1p-setup-rpt-exn `[,ggb=rw] gs-3-zeros) `[["Adam"] ["Zeina" "Yolanda"]] "2"))
 
 (module+ examples ;; Tests/
   
-  (define strange-1
+  (let ([strange-1
     #<< here
   scenario 1:
     cards all display colors 1 and 2
@@ -218,10 +280,10 @@
     bank has plenty of colors 3 and 4
      --> players continue to make exchanges unti all cards disappear
  here
-    )
-  (simple+ Complex/ (list 2players `[,r=bbbb] gs-10++) adam-eve "strange-1")
+    ])
+    (simple+ Complex/ (list 2players `[,r=bbbb] gs-10++) adam-eve "strange-1"))
 
-  (define strange-2
+  (let ([strange-2
     #<< here
    scenario 2: 
     bank has no colors showing up in any of the equations 
@@ -230,14 +292,27 @@
     players can request pebbles until bank is exchausted 
      --> referee terminates game per force 
  here
-    )
+    ])
+    (simple+ Complex/ (list 2players `[,ggb=rw] gs-10--) adam-eve "strange-2"))
 
-  (define eq++ `[,ggg=b ,r=bbbb ,r=gggg])
+  (let ([r `[ [] ["Zeina" "Xena" "Yolanda"]]])
+    (simple+ Complex/ (list 3exn-players `[,ggb=rw] gs-3-zeros) r "3 drops"))
 
-  (simple+ Complex/ (list 2players `[,ggb=rw] gs-10--) adam-eve "strange-2")
+  (let ([r `[[] ["Zeina" "Willhelmina" "Xena" "Yolanda"]]])
+    (simple+ Complex/ (list 2+4-players eq++ gs-6-players++) r "good one lose, bad wins"))
+
+  (let ([r `[[] ["Zeina" "Willhelmina" "Xena" "Yolanda" "Veronica"]]])
+    (simple+ Complex/ (list a-1+5-players eq++ gs-6-players++) r "2 bad winners"))
+
+  (let ([r `[["Eve"] ["Zeina" "Willhelmina" "Xena" "Yolanda" "Veronica"]]])
+    (simple+ Complex/ (list b-1+5-players eq++ gs-6-players++) r "an actual winner, five drops"))
+
   (simple+ Complex/ (list '[] '[] gs-no-players) `[[] []] "no players, stop immediately")
   (simple+ Complex/ (list 3players eq++ gs-3-zeros++) `[["Adam"] []] "2 buys, 2 winners")
-  (simple+ Complex/ (list 6players eq++ gs-6-players++) adam "all get turns"))
+  (simple+ Complex/ (list 6players eq++ gs-6-players++) adam "all get turns")
+
+  (let ([r `[[] ["Uria" "Zeina" "Willhelmina" "Xena" "Yolanda" "Veronica"]]])
+    (simple+ Complex/ (list 6-exn-players eq++ gs-6-players++) r "6 drop outs")))
 
 ;                                     
 ;                                     
@@ -257,13 +332,17 @@
 (module+ test
   #; {Symbol SimpleScenarios -> Void}
   (define (run-scenario* t scenario*)
+    (define count 0)
     (eprintf "--------------- ~a\n" t)
-    (for ([s scenario*] [i (in-naturals)])
-      (match-define (list args expected msg) s)
+    (for ([s scenario*] [i (in-naturals 1)])
+      (set! count i) 
+      (match-define (list args exp msg) s)
       (match-define (list players equations gs) args)
       #;
       (show t i msg equations players gs)
-      (check-equal?  (dev/null (w+do->names (referee/state players equations gs))) expected msg)))
+      (eprintf "-- test ~a ~a\n" msg i)
+      (check-equal? (dev/null (w+do->names (referee/state players equations gs))) (sort2 exp) msg))
+    (eprintf "done: ~a tests\n" count))
 
   #; {Symbol N Equations* [Listof OlayerObject] GameState -> Void}
   (define (show t i  msg equations players gs)
@@ -278,7 +357,12 @@
     (let* ([s p]
            [t (map (λ (player) (xsend player name)) (first s))]
            [u (map (λ (player) (xsend player name)) (second s))])
-      (list t u)))
+      (sort2 (list t u))))
+
+  (define (sort2 l)
+    (match-define [list t u] l)
+    (list (sort t string<=?) (sort u string<=?)))
+    
 
   (run-scenario* 'simple Simple/)
   (run-scenario* 'complex Complex/))

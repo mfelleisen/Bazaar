@@ -9,7 +9,8 @@
 (provide
  #; {type GameState}
  game?
- game-players
+ ; game-players
+ player-count
 
  #; {GameState -> PlayerObject}
  game-active 
@@ -197,6 +198,9 @@
 
 #; {type GameState = (game Bag [Listof Card] [Listof Card] [Listof Player+])}
 #; {type Player+   = (player+ Player {Object with name method take-turn method setup win})}
+
+(define (player-count gs)
+  (length (game-players gs)))
 
 (define (connect gs lop)
   (match-define [game bank visibles cards players-] gs)
