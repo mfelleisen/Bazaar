@@ -3,12 +3,12 @@ referee                         player (p_1) . . . player (p_n)
   |                                |                 |
   |                                |                 | % call only if game
   |                                |                 | % is not finished
-  |   request-pebble-or-trades(    |                 | % player receives:
+  |   requestPebbleortrades(       |                 | % player receives:
   | -----------------------------> |                 | % - turn state            
   | 		TurnState)         |		     |
   | 				   |		     |
   |                                |                 |
-  |     WANT-PEBBLE-or-TRADES      |                 | % requests a pebble 
+  |     EitherPebbleOrExchanges    |                 | % requests a pebble 
   | <============================  |                 | % or 
   |                                |                 | % an exchange of pebbles
   |				   |		     |
@@ -24,7 +24,7 @@ referee                         player (p_1) . . . player (p_n)
 
   IF LEGAL:
   | -----------------------------> |                 | 
-  |   request-cards(TurnState)     |                 | % player receives:
+  |   requestCards(TurnState)      |                 | % player receives:
   | -----------------------------> |                 | % - turn state
   |                                |                 | % with a revised 
   |				   |		     | % wallet of pebbles
