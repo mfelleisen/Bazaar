@@ -17,6 +17,9 @@
    ;; it uses the player factory, if provided, to create baddies
    (->* (string?) ((-> purchase? natural?) #:bad player-factory) player/c)]
 
+  [retrieve-factory
+   (-> string? factory-table player-factory)]
+
   [good-for-6
    ;; plain old creator -- essentially create-player
    factory-table]
@@ -218,7 +221,7 @@
 (define (retrieve-factory name table+)
   (define maker (assoc name table+))
   (unless maker
-    (error 'retrieve-factory "cannot retrieve ~a in ~v\n" name table+))
+    (error 'retrieve-factory "cannot retrieve ~s in ~v\n" name table+))
   (and maker (second maker)))
 
 (define good-for-6 `[["good" ,(λ (n s) (new player% [my-name n] [which s]))]])
