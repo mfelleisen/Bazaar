@@ -6,6 +6,7 @@
 (provide
  #; {type Pebble}
  pebble?
+ pebble-color
  pebble-color?
 
  #; {Pebble -> Pict}

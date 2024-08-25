@@ -61,11 +61,19 @@ The player with the highest total score wins when the game is over.
 @; -----------------------------------------------------------------------------
 @bold{Game Pieces}
 
+@(define pebbles
+  (let* ([all (list p:RED p:GREEN p:YELLOW p:WHITE p:BLUE)]
+	 [p (for/list ([c COLORS])
+	      (define p (memf (lambda (p) (equal? c (p:pebble-color p))) all))
+	      (first p))]
+	 [s (map p:render p)])
+    s))
+
+
 @ll-style{
 @; ----------------------
 Our version of the game comes with pebbles of the following colors: 
-@element-join[COLORS]{, }. & 
-@element-join[@(map p:render (list p:RED p:GREEN p:YELLOW p:WHITE p:BLUE))] |
+@element-join[COLORS]{, }. & @element-join[@pebbles] |
 @; ----------------------
 There are @(~a PEBBLES#) pebbles overall, an equal number of each kind. & | 
 @; ----------------------
