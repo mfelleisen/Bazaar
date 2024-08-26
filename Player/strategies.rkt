@@ -585,7 +585,7 @@
     (match lox
       [(list one) one]
       [_ (if (empty? f*)
-             [error 'tie-breakder "given ~a\n" (with-output-to-string (λ () (pretty-print lox0)))]
+             [error 'tie-breaker "given ~a\n" (with-output-to-string (λ () (pretty-print lox0)))]
              (while ((first f*) lox) (rest f*)))])))
 
 ;                                                                 
