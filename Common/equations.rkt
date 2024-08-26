@@ -21,20 +21,25 @@
 ;; ---------------------------------------------------------------------------------------------------
 (provide
  #; {type Equation* = [Setof 1Equation]}
+
+ #; {type Trades = [Listof Equations]}
+ ;; these 'equations' are used in a left-to-right direction only & an 1eq can show up more than once
  
- #; {type 1Equation = [List Bag Bag]}
+ #; {type 1Equation = [1eq Bag Bag]}
  ;; the intersection of thetwo sets must be empty
  1eq?
  #; {Bag Bag -> 1Equation}
  1eq
  1eq-left
  1eq-right
- 
+
+ equations<?
+
  #; {Equations Equations -> Boolean}
  ;; are the two sets of equations equal? -- each side is considered a set, too
  equations-equal?
 
- #; {Equations Bag Bag -> Equations}
+ #; {Equations Bag Bag -> Trades}
  #; (useful left-to-right my-wallet bank)
  ;; return those equations `e` in `left-to-right` for which `my-wallet` has
  ;; enough Xs to swap one side and `bank`has enough Xs for the other;
@@ -104,17 +109,12 @@
 (require SwDev/Contracts/unique)
 (require pict)
 
-(module+ pict
-  (require (prefix-in p: Bazaar/Common/pebbles)))
-
 (module+ examples
   (require (submod Bazaar/Common/bags examples))
-  (require (prefix-in p: (submod Bazaar/Common/pebbles examples)))
   (require SwDev/Testing/scenarios))
 
 (module+ json
   (require (submod Bazaar/Common/bags json))
-  (require (submod Bazaar/Common/pebbles json))
   (require Bazaar/Lib/parse-json))
   
 (module+ test
@@ -225,6 +225,27 @@
 ;                                                                                        ;    
 ;                                                                                       ;;    
 
+#; {Equations Equations -> Boolean}
+;; `e*` and `f*` are interpreted as exchanges, i.e., they apply from left to right only
+(define (equations<? e* f*)
+  (andmap 1eq<? e* f*))
+
+#; {1Equations 1Equations -> Boolean}
+(define (1eq<? e f)
+  (match-define [1eq e-lhs e-rhs] e)
+  (match-define [1eq f-lhs f-rhs] f)
+  (b:bag<? (b:bag-add e-lhs e-rhs) (b:bag-add f-lhs f-rhs)))
+
+(module+ test
+  (check-true  (1eq<? rg=bbbb ggg=r))
+  (check-false (1eq<? ggg=r rg=bbbb))
+  (check-true  (1eq<? ggg=r ggg=r-))
+  
+  (check-true  (equations<? [list rg=bbbb ggg=r]  (list rg=bbbb ggg=r-)))
+  (check-false (equations<? [list rg=bbbb ggg=r]  (list ggg=r- rg=bbbb)))
+  (check-true  (equations<? [list rg=bbbb ggg=r-] (list rg=bbbb ggg=r))))
+
+;; ---------------------------------------------------------------------------------------------------
 (define (equations-equal? eq* fq*)
   (and (subset? eq* fq*) (subset? fq* eq*)))
   

@@ -8,6 +8,7 @@
  pebble?
  pebble-color
  pebble-color?
+ pebble-id
 
  #; {Pebble -> Pict}
  render )
@@ -80,6 +81,9 @@
 
 (define (pebble-color? x)
   (cons? (member x COLORS)))
+
+(define (pebble-id p)
+  (string-ref (pebble-color p) 0))
 
 (define (render p)
   (filled-ellipse RADIUS RADIUS #:color (pebble-color p)))

@@ -9,6 +9,9 @@
  card?
  card-pebbles
  card-face?
+
+ #; {[NEListof Card] -> Boolean}
+ card*<?
  
  #; {[Listof Card] -> Pict}
  render*
@@ -25,8 +28,9 @@
 
   (provide ALL-CARDS)
      
-  (provide c-rrbrr  c-rgbrg  c-wyrbb  c-ggggg  c-rbbbb c-rbbbb* c-bbbbb  c-ywywy c-ywywy*
-           c-rrbrr* c-rgbrg* c-wyrbb* c-ggggg* c-yyrwg c-yyrwg* c-bbbbb* c-wgwgw c-wgwgw*))
+  (provide c-rrbrr  c-rgbrg  c-wyrbb  c-ggggg  c-rbbbb c-rbbbb*   c-rgggg c-rgggg* c-bbbbb
+           c-ywywy c-ywywy* c-rrbrr* c-rgbrg* c-wyrbb* c-ggggg* c-yyrwg c-yyrwg* c-bbbbb*
+           c-wgwgw c-wgwgw*))
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ json
@@ -100,25 +104,29 @@
  card
  [pebbles #:to-jsexpr bag->jsexpr #:from-jsexpr jsexpr->bag #:is-a "*Pebbles"]
  [face?   #:to-jsexpr boolean->jsexpr #:from-jsexpr jsexpr->boolean #:is-a "Boolean"]
-  #:transparent
-  #:methods gen:equal+hash
-  [(define equal-proc
-     (λ (x y recursive-equal?)
-       (and
-        (bag-equal? (card-pebbles x) (card-pebbles y))
-        (equal? (card-face? x) (card-face? y)))))
-   (define (hash-proc x re-hash)
-     (+ (* 1000 (re-hash (card-pebbles x)))
-        (* 10 (re-hash (card-face? x)))))
-   (define (hash2-proc x re-hash2)
-     (+ (* 891 (re-hash2 (card-pebbles x)))
-        (* 999 (re-hash2 (card-face? x)))))])
+ #:transparent
+ #:methods gen:equal+hash
+ [(define equal-proc
+    (λ (x y recursive-equal?)
+      (and
+       (bag-equal? (card-pebbles x) (card-pebbles y))
+       (equal? (card-face? x) (card-face? y)))))
+  (define (hash-proc x re-hash)
+    (+ (* 1000 (re-hash (card-pebbles x)))
+       (* 10 (re-hash (card-face? x)))))
+  (define (hash2-proc x re-hash2)
+    (+ (* 891 (re-hash2 (card-pebbles x)))
+       (* 999 (re-hash2 (card-face? x)))))])
 
 #; {type Card = (card [Bad X] Boolean)}
 
 (module+ examples
   (define c-rbbbb  (card b-rbbbb #false))
   (define c-rbbbb* (card b-rbbbb #true))
+
+  (define c-rgggg  (card b-rgggg #false))
+  (define c-rgggg* (card b-rgggg #true))
+  
   (define c-yyrwg  (card b-yyrwb #false))
   (define c-yyrwg* (card b-yyrwb #true))
   
@@ -138,10 +146,10 @@
   (define c-ywywy* (card b-ywywy #true))
   (define c-wgwgw  (card b-wgwgw #false))
   (define c-wgwgw* (card b-wgwgw #true))
-
-
+  
   (define ALL-CARDS
     (list
+     c-rgggg c-rgggg*
      c-ywywy c-ywywy* c-wgwgw c-wgwgw*
      c-rbbbb c-rbbbb* c-yyrwg c-yyrwg* c-rrbrr
      c-rrbrr* c-ggggg c-ggggg* c-bbbbb c-bbbbb*
@@ -161,6 +169,28 @@
 ;                                                                                         ;   
 ;                                                                                        ;    
 ;                                                                                       ;;    
+
+;; ---------------------------------------------------------------------------------------------------
+
+#; {[NEListof Card] [NEListof Card] -> Boolean}
+(define (card*<? 1loc 2loc)
+  (for/and ([c 1loc] [d 2loc]) (card<? c d)))
+
+#; {Card Card -> Boolean}
+;; one card is smaller than another if either
+;; (1) it has no face or
+;; (2) its bag is smaller than the one of the second card
+(define (card<? c d)
+  (match-define [card c-pebbles c-face] c)
+  (match-define [card d-pebbles d-face] d)
+  (or (and (not (equal? c-face d-face)) (not c-face))
+      (bag<? c-pebbles d-pebbles)))
+
+(module+ test
+  (check-true (card<? c-ggggg c-ywywy))
+  (check-true (card<? c-ggggg c-ggggg*))
+  (check-false (card<? c-ggggg* c-bbbbb*))
+  (check-false (card<? c-ywywy* c-ggggg*)))
 
 ;; ---------------------------------------------------------------------------------------------------
 (define (render* c*)

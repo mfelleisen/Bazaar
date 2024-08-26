@@ -11,6 +11,8 @@
  bag
  
  bag-empty?
+ bag<?
+ 
  bag-member?
  bag-size
  subbag?
@@ -45,7 +47,7 @@
            ;; for strategies
            b-6g-3r-4b b-2r-2y-1w b-3r-2y-1w b-4r-2y-1w
            ;; for cards 
-           b-bbbbb b-ggggg b-rgbrg b-wyrbb b-rrbrr b-rbbbb b-yyrwb b-ywywy b-wgwgw))
+           b-bbbbb b-ggggg b-rgbrg b-wyrbb b-rrbrr b-rbbbb b-rgggg b-yyrwb b-ywywy b-wgwgw))
 
 
 ;                                                                                      
@@ -74,6 +76,7 @@
 (module+ test
   (require (submod ".." examples))
   (require (submod ".." json))
+  (require SwDev/Testing/check-values)
   (require json)
   (require rackunit))
 
@@ -106,6 +109,7 @@
 (module+ examples
   
   (define b-bbbb    [bag p:BLUE p:BLUE p:BLUE p:BLUE])
+  (define b-gggg [bag p:GREEN p:GREEN p:GREEN p:GREEN])
 
   ;; usable for cards 
   (define b-rrbrr [bag p:RED p:RED p:BLUE p:RED p:RED])
@@ -117,10 +121,9 @@
   (define b-rgbrg (bag p:RED p:GREEN p:BLUE p:RED p:GREEN))
   (define b-wyrbb (bag p:WHITE p:YELLOW p:RED p:BLUE p:BLUE))
   (define b-rbbbb (bag-add b-bbbb (list p:RED)))
+  (define b-rgggg (bag-add b-gggg (list p:RED)))
   (define b-yyrwb (bag p:YELLOW p:YELLOW p:RED p:WHITE p:BLUE))
-
-  (define b-gggg [bag p:GREEN p:GREEN p:GREEN p:GREEN])
-
+  
   (define b-yyw [bag p:YELLOW p:YELLOW p:WHITE])
   (define b-ggg [bag p:GREEN p:GREEN p:GREEN])
   (define b-gg  [bag p:GREEN p:GREEN])
@@ -153,21 +156,48 @@
 ;                                                                                        ;    
 ;                                                                                       ;;    
 
-;; a bag is below another if for some color `c` it displays `c` and the other one doesn't
-;; the colors are checked in the specified order (RED, WHITE, BLUE, GREEN, YELLOW)
-(define (bag< 1bag 2bag)
-  (for/first ([p p:PEBBLES] #:when (and (bag-member? 1bag p) (not (bag-member? 2bag p))))
-    #true))
+#; {Bag Bag -> Boolean}
+;; one bag is below another if the words formed from the sorted first chars are string<=?
+#; (= (bag-size 1bag) (bag-size 2bag))
+(define (bag<? 1bag 2bag)
+  (string<? (bag->string 1bag) (bag->string 2bag)))
 
+#; {Bag -> String}
+;; bag -> list of colors, take first letter, sort, create string
+(define (bag->string 1bag)
+  (let* ([s 1bag]
+         [s (bag->list s)]
+         [s (map p:pebble-id s)]
+         [s (sort s char<=?)]
+         [s (apply string s)])
+    s))
+
+(module+ test
+  (check-false (bag<? b-ggg b-ggg) "ggg <= ggg")
+  (check-true  (bag<? b-ggg b-yyw) "ggg <= yyw")
+  (check-false (bag<? b-yyw b-ggg) "yyw !<= ggg"))
+
+;; ---------------------------------------------------------------------------------------------------
+#; {Bag Bag Bag Bag -> (vaues Bag Bag)}
+;; transfer the content of `left` into `bank` from `wallet` and `right` from `bank` to `wallet` 
 (define (bag-transfer wallet bank left right)
   (values (bag-add (bag-minus wallet left) right)
           (bag-add (bag-minus bank right) left)))
 
-(define (render b) (lib:render b p:render))
+(module+ test
+  (check-values (bag-transfer b-rg b-rg b-r b-g) b-gg b-rr "transfer"))
 
+;; ---------------------------------------------------------------------------------------------------
+#; {Bag -> Pebble}
 (define (bag-pick bank)
   (for/first ([p p:PEBBLES]  #:when (member p bank))
     p))
+
+(module+ test
+  (check-equal? (bag-pick b-r) RED "random pick"))
+
+;; ---------------------------------------------------------------------------------------------------
+(define (render b) (lib:render b p:render))
 
 ;                              
 ;      ;                       
@@ -189,25 +219,6 @@
 
   (define (jsexpr->bag j) (lib:jsexpr->bag j p:pebble-color? jsexpr->pebble)))
 
-;                                     
-;                                     
-;     ;                    ;          
-;     ;                    ;          
-;   ;;;;;   ;;;    ;;;   ;;;;;   ;;;  
-;     ;    ;;  ;  ;   ;    ;    ;   ; 
-;     ;    ;   ;; ;        ;    ;     
-;     ;    ;;;;;;  ;;;     ;     ;;;  
-;     ;    ;          ;    ;        ; 
-;     ;    ;      ;   ;    ;    ;   ; 
-;     ;;;   ;;;;   ;;;     ;;;   ;;;  
-;                                     
-;                                     
-;                                     
-
 (module+ test
-  (require SwDev/Testing/check-values)
-
   (check-true (jsexpr? (bag->jsexpr b-rrbrr)))
-  (check bag-equal? (jsexpr->bag (bag->jsexpr b-rrbrr)) b-rrbrr "basic bag test")
-
-  (check-values (bag-transfer b-rg b-rg b-r b-g) b-gg b-rr "transfer"))
+  (check bag-equal? (jsexpr->bag (bag->jsexpr b-rrbrr)) b-rrbrr "basic bag test"))
