@@ -11,6 +11,7 @@
  bag
  bag-empty?
  bag-member?
+ bag->list
  bag-size
  (contract-out
   [subbag? (-> bag? bag? boolean?)])
@@ -91,6 +92,8 @@
 ;                                                                                       ;;    
 
 (define bag-empty? empty?)
+
+(define bag->list identity)
 
 (define bag-size length)
 
