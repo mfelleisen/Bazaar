@@ -255,12 +255,23 @@
   (define u (create-exn-player "Uria" purchase-size "request-cards"))
   (define 6-exn-players (list v x y z w u))
 
+  #;{String [Purchase -> Natural] String -> PlayerObject}
+  (define (create-inf-player name which xn)
+    (define factory (retrieve-factory xn infinite-loop-table-for-9))
+    (create-player name which #:bad factory))
+
+  (define t (create-inf-player "Theresa" purchase-size "setup-1"))
+  (define 2p+setup-inf (cons t 2players))
+
+  (define s (create-inf-player "Susanne" purchase-size "request-cards-1"))
+  (define b-2p+setup-inf (cons s 2players))
+  
   (define adam `[["Adam"] []])
   (define adam-eve `[["Adam" "Eve"] []])
   (define eve `[["Eve"] []])
 
-  #;
-  [observe #true] (referee/state b-1+5-players eq++ gs-6-players++))
+  ; #;
+  [observe #true] (referee/state b-2p+setup-inf #; 2p+setup-inf eq++ gs-3-zeros))
 
 (module+ examples ;; ForStudents/
   (simple+ Simple/ (list 2players '[] gs-20) adam "no action, 1 winner")

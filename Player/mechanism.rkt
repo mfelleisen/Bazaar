@@ -26,6 +26,10 @@
 
   [exn-raising-table-for-7
    ;; raise exns for specific methods 
+   factory-table]
+
+  [infinite-loop-table-for-9
+   ;; go into infinite loops after n calls 
    factory-table]))
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -56,7 +60,6 @@
 (require Bazaar/Common/actions)
 (require Bazaar/Common/player-interface)
 (require Bazaar/Common/turn-state)
-(require (prefix-in p: Bazaar/Common/player))
 
 (require (submod Bazaar/Player/strategies json))
 
