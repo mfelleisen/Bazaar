@@ -584,9 +584,15 @@
   (let while ([lox lox0] [f* f*0])
     (match lox
       [(list one) one]
-      [_ (if (empty? f*)
-             [error 'tie-breaker "given ~a\n" (with-output-to-string (λ () (pretty-print lox0)))]
-             (while ((first f*) lox) (rest f*)))])))
+      [_ (cond
+           [(empty? f*)
+            (define p-f*0  (map object-name f*0))
+            (define p-lox0 (with-output-to-string (λ () (pretty-print lox0))))
+            (define p-lox  (with-output-to-string (λ () (pretty-print lox))))
+            (define N      (length lox))
+            [error 'tie-breaker "~a left over:\n ~a\n given ~a and ~a\n" N p-lox p-f*0 p-lox0]]
+           [else 
+            (while ((first f*) lox) (rest f*))])])))
 
 ;                                                                 
 ;                                                                 
