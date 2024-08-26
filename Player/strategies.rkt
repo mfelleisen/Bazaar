@@ -224,7 +224,13 @@
   (let*-values ([(r) (exchange '[] (purchase '[] 0 b-4xb-3xg))])
     (scenario+ ForStudents/ (list equations strat-t1 purchase-points) r "no trades"))
 
-  ;; the player can buy a card for 1 point w/o trading
+  ;; the player can buy a card for 2 point w/o trading
+  (let*-values ([(b) (b:bag-add b-6g-3r-4b b-r)]
+                [(b) (b:bag-minus b b-ggg)]
+                [(b) (b:bag-minus b (c:card-pebbles (first cards0)))]
+                [(r) (exchange `(,ggg=r) (purchase `[,(first cards0)] 2 b))])
+    (void))
+  
   (let*-values ([(r) (exchange '() (purchase `[,(cadr cards0)] 1 (b:bag-minus b-6g-3r-4b b-ggggg)))])
     (scenario+ ForStudents/ (list equations strat-t2 purchase-size) r "cards 1"))
 
@@ -259,16 +265,9 @@
 
   (require (submod Bazaar/Common/pebbles examples))
   
-  ;; failure in tie breaking: using `first`
-  #;
-  (let*-values ([(e) (list r=gggg)]
-                [(r) (exchange '[] (purchase (list c-ggggg) 1 (b:bag-add b-bbbb (b:bag WHITE))))])
-    (extra+ Extras/ (list e xstrat-1 purchase-size) r "same number of cards, cards differ in face"))
-
-  ;; failure in tie breaking: using `second`
   (let*-values ([(e) (list r=gggg)]
                 [(r) (exchange '[] (purchase (list c-ggggg*) 2 (b:bag-add b-bbbb (b:bag WHITE))))])
-    (extra+ Extras/ (list e xstrat-1 purchase-size) r "same number of cards, cards differ in face"))
+    (extra+ Extras/ (list e xstrat-1 purchase-size) r "same # of cards, cards differ in face (2)"))
     
   (let*-values ([(e) (list r=gggg r=bbbb)]
                 [(w) b-4r-2y-1w]
@@ -278,7 +277,13 @@
   (let*-values ([(e) (list ggg=r- rg=bbbb)]
                 [(w) (b:bag-add b-b b-b b-b)]
                 [(r) (exchange (list ggg=r- rg=bbbb ggg=r-) (purchase (list c-yyrwg* c-ggggg) 3 w))])
-    (extra+ Extras/ (list e xstrat-3 purchase-points) r "3 rules, 2 cards, score 3, wallet 3b")))
+    (extra+ Extras/ (list e xstrat-3 purchase-points) r "3 rules, 2 cards, score 3, wallet 3b"))
+
+  (let*-values ([(e) (list r=bbbb r=gggg)]
+                [(r) (exchange (list r=bbbb) (purchase (list c-rbbbb) 5 (b:bag)))])
+    (extra+ Extras/ (list e xben-4 purchase-points) r "ben's test"))
+
+  )
 
 ;                                                                               
 ;                            ;                              ;                   
@@ -336,19 +341,29 @@
 #; {[NEListof Exchange] -> Exchange}
 ;; given all possible exchange paths, break ties among the embedded trades-buys as follows:
 ;; -- from those pick the ones with the smallest number of trades
-;; -- from those pick the ones that leave the player with the most pebbles
+;; -- from those pick the ones that leave the player with the optimal card purchases
+;; -- from those pick the one with the smallest-equations 
 
-(define (tie-breaker-trade-then-purchase possibles0)
-  (define f* (list smallest-number-of-trades most-pebbles-left))
-  (tie-breaker f* possibles0))
-
+(define (tie-breaker-trade-then-purchase lo-ex-0)
+  (define f* (list smallest-number-of-trades))
+  (tie-breaker
+   f* lo-ex-0
+   #:continue
+   (λ (lo-ex-1)
+     (tie-breaker-for-purchases
+      lo-ex-1
+      #:selector exchange-purchase
+      #:continue smallest-trade))))
+                      
 #; {[Listof Exchange] -> [Listof Exchange]}
 (define (smallest-number-of-trades the-bests)
   (all-argmin (λ (ex) (length (exchange-trades ex))) the-bests))
 
-#; {[Listof Exchange] -> [Listof Exchange]}
-(define (most-pebbles-left exchanges)
-  (all-argmax (compose b:bag-size purchase-walletω exchange-purchase) exchanges))
+#; {[Listof Exchange] -> Exchange}
+(define (smallest-trade lo-ex-2)
+  (if (all-equal? (map exchange-trades lo-ex-2))
+      (first lo-ex-2)
+      (first (sort lo-ex-2 e:equations<? #:key exchange-trades))))
 
 ;                                     
 ;                                     
@@ -393,27 +408,6 @@
     (eprintf "---- ~a with policy ~a\n" msg policy)
     (pretty-print (frame (inset (hb-append 10 p-equations p-cards p-wallet p-bank) 2)))
     (pretty-print expected))
-
-  #; {Symbol Trade&BuyScenarios -> Void}
-  (define (run-ties* t scenario*)
-    (eprintf "--------------- ~a\n" t)
-    (define count 0)
-    (for ([s scenario*] [i (in-naturals)])
-      (set! count (+ count 1))
-      (match-define (list args expected msg) s)
-      (match-define (list equations cards wallet bank policy) args)
-
-      (eprintf "~a ~a\n" msg i)
-      (pretty-print (list (b:render bank) (c:render* cards) (b:render wallet)) (current-error-port))
-      
-
-      (check-equal? (let* ([s (possible-trades equations wallet bank cards policy)]
-                           [s (tie-breaker-trade-then-purchase s)]
-                           [s (if (exchange? s) 1 (length s))])
-                      s)
-                    expected
-                    msg))
-    (eprintf "~a tests completed\n" count))
   
   (run-scenario* 'ForStudents ForStudents/)
   (run-scenario* 'Tests Tests/)
@@ -523,12 +517,27 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {[NEListof Purchases] -> Purchases}
-;; pick the list of cards that is best according to some whimsical ordering of card sequences
-(define (tie-breaker-for-purchases lop)
-  (tie-breaker (list also-point-max) lop))
+;; pick the pruchase that has the most poinnts, tthe largest wallet, the best wallet, or best cards
+;; if all equals?, the list is passed on to the fail continuation `fk` if it exists
+;; otherwise just pick the first one 
+(define (tie-breaker-for-purchases lop #:selector (selector identity) #:continue (fk #false))
+  (define (also-point-max lop)
+    (all-argmax (compose purchase-points selector) lop))
 
-(define (also-point-max lop)
-  (all-argmax purchase-points lop))
+  (define (wallet-size lop)
+    (all-argmax (λ (x) (b:bag-size (purchase-walletω (selector x)))) lop))
+
+  (define (best-wallet lop)
+    (if (all-equal? (map (compose purchase-walletω selector) lop))
+        (best-cards lop)
+        (first (sort lop b:bag<? #:key (compose purchase-walletω selector)))))
+
+  (define (best-cards lop)
+    (if (all-equal? (map (compose purchase-cards selector) lop))
+        (if fk (fk lop) (first lop))
+        (first (sort lop c:card*<? #:key (compose purchase-cards selector)))))
+        
+  (tie-breaker (list also-point-max wallet-size) lop #:continue best-wallet))
 
 ;                                     
 ;                                     
@@ -579,20 +588,23 @@
 #; (tie-breaker (f1 ... fN) lox)
 ;; apply the fj-s to lox until 
 #; (fi ... (f1 lox) ...)
-;; yields singleton list; otherwise error 
-(define (tie-breaker f*0 lox0)
+;; yields singleton list;
+;; a singleton list or a failure is passed on to the fail continuation `fk` if it exists
+;; otherwise error 
+(define (tie-breaker f*0 lox0 #:continue (fk #false))
   (let while ([lox lox0] [f* f*0])
     (match lox
-      [(list one) one]
+      [(list one) (if fk (fk lox) one)]
       [_ (cond
-           [(empty? f*)
-            (define p-f*0  (map object-name f*0))
-            (define p-lox0 (with-output-to-string (λ () (pretty-print lox0))))
-            (define p-lox  (with-output-to-string (λ () (pretty-print lox))))
-            (define N      (length lox))
-            [error 'tie-breaker "~a left over:\n ~a\n given ~a and ~a\n" N p-lox p-f*0 p-lox0]]
-           [else 
-            (while ((first f*) lox) (rest f*))])])))
+           [(empty? f*) (if fk (fk lox) (show-tie-breaking-problem f*0 lox0 lox))]
+           [else (while ((first f*) lox) (rest f*))])])))
+
+(define (show-tie-breaking-problem f*0 lox0 lox)
+  (define p-f*0  (map object-name f*0))
+  (define p-lox0 (with-output-to-string (λ () (pretty-print lox0))))
+  (define p-lox  (with-output-to-string (λ () (pretty-print lox))))
+  (define N      (length lox))
+  [error 'tie-breaker "~a left over:\n ~a\n given ~a and ~a\n" N p-lox p-f*0 p-lox0])
 
 ;                                                                 
 ;                                                                 

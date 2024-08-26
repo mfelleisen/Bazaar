@@ -177,7 +177,7 @@
   (define strat-t4 (turn bank0 cards1 p-4r-2y-1w '[])))
 
 (module+ examples
-  (provide xstrat-1 xstrat-2 xstrat-3)
+  (provide xstrat-1 xstrat-2 xstrat-3 xben-4)
 
   (require (submod Bazaar/Common/pebbles examples))
   
@@ -187,7 +187,11 @@
       (turn b c px-1 '[])))
 
   (define xstrat-2 (turn (b:bag-add b-ggggg b-rbbbb) (list c-bbbbb c-ggggg) px-2 '[]))
-  (define xstrat-3 (turn bank0 (list c-yyrwg* c-ggggg) p-4r-2y-1w '[])))
+  (define xstrat-3 (turn bank0 (list c-yyrwg* c-ggggg) p-4r-2y-1w '[]))
+
+  (define xben-4
+    (let* ([b (b:bag-add b-ggggg b-bbbbb)])
+      (turn b (list c-rgggg c-rbbbb) p-rr-9 '[]))))
 
 (module+ test
   (check-equal? ts1 ts1-wallet "construct wallet")
