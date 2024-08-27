@@ -242,11 +242,12 @@
   (b:bag<? (b:bag-add e-lhs e-rhs) (b:bag-add f-lhs f-rhs)))
 
 (module+ test
-  (check-true  (1eq<? rg=bbbb ggg=r))
+  (check-true  (1eq<? r=bbbb r=gggg))
+  (check-false (1eq<? rg=bbbb ggg=r))
   (check-false (1eq<? ggg=r rg=bbbb))
   (check-false (1eq<? ggg=r ggg=r-))
 
-  (check-true  (equations<? (list rg=bbbb rg=bbbb) (list ggg=r ggg=r-)))
+  (check-true (equations<? (list r=bbbb r=bbbb) (list r=gggg r=gggg)))
   (check-false (equations<? [list rg=bbbb ggg=r]  (list rg=bbbb ggg=r-)))
   (check-false (equations<? [list rg=bbbb ggg=r]  (list ggg=r- rg=bbbb)))
   (check-false (equations<? [list rg=bbbb ggg=r-] (list rg=bbbb ggg=r))))
