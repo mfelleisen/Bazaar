@@ -152,22 +152,22 @@ referee                         player (p_1) . . . player (p_n)
 #### Turn Case 1: player requests a random pebble
 
 ```
-	
+        
 referee                         player (p_1) . . . player (p_n)
   |                                |                 |
   |                                |                 | % call only if game
   |                                |                 | % is not finished
-  |   request-pebble-or-trades(    |                 | % player receives:
+  |   requestPebbleortrades(       |                 | % player receives:
   | -----------------------------> |                 | % - turn state            
-  | 		TurnState)         |		     |
-  | 				   |		     |
+  |             TurnState)         |                 |
   |                                |                 |
-  |     WANT-PEBBLE-or-TRADES      |                 | % requests a pebble 
+  |                                |                 |
+  |     EitherPebbleOrExchanges    |                 | % requests a pebble 
   | <============================  |                 | % or 
   |                                |                 | % an exchange of pebbles
-  |				   |		     |
-  |				   |		     |
-  |				   |		     |
+  |                                |                 |
+  |                                |                 |
+  |                                |                 |
   |--+                             |                 |
   .  |                             .                 . % if legal:
   .  |                             .                 . % referee modifies game state
@@ -178,13 +178,13 @@ referee                         player (p_1) . . . player (p_n)
 
   IF LEGAL:
   | -----------------------------> |                 | 
-  |   request-cards(TurnState)     |                 | % player receives:
+  |   requestCards(TurnState)      |                 | % player receives:
   | -----------------------------> |                 | % - turn state
   |                                |                 | % with a revised 
-  |				   |		     | % wallet of pebbles
-  |				   |		     |
-  |				   |		     |
-  |   SequenceOf<Card>             |		     | 
+  |                                |                 | % wallet of pebbles
+  |                                |                 |
+  |                                |                 |
+  |   SequenceOf<Card>             |                 | 
   | <============================= |                 | % purchases cards
   |--+                             |                 |
   .  |                             .                 . % if legal:
