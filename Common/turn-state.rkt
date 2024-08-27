@@ -47,6 +47,8 @@
 ;                 ;                                                                    
 ;                 ;                                                                    
 
+(require Bazaar/scribblings/spec)
+
 (require (submod Bazaar/Common/bags json))
 (require (submod Bazaar/Common/cards json))
 (require (submod Bazaar/Common/player json))
@@ -85,10 +87,15 @@
 ;                                                          
 ;                                                          
 
+(define (size-check cards)
+  (unless (<= (length cards) VISIBLE#)
+    (error 'jsexpr->card ""))
+  cards)
+
 (struct/description
  turn
  [bank   #:to-jsexpr bag->jsexpr    #:from-jsexpr jsexpr->bag #:is-a "*Pebbles"]
- [cards  #:to-jsexpr card*->jsexpr  #:from-jsexpr jsexpr->card* #:is-a "*Cards"]
+ [cards  #:to-jsexpr card*->jsexpr  #:from-jsexpr (compose size-check jsexpr->card*) #:is-a "*Cards"]
  [active #:to-jsexpr player->jsexpr #:from-jsexpr jsexpr->player #:is-a "Player"]
  [scores #:to-jsexpr score*->jsexpr #:from-jsexpr jsexpr->score* #:is-a "*Naturals"]
  #:transparent

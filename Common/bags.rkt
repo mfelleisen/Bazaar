@@ -230,7 +230,11 @@
 (module+ json
   (define (bag->jsexpr b) (lib:bag->jsexpr b pebble->jsexpr))
 
-  (define (jsexpr->bag j) (lib:jsexpr->bag j p:pebble-color? jsexpr->pebble)))
+  (define (jsexpr->bag j)
+    (define b (lib:jsexpr->bag j p:pebble-color? jsexpr->pebble))
+    (unless (pebbles#? (bag-size b))
+      (error 'jsexpr->bag "bad contains more pebbels than the game specs allow"))
+    b))
 
 (module+ test
   (check-true (jsexpr? (bag->jsexpr b-rrbrr)))

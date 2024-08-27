@@ -365,7 +365,7 @@
     (eprintf "~a ~a ~a\n" t msg i)
     (pretty-print (e:render* equations) (current-error-port))
     (pretty-print (gs:render (gs:connect gs players)) (current-error-port))
-    (pretty-print (player*->jsexpr players) (current-error-port))
+    (pretty-print (actor*->jsexpr players) (current-error-port))
     (eprintf "--------------------------------------------------------\n"))
 
   #; {[List [Listof PlayerObject] [Listof PlayerObject]] -> [List [Listof String] [Listof String]]}

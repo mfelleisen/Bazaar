@@ -45,7 +45,7 @@
   (provide sample))
 
 (module+ json
-  (provide player->jsexpr jsexpr->player player*->jsexpr jsexpr->player*))
+  (provide actor->jsexpr jsexpr->actor actor*->jsexpr jsexpr->actor*))
 
 ;                                                                                      
 ;       ;                                  ;                                           
@@ -61,6 +61,8 @@
 ;                 ;                                                                    
 ;                 ;                                                                    
 ;                 ;                                                                    
+
+(require Bazaar/scribblings/spec)
 
 (require (only-in (submod Bazaar/Common/cards examples) ALL-CARDS))
 (require Bazaar/Player/strategies)
@@ -450,18 +452,21 @@
 (module+ json
   (define lax-names-okay? (make-parameter #false))
 
-  (define (player*->jsexpr p*) (map player->jsexpr p*))
+  (define (actor*->jsexpr p*) (map actor->jsexpr p*))
 
-  (define (player->jsexpr p) (send p description))
+  (define (actor->jsexpr p) (send p description))
 
-  (define (jsexpr->player* j #:loops [loops #false] #:cheating [cheaters #false])
+  (define (jsexpr->actor* j #:loops [loops #false] #:cheating [cheaters #false])
     (match j
-      [(list (app (λ (j) (jsexpr->player j #:loops loops #:cheating cheaters))
-                  (? (λ (p) (is-a? p player%)) p)) ...) p]
-      [_ (eprintf "value does not match JActors schema:\n~a\n" (jsexpr->string j))
+      [(list (app (λ (j) (jsexpr->actor j #:loops loops #:cheating cheaters))
+                  (? (λ (p) (is-a? p player%)) players)) ...)
+       (unless (<= (length players) MAX-PLAYERS)
+         (error 'jexpr->actor* "*Actors contains more players than the game specs allow"))
+       players]
+      [_ (eprintf "value does not match *Actors schema:\n~a\n" (jsexpr->string j))
          #false]))
 
-  (define (jsexpr->player j #:loops [loops #false] #:cheating [cheaters #false])
+  (define (jsexpr->actor j #:loops [loops #false] #:cheating [cheaters #false])
     (match j
       [(list* (? jname? name) (app jsexpr->policy (? procedure? s)) remainder)
        (define check-then-create [check-then-create/curried j name s])
@@ -500,20 +505,20 @@
   #; {JSexpr N -> False}
   (define (err n j)
     (define s (jsexpr->string/ j))
-    (eprintf "~a does not match JActorSpec schema [~a] \n ~a\n" 'jsexpr->player n s)
+    (eprintf "~a does not match Actor schema [~a] \n ~a\n" 'jsexpr->actor n s)
     #false))
 
 (module+ test
   
-  (check-false (check-message "a" cep #px"schema" (jsexpr->player 1)) "bad JSexpr 1")
-  (check-false (check-message "b" cep #px"schema" (jsexpr->player '["a" "dag" 1])) "bad JSexpr 2")
-  (check-false (check-message "c" cep #px"not match" (jsexpr->player `["a" "dag" "setup" 1])) "BAD")
+  (check-false (check-message "a" cep #px"schema" (jsexpr->actor 1)) "bad JSexpr 1")
+  (check-false (check-message "b" cep #px"schema" (jsexpr->actor '["a" "dag" 1])) "bad JSexpr 2")
+  (check-false (check-message "c" cep #px"not match" (jsexpr->actor `["a" "dag" "setup" 1])) "BAD")
 
-  (check-equal? (send (jsexpr->player (player->jsexpr sample)) setup `[]) (void) "normal player")
+  (check-equal? (send (jsexpr->actor (actor->jsexpr sample)) setup `[]) (void) "normal player")
 
   (let* ([new-exn-setup (retrieve-factory "setup" exn-raising-table-for-7)]
          [exn-setup     (create-player "bad" purchase-points #:bad new-exn-setup)])
-    (check-exn #px"div" (λ () (send (jsexpr->player (player->jsexpr exn-setup)) setup '[])) "j exn"))
+    (check-exn #px"div" (λ () (send (jsexpr->actor (actor->jsexpr exn-setup)) setup '[])) "j exn"))
 
 
   (let* ([new-exn-setup (retrieve-factory "setup-1" infinite-loop-table-for-9)]
@@ -521,10 +526,10 @@
     (check-exn #px"out of time"
                (λ ()
                  (with-deep-time-limit 1
-                   (send (jsexpr->player (player->jsexpr setup-1) #:loops 'yes) setup '[]))) "j inf"))
+                   (send (jsexpr->actor (actor->jsexpr setup-1) #:loops 'yes) setup '[]))) "j inf"))
 
   (let* ([buy-invisible-card-factory (retrieve-factory "buy-invisible-card" cheater-table-for-8)]
          [players (list (create-player "A" purchase-points #:bad buy-invisible-card-factory))]
-         [j (player*->jsexpr players)]
-         [p (jsexpr->player* j #:cheating 'yes!) ]) 
+         [j (actor*->jsexpr players)]
+         [p (jsexpr->actor* j #:cheating 'yes!) ]) 
     (check-true (andmap (λ (p) (is-a? p player%)) p) "cheating player")))

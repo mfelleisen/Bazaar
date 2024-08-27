@@ -261,8 +261,12 @@
   (define (player*->jsexpr s)
     (map player->jsexpr s))
 
-  (def/jsexpr-> player*
-    #:array [(list (app jsexpr->player (? player? p)) ...) p])
+  (define (jsexpr->player* j)
+    (def/jsexpr-> player* #:array [(list (app jsexpr->player (? player? p)) ...) p])
+    (define players (jsexpr->player* j))
+    (unless (<= (length players) MAX-PLAYERS)
+      (error 'jexpr->player* "*Players contains more players than the game specs allow"))
+    players)
 
   (define (score*->jsexpr s)
     (map natural->jsexpr s))

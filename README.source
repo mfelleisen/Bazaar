@@ -11,7 +11,5 @@ $ raco doc Bazaar
 
 ### IMMEDIATE TODO
 
-- impose loose constraints on GameState and TurnState when introduced as test inputs
-- check those constraints where?
-
+- does the rule checker make sure trades are subsets of equations (in either direction?) 
 

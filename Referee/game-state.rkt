@@ -188,11 +188,21 @@
 ;                                                          
 ;                                                          
 
+(define (card-check cards)
+  (unless (<= (length cards) CARDS#)
+    (error 'jsexpr->card ""))
+  cards)
+
+(define (size-check cards)
+  (unless (<= (length cards) VISIBLE#)
+    (error 'jsexpr->card ""))
+  cards)
+
 (struct/description
  game
  [bank     #:to-jsexpr bag->jsexpr   #:from-jsexpr jsexpr->bag   #:is-a "*Pebbles"]
- [visibles #:to-jsexpr card*->jsexpr #:from-jsexpr jsexpr->card* #:is-a "*Cards"]
- [cards    #:to-jsexpr card*->jsexpr #:from-jsexpr jsexpr->card* #:is-a "*Cards"]
+ [visibles #:to-jsexpr card*->jsexpr #:from-jsexpr (compose size-check jsexpr->card*) #:is-a "*Cards"]
+ [cards    #:to-jsexpr card*->jsexpr #:from-jsexpr (compose card-check jsexpr->card*) #:is-a "*Cards"]
  [players  #:to-jsexpr player+*->jsexpr #:from-jsexpr jsexpr->player+*
            #:is-a "*Players"])
 

@@ -7,16 +7,23 @@
 (define (distinct-equations eq*)
   (distinct? (append eq* (map 1eq-flip eq*))))
 
-(define (good-equations eq*)
+(define (ok-#equations eq*)
+  (<= (length eq*) EQUATIONS#))
+
+(define (ok-equations eq*)
   (for/and ([e eq*])
     (match-define [1eq left right] e)
-    (and (good-size left) (good-size right) (no-overlap left right))))
+    (and (ok-1eq-size left) (ok-1eq-size right) (no-overlap left right))))
 
 (define (no-overlap left right)
   (b:bag-empty? (b:bag-intersect left right)))
 
-(define (good-size b)
+(define (ok-1eq-size b)
   (<= 1 (b:bag-size b) [MAX-EQ-SIDE]))
+
+(define equations/c (and/c (listof (λ (x) (1eq? x))) ok-#equations distinct-equations ok-equations))
+
+(define trades/c (and/c ok-equations))
 
 ;; ---------------------------------------------------------------------------------------------------
 (provide
@@ -45,8 +52,7 @@
  ;; enough Xs to swap one side and `bank`has enough Xs for the other;
  ;; orient the resulting equations so that `my-wallet` covers the left
  (contract-out 
-  [useful (-> (and/c (listof 1eq?) distinct-equations good-equations) b:bag? b:bag?
-              (and/c (listof 1eq?) distinct?))])
+  [useful (-> equations/c b:bag? b:bag? (and/c (listof 1eq?) distinct?))])
  
  #; {1Equation-> Pict}
  #; (render e)
@@ -207,7 +213,7 @@
   (scenario+ Tests/ `[,(list rg=bbbb ggb=rw ggg=r) ,b-rg ,b-4xb-3xg] (list ggg=r- rg=bbbb) "3 -> 2")
   
   (scenario+ Exns/ `[,(list rg=bbbb 4xb=r-g) ,b-rg ,b-bbbb] #px"distinct-equations" "repeated eq")
-  (scenario+ Exns/ `[,(list 3xg=g 4xb=r-g) ,b-rg ,b-bbbb]   #px"good-equations" "1 bad eq"))
+  (scenario+ Exns/ `[,(list 3xg=g 4xb=r-g) ,b-rg ,b-bbbb]   #px"ok-equations" "1 bad eq"))
 
 ;                                                                                             
 ;      ;;                                                                                     
@@ -301,13 +307,16 @@
     (define eq* (jsexpr->equations j))
     
     (cond
-      [(and eq* (distinct? eq*)) eq*]
+      [(and eq* (equations/c eq*)) eq*]
       [else (eprintf "distinct set of equations expected, given ~a\n" j) #false]))
 
   (define (jsexpr->trades j)
     (def/jsexpr-> equations #:array [(list (app jsexpr->1eq (? 1eq? 1eq)) ...) 1eq])
     (define eq* (jsexpr->equations j))
-    eq*)
+
+    (cond
+      [(and eq* (trades/c eq*)) eq*]
+      [else (eprintf "distinct set of equations expected, given ~a\n" j) #false]))
   
   (define (1eq->jsexpr eq)
     (match-define [1eq left right] eq)

@@ -100,9 +100,14 @@
 ;                                                          
 ;                                                          
 
+(define (size-check b)
+  (unless (<= (bag-size b) P-ON-CARD)
+    (error 'jsexpr->card "too many pebbles for a card"))
+  b)
+
 (struct/description
  card
- [pebbles #:to-jsexpr bag->jsexpr #:from-jsexpr jsexpr->bag #:is-a "*Pebbles"]
+ [pebbles #:to-jsexpr bag->jsexpr #:from-jsexpr (compose size-check jsexpr->bag) #:is-a "*Pebbles"]
  [face?   #:to-jsexpr boolean->jsexpr #:from-jsexpr jsexpr->boolean #:is-a "Boolean"]
  #:transparent
  #:methods gen:equal+hash
@@ -207,8 +212,6 @@
    (apply hb-append (take picts (quotient VISIBLE# 2)))
    (apply hb-append (drop picts (quotient VISIBLE# 2)))))
 
-;; WARNING this is one place where I break the abstraction barrier to bags
-
 #; {Pict -> Pict}
 (define (render c)
   (let* ([s (render-in0star-shape (card-pebbles c))]
@@ -217,6 +220,7 @@
     s))
 
 #; {Pict -> Pict}
+;; should really use ;; P-ON-CARD
 (define (put-star-shape-bad-on-background s)
   (let* ([w (+ (pict-width s) 10)]
          [h (+ (pict-height s) 10)]
@@ -256,9 +260,13 @@
   (define (card*->jsexpr lo-cards)
     (map card->jsexpr lo-cards))
 
-  (def/jsexpr-> card*
-    #:array [(list (app jsexpr->card (? card? c)) ...) c]))
-
+  (define (jsexpr->card* j)
+    (def/jsexpr-> card* #:array [(list (app jsexpr->card (? card? c)) ...) c])
+    (define cards (jsexpr->card* j))
+    (unless (<= (length cards) CARDS#)
+      (error 'jsexpr->card* "*Cards contained more cards than the game specs allow"))
+    cards))
+    
 ;                                     
 ;                                     
 ;     ;                    ;          
