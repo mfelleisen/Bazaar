@@ -28,9 +28,16 @@
    ;; raise exns for specific methods 
    factory-table]
 
+  [cheater-table-for-8
+    ;; cheat! 
+    factory-table]
+  [ACHEAT string?]
+
   [infinite-loop-table-for-9
    ;; go into infinite loops after n calls 
-   factory-table]))
+   factory-table])
+
+ all-cheater-classes)
 
 ;; ---------------------------------------------------------------------------------------------------
 
