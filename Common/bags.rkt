@@ -71,7 +71,7 @@
 (require (prefix-in p: Bazaar/Common/pebbles))
 (require (prefix-in lib: (only-in Bazaar/Lib/bags render)))
 (require Bazaar/Lib/bags)
-(require)
+(require pict)
 
 (module+ test
   (require (submod ".." examples))
@@ -199,6 +199,19 @@
 ;; ---------------------------------------------------------------------------------------------------
 (define (render b) (lib:render b p:render))
 
+;; ---------------------------------------------------------------------------------------------------
+
+(provide render-in0star-shape)
+
+#; {[List Pebble Pebble Pebble Pebble Pebble] -> Pict}
+(define (render-in0star-shape bag-of-5-pebbles)
+  (match-define [list p1 p2 p3 p4 p5] (map p:render bag-of-5-pebbles))
+  (let* ([pebbles (map p:render bag-of-5-pebbles)]
+         [s p1]
+         [s (vc-append 20 s (apply hc-append 40 (list p2 p3)))]
+         [s (vc-append 20 s (apply hc-append 20 (list p4 p5)))])
+    s))
+  
 ;                              
 ;      ;                       
 ;                              

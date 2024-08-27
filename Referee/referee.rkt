@@ -255,6 +255,7 @@
   (define u (create-exn-player "Uria" purchase-size "request-cards"))
   (define 6-exn-players (list v x y z w u)))
 
+;; ---------------------------------------------------------------------------------------------------
 (module+ examples ;; inf
 
   #;{String [Purchase -> Natural] String -> PlayerObject}
@@ -275,6 +276,7 @@
   ; #;
   [observe #true] (referee/state b-2p+setup-inf #; 2p+setup-inf eq++ gs-3-zeros))
 
+;; ---------------------------------------------------------------------------------------------------
 (module+ examples ;; ForStudents/
   (simple+ Simple/ (list 2players '[] gs-20) adam "no action, 1 winner")
   (simple+ Simple/ (list 3players '[] gs-3-zeros) `[["Carl" "Adam"] []] "2 buys, 2 winners")
@@ -282,6 +284,7 @@
   (simple+ Simple/ (list 6players `[,ggg=b] gs-6-players) adam "1 trade, 1 buy, 1 winner")
   (simple+ Simple/ (list 1p-setup-rpt-exn `[,ggb=rw] gs-3-zeros) `[["Adam"] ["Zeina" "Yolanda"]] "2"))
 
+;; ---------------------------------------------------------------------------------------------------
 (module+ examples ;; Tests/
   
   (let ([strange-1

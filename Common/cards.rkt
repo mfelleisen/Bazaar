@@ -118,7 +118,7 @@
     (+ (* 891 (re-hash2 (card-pebbles x)))
        (* 999 (re-hash2 (card-face? x)))))])
 
-#; {type Card = (card [Bad X] Boolean)}
+#; {type Card = (card Bag Boolean)}
 
 (module+ examples
   (define c-rbbbb  (card b-rbbbb #false))
@@ -209,22 +209,21 @@
 
 ;; WARNING this is one place where I break the abstraction barrier to bags
 
+#; {Pict -> Pict}
 (define (render c)
-  (define pebbles (map p:render (card-pebbles c)))
-  (define angle   (/ (* 2 pi) 5))
-  (let* ([pebbles pebbles]
-         [s (first pebbles)]
-         [pebbles (rest pebbles)]
-         [s (vc-append 20 s (apply hc-append 40 (take pebbles 2)))]
-         [pebbles (drop pebbles 2)]
-         [s (vc-append 20 s (apply hc-append 20 (take pebbles 2)))]
-         [w (+ (pict-width s) 10)]
+  (let* ([s (render-in0star-shape (card-pebbles c))]
+         [s (put-star-shape-bad-on-background s)]
+         [s (if (card-face? c) (add-face s) s)])
+    s))
+
+#; {Pict -> Pict}
+(define (put-star-shape-bad-on-background s)
+  (let* ([w (+ (pict-width s) 10)]
          [h (+ (pict-height s) 10)]
          [r (filled-rectangle w h #:color "turquoise")]
          [s (cc-superimpose r s)]
          [r (filled-rectangle w (quotient h 3) #:color "orange")]
-         [s (vc-append r s r)]
-         [s (if (card-face? c) (add-face s) s)])
+         [s (vc-append r s r)])
     s))
 
 #; {Pict -> Pict}
