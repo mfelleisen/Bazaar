@@ -142,7 +142,6 @@
 ;                                                          
 
 (struct 1eq [left right] #:transparent
-
   #:methods gen:equal+hash
   [(define equal-proc
      (λ (x y recursive-equal?)
@@ -228,7 +227,7 @@
 #; {Equations Equations -> Boolean}
 ;; `e*` and `f*` are interpreted as exchanges, i.e., they apply from left to right only
 (define (equations<? e* f*)
-  (andmap 1eq<? e* f*))
+  (for/and ([e e*] [f f*]) (1eq<? e f)))
 
 #; {1Equations 1Equations -> Boolean}
 (define (1eq<? e f)
