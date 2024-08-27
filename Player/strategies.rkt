@@ -164,21 +164,8 @@
 ;                                                                          ;    
 ;                                                                         ;;    
 
-(struct exchange [trades purchase]
-  #:transparent
-  #:methods gen:equal+hash
-  [(define equal-proc
-     (λ (x y recursive-equal?)
-       (and
-        (b:bag-equal? (apply b:bag (exchange-trades x)) (apply b:bag (exchange-trades y)))
-        (equal? (exchange-purchase x) (exchange-purchase y)))))
-   (define (hash-proc x re-hash)
-     (+ (* 1000 (re-hash (exchange-purchase x)))
-        (* 10 (re-hash (exchange-purchase x)))))
-   (define (hash2-proc x re-hash2)
-     (+ (* 891 (re-hash2 (exchange-purchase x)))
-        (* 999 (re-hash2 (exchange-purchase x)))))])
-  
+(struct exchange [trades purchase] #:transparent)
+
 #; {type Exchange = (exchange Equation* Purchases)}
 #; (exchange e* p)
 ;; applying the series of Equations e*, left to right, to the wallet yields as best purchases p
@@ -266,17 +253,17 @@
   (require (submod Bazaar/Common/pebbles examples))
   
   (let*-values ([(e) (list r=gggg)]
-                [(r) (exchange '[] (purchase (list c-ggggg*) 2 (b:bag-add b-bbbb (b:bag WHITE))))])
+                [(r) (exchange '[] (purchase (list c-ggggg*) 2 (b:bag-add (b:bag WHITE) b-bbbb)))])
     (extra+ Extras/ (list e xstrat-1 purchase-size) r "same # of cards, cards differ in face (2)"))
     
   (let*-values ([(e) (list r=gggg r=bbbb)]
                 [(w) b-4r-2y-1w]
-                [(r) (exchange (list r=bbbb r=gggg) (purchase (list c-bbbbb c-ggggg) 6 (b:bag)))])
+                [(r) (exchange (list r=gggg r=bbbb) (purchase (list c-ggggg c-bbbbb) 6 (b:bag)))])
     (extra+ Extras/ (list e xstrat-2 purchase-points) r "2 rules, 2 cards, score 6, wallet: 0"))
   
   (let*-values ([(e) (list ggg=r- rg=bbbb)]
                 [(w) (b:bag-add b-b b-b b-b)]
-                [(r) (exchange (list ggg=r- rg=bbbb ggg=r-) (purchase (list c-yyrwg* c-ggggg) 3 w))])
+                [(r) (exchange (list ggg=r- ggg=r- rg=bbbb) (purchase (list c-yyrwg* c-ggggg) 3 w))])
     (extra+ Extras/ (list e xstrat-3 purchase-points) r "3 rules, 2 cards, score 3, wallet 3b"))
 
   (let*-values ([(e) (list r=bbbb r=gggg)]
@@ -429,15 +416,13 @@
 ;                   ;   
 ;                  ;    
 ;                 ;;    
-                                 
+
 (struct purchase [cards points walletω] #:transparent
   #:methods gen:equal+hash
   [(define equal-proc
      (λ (x y recursive-equal?)
        (and
-        
-        (b:bag-equal? (apply b:bag (purchase-cards x)) (apply b:bag (purchase-cards y)))
-        (= ([equality-selector] x) ([equality-selector] y))
+        (equal? (purchase-cards x) (purchase-cards y))
         (b:bag-equal? (purchase-walletω x) (purchase-walletω y)))))
    (define (hash-proc x re-hash)
      (+ (* 1000 (re-hash (purchase-cards x)))
@@ -445,8 +430,6 @@
    (define (hash2-proc x re-hash2)
      (+ (* 891 (re-hash2 (purchase-cards x)))
         (* 999 (re-hash2 (purchase-cards x)))))])
-
-(define equality-selector (make-parameter purchase-points))
 
 #; {type Purchases = (purchase [Listof Card] Natural Bag)}
 #; (node (list c ...) n w)
@@ -456,13 +439,6 @@
 
 (define (purchase-size p)
   (length (purchase-cards p)))
-
-(module+ test
-  (let ()
-    (equality-selector purchase-size)
-    (check-equal? (purchase (list c-ggggg) 1 (b:bag)) (purchase (list c-ggggg) 2 (b:bag))))
-   
-  (check-equal? (purchase `[,c-ggggg ,c-yyrwg] 3 b-bbbb) (purchase `[,c-yyrwg ,c-ggggg] 3 b-bbbb)))
 
 ;                                                          
 ;      ;                               ;                   
@@ -480,7 +456,6 @@
 ;    ;;                                              ;;    
 
 (define (f-buy-cards visibles wallet which)
-  [equality-selector which]
   (match (possible-purchases visibles wallet which)
     [(list p) p]
     [possibles (tie-breaker-for-purchases possibles)]))
