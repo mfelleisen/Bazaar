@@ -253,7 +253,9 @@
   (define b-1+5-players (list (second 2players) v x y z w))
   
   (define u (create-exn-player "Uria" purchase-size "request-cards"))
-  (define 6-exn-players (list v x y z w u))
+  (define 6-exn-players (list v x y z w u)))
+
+(module+ examples ;; inf
 
   #;{String [Purchase -> Natural] String -> PlayerObject}
   (define (create-inf-player name which xn)
@@ -319,7 +321,7 @@
     (simple+ Complex/ (list b-1+5-players eq++ gs-6-players++) r "an actual winner, five drops"))
 
   (simple+ Complex/ (list '[] '[] gs-no-players) `[[] []] "no players, stop immediately")
-  (simple+ Complex/ (list 3players eq++ gs-3-zeros++) `[["Adam"] []] "2 buys, 2 winners")
+  (simple+ Complex/ (list 3players eq++ gs-3-zeros++) `[["Eve"] []] "2 buys, 2 winners")
   (simple+ Complex/ (list 6players eq++ gs-6-players++) adam "all get turns")
 
   (let ([r `[[] ["Uria" "Zeina" "Willhelmina" "Xena" "Yolanda" "Veronica"]]])

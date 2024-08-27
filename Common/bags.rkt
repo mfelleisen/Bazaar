@@ -194,7 +194,7 @@
     p))
 
 (module+ test
-  (check-equal? (bag-pick b-r) RED "random pick"))
+  (check-equal? (bag-pick b-r) p:RED "random pick"))
 
 ;; ---------------------------------------------------------------------------------------------------
 (define (render b) (lib:render b p:render))

@@ -239,11 +239,12 @@
 (module+ test
   (check-true  (1eq<? rg=bbbb ggg=r))
   (check-false (1eq<? ggg=r rg=bbbb))
-  (check-true  (1eq<? ggg=r ggg=r-))
-  
-  (check-true  (equations<? [list rg=bbbb ggg=r]  (list rg=bbbb ggg=r-)))
+  (check-false (1eq<? ggg=r ggg=r-))
+
+  (check-true  (equations<? (list rg=bbbb rg=bbbb) (list ggg=r ggg=r-)))
+  (check-false (equations<? [list rg=bbbb ggg=r]  (list rg=bbbb ggg=r-)))
   (check-false (equations<? [list rg=bbbb ggg=r]  (list ggg=r- rg=bbbb)))
-  (check-true  (equations<? [list rg=bbbb ggg=r-] (list rg=bbbb ggg=r))))
+  (check-false (equations<? [list rg=bbbb ggg=r-] (list rg=bbbb ggg=r))))
 
 ;; ---------------------------------------------------------------------------------------------------
 (define (equations-equal? eq* fq*)
