@@ -26,6 +26,9 @@
  bag-equal?
  
  (contract-out
+  [bag-replace-first
+   (-> (and/c bag? (compose not bag-empty?)) p:pebble? bag?)]
+   
   [bag-transfer
    #; (bag-transfer one to from-one-to-two from-two-to-one)
    (-> bag? bag? bag? bag? (values bag? bag?))])
@@ -195,6 +198,14 @@
 
 (module+ test
   (check-equal? (bag-pick b-r) p:RED "random pick"))
+
+;; ---------------------------------------------------------------------------------------------------
+#; {NEBag -> Bag}
+(define (bag-replace-first lhs p)
+  (cons p (rest lhs)))
+
+(module+ test
+  (check-equal? (bag-replace-first b-rg p:GREEN) b-gg))
 
 ;; ---------------------------------------------------------------------------------------------------
 (define (render b) (lib:render b p:render))

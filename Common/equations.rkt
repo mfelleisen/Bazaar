@@ -39,6 +39,7 @@
  1eq
  1eq-left
  1eq-right
+ 1eq-flip
 
  equations<?
 
@@ -53,6 +54,10 @@
  ;; orient the resulting equations so that `my-wallet` covers the left
  (contract-out 
   [useful (-> equations/c b:bag? b:bag? (and/c (listof 1eq?) distinct?))])
+
+ #; {Equations -> Trades}
+ ;; create a trade that is not an equation 
+ make-non-existent-equation
  
  #; {1Equation-> Pict}
  #; (render e)
@@ -65,6 +70,7 @@
 ;; ---------------------------------------------------------------------------------------------------
 (module+ examples
   (provide
+   w=bbbb
    r=bbbb
    r=gggg
    ggg=b
@@ -111,7 +117,10 @@
 ;                 ;                                                                    
 
 (require Bazaar/scribblings/spec)
+
+(require (prefix-in p: (submod Bazaar/Common/pebbles examples)))
 (require (prefix-in b: Bazaar/Common/bags))
+
 (require SwDev/Contracts/unique)
 (require pict)
 
@@ -174,6 +183,7 @@
   (define g-r=bbbb (1eq (reverse b-rg) b-bbbb))
   (define 4xb=r-g (1eq b-bbbb b-rg))
 
+  (define w=bbbb    (1eq (b:bag p:WHITE) b-bbbb))
   (define r=bbbb    (1eq b-r b-bbbb))
   (define r=gggg    (1eq b-r b-gggg))
 
@@ -271,6 +281,22 @@
 #; {1Equation -> 1Equation}
 (define (1eq-flip e)
   (1eq (1eq-right e) (1eq-left e)))
+
+;; ---------------------------------------------------------------------------------------------------
+(define (make-non-existent-equation equations0)
+  (let/ec return 
+    (for ([e equations0])
+      (match-define [1eq lhs rhs] e)
+      (for ([p p:PEBBLES])
+        (define -lhs (b:bag-replace-first lhs p))
+        (when (no-overlap -lhs rhs)
+          (define -e   (1eq -lhs rhs))
+          (unless (set-member? equations0 -e)
+            (return (list -e))))))
+    '[]))
+
+(module+ test
+  (check-equal? (make-non-existent-equation (list r=bbbb)) (list w=bbbb)))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; graphical representation 

@@ -23,7 +23,7 @@ referee                         player (p_1) . . . player (p_n)
   .<-+                             .                 . % completes turn 
 
   IF LEGAL:
-  | -----------------------------> |                 | 
+  |                                |                 |
   |   requestCards(TurnState)      |                 | % player receives:
   | -----------------------------> |                 | % - turn state
   |                                |                 | % with a revised 
