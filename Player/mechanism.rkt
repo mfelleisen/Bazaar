@@ -35,7 +35,8 @@
 
   [infinite-loop-table-for-9
    ;; go into infinite loops after n calls 
-   factory-table])
+   factory-table]
+  [Count# natural?])
 
  all-cheater-classes)
 
@@ -64,9 +65,14 @@
 
 (require Bazaar/scribblings/spec)
 
-(require (only-in (submod Bazaar/Common/cards examples) ALL-CARDS))
+(require (only-in (submod Bazaar/Common/cards examples) c-ggggg ALL-CARDS))
 (require Bazaar/Player/strategies)
 (require Bazaar/Common/actions)
+(require (prefix-in b: Bazaar/Common/bags))
+(require (prefix-in c: Bazaar/Common/cards))
+(require (prefix-in e: Bazaar/Common/equations))
+(require (prefix-in p: Bazaar/Common/player))
+(require (prefix-in t: Bazaar/Common/turn-state))
 (require Bazaar/Common/player-interface)
 (require Bazaar/Common/turn-state)
 
@@ -271,9 +277,10 @@
 (define-syntax (class/fail stx)
   (syntax-parse stx
     [(class/fail go-bad-after-this-many-times [(method-that-goes-bad args) body ...])
+     #:with equations (datum->syntax stx 'equations #'class/fail #'class/fail)
      #'(class* player% ()
          (init-field #; [String {Nat}]  badfm) ;; descriptor for use in integration tests
-         (inherit-field my-name)
+         (inherit-field my-name equations)
          (super-new)
 
          (define/override (description)
@@ -393,6 +400,51 @@
 ;                                                          
 ;                                                          
 
+;; ---------------------------------------------------------------------------------------------------
+(define wallet-cannot-trade%
+  (class/fail
+   1
+   [(request-pebble-or-trades t*)
+    (define t (first t*)) ;; because class/fail uses . args
+    (make-trade-w/o-support (p:player-wallet (t:turn-active t)) equations)]))
+
+(define bank-cannot-trade%
+  (class/fail
+   1
+   [(request-pebble-or-trades t*)
+    (define t (first t*)) ;; because class/fail uses . args
+    (make-trade-w/o-support (t:turn-bank t) equations)]))
+
+(define (make-trade-w/o-support wallet equations)
+  (or
+   (for/first ([e equations] #:unless (b:subbag? (e:1eq-left e) wallet))  (list e))
+   (for/first ([e equations] #:unless (b:subbag? (e:1eq-right e) wallet)) (list (e:1eq-flip e)))))
+
+(module+ test
+  (let* ([f (retrieve-factory "wallet-cannot-trade" cheater-table-for-8)]
+         [a (create-player "ouch" #:bad f)])
+    (send a setup `[,r=bbbb])
+    (check-equal? (send a request-pebble-or-trades ts0) (list r=bbbb)))
+
+  (let* ([f (retrieve-factory "bank-cannot-trade" cheater-table-for-8)]
+         [a (create-player "ouch" #:bad f)])
+    (send a setup `[,r=bbbb])
+    (check-equal? (send a request-pebble-or-trades ts0) (list r=bbbb))))
+
+;; ---------------------------------------------------------------------------------------------------
+(define use-non-existent-equation%
+  (class/fail
+   1
+   [(request-pebble-or-trades t)
+    (e:make-non-existent-equation equations)]))
+
+(module+ test
+  (let* ([f (retrieve-factory "use-non-existent-equation" cheater-table-for-8)]
+         [a (create-player "ouch" #:bad f)])
+    (send a setup `[,r=bbbb])
+    (check-equal? (send a request-pebble-or-trades ts0) (list w=bbbb))))
+
+;; ---------------------------------------------------------------------------------------------------
 (define buy-invisible-card%
   (class/fail
    1
@@ -400,15 +452,35 @@
     (define visibles (turn-cards t))
     (for/first ([c ALL-CARDS] #:unless (member c visibles))
       (list c))]))
-      
+
+(define wallet-cannot-buy-card%
+  (class/fail
+   1
+   [(request-cards t*)
+    (define t (first t*)) ;; because class/fail uses . args
+    (define visibles (turn-cards t))
+    (define wallet   (p:player-wallet (t:turn-active t)))
+    (define badcard 
+      (for/first ([c visibles] #:unless (b:subbag? (c:card-pebbles c) wallet))
+        (list c)))
+    (or badcard '[])]))
+
+(module+ test
+  ts1
+  (let* ([f (retrieve-factory "wallet-cannot-buy-card" cheater-table-for-8)]
+         [a (create-player "ouch" #:bad f)])
+    (send a setup `[,r=bbbb])
+    (check-equal? (send a request-cards ts1) (list c-ggggg))))
+
+;; ---------------------------------------------------------------------------------------------------
 (define all-cheater-classes
-  `[[,buy-invisible-card% "attempt to buy a card that is not visible"]]
-  #;
-  `[
-    [,tile-not-owned%          "the placement of a tile that it does not own."]
-    [,not-a-line%              "placements that are not in one line (row, column)."]
-    [,bad-ask-for-tiles%       "a tile replacement but it owns more tiles than the referee has left."]
-    [,no-fit%                  "the placement of a tile that does not match its adjacent tiles."]])
+  `[ [,use-non-existent-equation% "make up a equation to trade that is not a given equation"]
+     [,bank-cannot-trade%         "pick an equation to trade that the bank cannot support"]
+     [,wallet-cannot-trade%       "pick an equation to trade that the active player's wallet cannot support"]
+     [,buy-invisible-card%        "attempt to buy a card that is not visible"]
+     [,wallet-cannot-buy-card%    ""] ])
+
+;; ALSO CHECK THAT THE RETURNS ARE ILLEGAL! 
 
 (define ACHEAT "a cheat")
 
