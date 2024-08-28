@@ -1,6 +1,6 @@
 ## Common 
 
-this component represents the common ontology of Q players and the Q gaming framework 
+this component represents the common ontology of Bazaar players and the Bazaar gaming framework 
 
 ### Table of Content
 
@@ -30,7 +30,8 @@ Here is a rough overview of the layers:
         | player-interface |
         + ---------------- +
         | - setup          |         + ---------------- +        + ---------------- +
-        | - take-turn      | ------> | IAction          | -----> | trade->purchase  | 
+        | - pebble-or-trade| ------> | IAction          | -----> | exchanges        |
+        | - cards?         | ------> |                  | -----> | card purchase    | 
         | - win            |         + ---------------- +        + ---------------- +
         | - name           |                |        + ---------------- +
         + ---------------- +                + -----> | want-pebble      |
@@ -61,70 +62,105 @@ Here is a rough overview of the layers:
                 | Bags             |
                 + ---------------- +
 ```
-### Generic Game State and Interaction Protocol 
+### The Remote Protocol
+
+The following sequence diagrams sketch how proxy referee and the proxy
+player re-connect the referee and the players over TCP. 
+
+#### Starting the Game 
 
 ```
 
+           server side                                   many client sides (*)
+-----------------------------------------------------------------------------------
+referee                       proxy_player (p_*) //    proxy_ref (p_*)   player p_*
+  |                               |              //      |                | 
+  |                               |              //      |                | 
+  |  setup(s:equations)           |              //      |                | 
+  | ----------------------------> |              //      |                |   
+  |                               |  (s,t):JSON  //      |                | 
+  |                               | ~~~~~~~~~~~~ // ~~~> |                | 
+  |                               |              //      |   setup(s,t)   | 
+  |                               |              //      | -------------> | 
+  |                               |              //      |   void         | 
+  |                               |  void:JSON   //      | <============  | 
+  |    void                       | <~~~~~~~~~~~ // ~~~~ |                | 
+  | <============================ |              //      |                | 
+  |                               |              //      |                | 
+  |                               |              //      |                | 
+  .                               .              //      .                . 
+  .                               .              //      .                . 
+```
 
------------------------------------------------------------------------------
+#### Running Turns
 
-   game-state                     referee                         player (p_n) 
- 
-        |    extract()               |                                |
-        | < ------------------------ |                                |
-        |    turn-state: ts          |                                | 
-        | ======================== > |                                | 
-        |                            |   take-turn(ts)                | 
-        |                            | -----------------------------> | 
-        |                            |                                |
+```
 
-case 1: 
-
-        |                            |  trade->purchase(t, c)         |
-        |                            | <============================= |
-        |                            |                                |
-        | trade->purchase(t, c)      |                                |
-        | <------------------------- |                                |
-        |   #false or game-state?    |                                |
-        | =========================> |                                |
-
-case 2: 
-
-        |                            |     want-pebble                |
-        |                            | <============================= |
-        |  want-pebble-okay?         |                                |
-        | < ------------------------ |                                |
-        |                            |                                |
-        |   #false or pebble?        |                                |
-        | =========================> |                                |
-        |                            |                                |
-
-if pebble?:
-
-        |                            |  take-turn(turn-state+)        | 
-        |                            | -----------------------------> |
-        |                            |                                |
-        |                            |  trade->purchase([], c)        |
-        |                            | <============================= |
-        |                            |                                |
-        | trade->purchase([], c)     |                                |
-        | <------------------------- |                                |
-        |   #false or game-state?    |                                |
-        | =========================> |                                |
+     server side          proxies                    clients
+-----------------------------------------------------------------------------------
         
-if any callback returns #false:
+referee                      //     player (p_1) . . . player (p_n)
+  |                          //      |                 |
+  |                          //      |                 | % call only if game
+  |                          //      |                 | % is not finished
+  |   requestPebbleortrades( //      |                 | % player receives:
+  | ------------------------ // ---> |                 | % - turn state            
+  |             TurnState)   //      |                 |
+  |                          //      |                 |
+  |                          //      |                 |
+  |     EitherPebbleOrExchang//es    |                 | % requests a pebble 
+  | <======================= // ===  |                 | % or 
+  |                          //      |                 | % an exchange of pebbles
+  |                          //      |                 |
+  |                          //      |                 |
+  |                          //      |                 |
+  |--+                       //      |                 |
+  .  |                       //      .                 . % if legal:
+  .  |                       //      .                 . % referee modifies game state
+  .  |                       //      .                 . % completes turn 
+  .  |                       //      .                 . % otherwise: 
+  .  |                       //      .                 . % kick player out 
+  .<-+                       //      .                 . % completes turn 
+                             //
+  IF LEGAL:                  //
+  | requestCards(TurnState)  //      |                 | % player receives:
+  | ------------------------ // ---> |                 | % - turn state
+  |                          //      |                 | % with a revised 
+  |                          //      |                 | % wallet of pebbles
+  |                          //      |                 |
+  |                          //      |                 |
+  |   SequenceOf<Card>       //      |                 | 
+  | <========================//===== |                 | % purchases cards
+  |--+                       //      |                 |
+  .  |                       //      .                 . % if legal:
+  .  |                       //      .                 . % referee modifies game state
+  .  |                       //      .                 . % completes turn 
+  .  |                       //      .                 . % otherwise: 
+  .  |                       //      .                 . % kick player out 
+  .<-+                       //      .                 . % completes turn 
+                             //
+                             
+```
 
-        | kick-active-player()       |                                
-        | <------------------------- |
-        |                            | 
-        | state-rotate()             | 
-        | <------------------------- |                                
-        
-otherwise:
+#### Ending the Game
 
-        |                            | 
-        | state-rotate()             | 
-        | <------------------------- |                                
+```
+  server side              proxies             clients
+-----------------------------------------------------------------------------------
+referee                              player (p_1) . . . player (p_n)
+  |                         //               |                 |
+  |                         //               |                 |
+  |    win(Boolean)         //               |                 |
+  | ---------------- ~~~~   //  ~~~~ ------> |                 | 
+  |                         //               |                 | 
+  .                         //               .                 . 
+  .                         //               .                 . 
+  .                         //               .                 . 
+  .                         //               .                 .
+  |    win(Boolean)         //               |                 |
+  | ---------------- ~~~~   //  ~~~~ ------------------------> |
+  |                         //               |                 |
+  |                         //               |                 |
 ```
 
 ### The Logical Protocol 
@@ -177,7 +213,7 @@ referee                         player (p_1) . . . player (p_n)
   .<-+                             .                 . % completes turn 
 
   IF LEGAL:
-  | -----------------------------> |                 | 
+  |                                |                 |
   |   requestCards(TurnState)      |                 | % player receives:
   | -----------------------------> |                 | % - turn state
   |                                |                 | % with a revised 

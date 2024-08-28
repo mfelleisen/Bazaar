@@ -11,5 +11,6 @@ $ raco doc Bazaar
 
 ### IMMEDIATE TODO
 
-- does the rule checker make sure trades are subsets of equations (in either direction?) 
+- cross-check the number of cards and pebbles in Turn and Game
+- check illegality of results of cheating
 

@@ -1,6 +1,6 @@
 ## Referee 
 
-this component implements the Q referee 
+this component implements the Bazaar referee 
 
 The referee is organized as a mechanism that sets up an initial state,
 consults external players to cause transitions from one state

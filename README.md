@@ -11,7 +11,6 @@ $ raco doc Bazaar
 
 ### IMMEDIATE TODO
 
-- impose loose constraints on GameState and TurnState when introduced as test inputs
-- check those constraints where?
-
+- cross-check the number of cards and pebbles in Turn and Game
+- check illegality of results of cheating
 
