@@ -48,7 +48,7 @@
 ;; ---------------------------------------------------------------------------------------------------
 (module+ examples
   (provide gs0 gs1 gs-no-players gs-20 gs-20-rotate gs1+g-r+1 gs-3-zeros
-           gs-6-players gs-10 gs-10++ gs-10--)
+           gs-6-players gs-10 gs-10++ gs-10-- gs-6-players++++)
 
   #; {type GameTurnScenarios = [Listof 1Scenario]}
   #; {type 1Scenario         = [List GameState TurnState]}
@@ -256,6 +256,7 @@
 
   (define cards2 (b:bag-add cards0 cards1 cards1 cards0 cards1))
   (define gs-6-players++ (game bank0 (take cards2 4) (drop cards2 4) 6-players))
+  (define gs-6-players++++ (game bank0 (take ALL-CARDS 4) (drop ALL-CARDS 4) 6-players))
 
   (define 3-0-players (map player+ (list p-ggggg p-rgbrg p-wyrbb) '[k l m]))
   (define gs-3-zeros (game b-rrbrr (list c-wyrbb c-ggggg) '[] 3-0-players))

@@ -33,7 +33,11 @@
   #; {RefScenarios  = [Listof 1RefScenario]}
   #; {1RefScenario = [List [List [Listof PlayerObject] Equations GameState] Result]}
   #; {Result       = [List [Listof Player] [Listof Player]]} 
-  (provide Simple/ Complex/))
+  (provide Simple/ Complex/)
+
+  (provide 8Simple/ 8Complex/)
+
+  (provide 9Simple/ 9Complex/))
 
 ;                                                                                      
 ;       ;                                  ;                                           
@@ -207,29 +211,37 @@
       [(? string?) (values winners (cons p kicked))]
       [_      (values (cons p winners) kicked)])))
 
-;                                                                 
-;                                                                 
-;                                                ;                
-;                                                                 
-;    ;;;    ;;;    ;;;   ; ;;   ;;;;    ;;;;   ;;;    ;;;    ;;;  
-;   ;   ;  ;;  ;  ;;  ;  ;;  ;      ;   ;;  ;    ;   ;; ;;  ;   ; 
-;   ;      ;      ;   ;; ;   ;      ;   ;        ;   ;   ;  ;     
-;    ;;;   ;      ;;;;;; ;   ;   ;;;;   ;        ;   ;   ;   ;;;  
-;       ;  ;      ;      ;   ;  ;   ;   ;        ;   ;   ;      ; 
-;   ;   ;  ;;     ;      ;   ;  ;   ;   ;        ;   ;; ;;  ;   ; 
-;    ;;;    ;;;;   ;;;;  ;   ;   ;;;;   ;      ;;;;;  ;;;    ;;;  
-;                                                                 
-;                                                                 
-;                                                                 
+;                                                                               
+;                                                                               
+;   ;;;;;;                                                     ;                
+;       ;;                                                                      
+;       ;          ;;;    ;;;    ;;;   ; ;;   ;;;;    ;;;;   ;;;    ;;;    ;;;  
+;       ;         ;   ;  ;;  ;  ;;  ;  ;;  ;      ;   ;;  ;    ;   ;; ;;  ;   ; 
+;      ;          ;      ;      ;   ;; ;   ;      ;   ;        ;   ;   ;  ;     
+;      ;           ;;;   ;      ;;;;;; ;   ;   ;;;;   ;        ;   ;   ;   ;;;  
+;     ;               ;  ;      ;      ;   ;  ;   ;   ;        ;   ;   ;      ; 
+;     ;           ;   ;  ;;     ;      ;   ;  ;   ;   ;        ;   ;; ;;  ;   ; 
+;    ;             ;;;    ;;;;   ;;;;  ;   ;   ;;;;   ;      ;;;;;  ;;;    ;;;  
+;                                                                               
+;                                                                               
+;                                                                               
+           
+(module+ examples ;; players for milestone 7
+  (define eq1 `[,ggg=b ,r=bbbb ,r=gggg])
+  (define eq2 `[,w=bbbb ,rg=bbbb ,ggb=rw ,ggg=b ,r=bbbb ,r=gggg, ggg=r])
 
-(module+ examples
-  (setup-scenarios simple+ Simple/ Complex/)
-
-  (define eq++ `[,ggg=b ,r=bbbb ,r=gggg])
+  (define a (create-player "Adam" purchase-points))
+  (define b (create-player "Bettina" purchase-points))
+  (define c (create-player "Carl"))
+  (define d (create-player "Dan"))
+  (define e (create-player "Eve" purchase-size))
+  (define f (create-player "Felix"))
+  (define g (create-player "Grace"))
+  (define d-f-g (list d f g))
   
-  (define 2players [list (create-player "Adam" purchase-points) (create-player "Eve" purchase-size)])
-  (define 3players (append 2players (list (create-player "Carl"))))
-  (define 6players (append 3players (map create-player '["Dan" "Felix" "Grace"])))
+  (define 2players [list a e])
+  (define 3players (append 2players (list c)))
+  (define 6players (append 3players d-f-g))
 
   #;{String [Purchase -> Natural] String -> PlayerObject}
   (define (create-exn-player name which xn)
@@ -237,58 +249,45 @@
     (create-player name which #:bad factory))
   
   (define z (create-exn-player "Zeina" purchase-points "setup"))
-  (define 2p+setup-exn (cons z 2players))
-  
   (define y (create-exn-player "Yolanda" purchase-points "request-pebble-or-trades"))
-  (define 1p-setup-rpt-exn (list z y (first 2players)))
-  
   (define x (create-exn-player "Xena" purchase-size "request-cards"))
-  (define 3exn-players (list x y z))
-  
   (define w (create-exn-player "Willhelmina" purchase-size "win"))
-  (define 2+4-players (list* x y z w 2players))
-
   (define v (create-exn-player "Veronica" purchase-size "win"))
-  (define a-1+5-players (list v x y z w (first 2players)))
-  (define b-1+5-players (list (second 2players) v x y z w))
-  
   (define u (create-exn-player "Uria" purchase-size "request-cards"))
-  (define 6-exn-players (list v x y z w u)))
-
-;; ---------------------------------------------------------------------------------------------------
-(module+ examples ;; inf
-
-  #;{String [Purchase -> Natural] String -> PlayerObject}
-  (define (create-inf-player name which xn)
-    (define factory (retrieve-factory xn infinite-loop-table-for-9))
-    (create-player name which #:bad factory))
-
-  (define t (create-inf-player "Theresa" purchase-size "setup-1"))
-  (define 2p+setup-inf (cons t 2players))
-
-  (define s (create-inf-player "Susanne" purchase-size "request-cards-1"))
-  (define b-2p+setup-inf (cons s 2players))
   
-  (define adam `[["Adam"] []])
-  (define adam-eve `[["Adam" "Eve"] []])
-  (define eve `[["Eve"] []])
+  (define z-a-e (cons z 2players))
+  (define z-y-a (list z y a))
+  (define x-y-z (list x y z))
+  (define x-y-z-w-a-e (list* x y z w 2players))
+  (define v-x-y-z-w-a (list v x y z w a))
+  (define v-x-y-z-w-second-of-2 (list e v x y z w))
+  (define v-x-y-z-w-u (list v x y z w u)))
 
-  ; #;
-  [observe #true] (referee/state b-2p+setup-inf #; 2p+setup-inf eq++ gs-3-zeros))
+(module+ examples ;; outcomes for games abstracted over drop-outs
+  (define (ff x) (map (λ (a) (send a name)) x))
+  (define [default . x]    `[[] ,(ff x)])
+  (define [adam . x]       `[["Adam"] ,(ff x)])
+  (define [bettina . x]    `[["Bettina"] ,(ff x)])
+  (define [adam-eve . x]   `[["Adam" "Eve"] ,(ff x)])
+  (define [carl-adam . x]  `[["Adam" "Carl"] ,(ff x)])
+  (define [eve . x]        `[["Eve"] ,(ff x)])
+  (define [felix . x]      `[["Felix"] ,(ff x)]))
 
 ;; ---------------------------------------------------------------------------------------------------
-(module+ examples ;; ForStudents/
-  (simple+ Simple/ (list 2players '[] gs-20) adam "no action, 1 winner")
-  (simple+ Simple/ (list 3players '[] gs-3-zeros) `[["Carl" "Adam"] []] "2 buys, 2 winners")
-  (simple+ Simple/ (list 2p+setup-exn `[,ggb=rw] gs-3-zeros) `[["Eve"] ["Zeina"]] "setup exn")
-  (simple+ Simple/ (list 6players `[,ggg=b] gs-6-players) adam "1 trade, 1 buy, 1 winner")
-  (simple+ Simple/ (list 1p-setup-rpt-exn `[,ggb=rw] gs-3-zeros) `[["Adam"] ["Zeina" "Yolanda"]] "2"))
+(module+ examples ;; ForStudents/ in 7
+  (setup-scenarios simple+ Simple/ Complex/)
+
+  (simple+ Simple/ (list 2players '[] gs-20) [adam] "no action, 1 winner")
+  (simple+ Simple/ (list 3players '[] gs-3-zeros) [carl-adam] "2 buys, 2 winners")
+  (simple+ Simple/ (list z-a-e `[,ggb=rw] gs-3-zeros) (eve z) "setup exn")
+  (simple+ Simple/ (list 6players `[,ggg=b] gs-6-players) [adam] "1 trade, 1 buy, 1 winner")
+  (simple+ Simple/ (list z-y-a `[,ggb=rw] gs-3-zeros) `[["Adam"] ["Zeina" "Yolanda"]] "2"))
 
 ;; ---------------------------------------------------------------------------------------------------
-(module+ examples ;; Tests/
+(module+ examples ;; Tests/ in 7
   
   (let ([strange-1
-    #<< here
+         #<< here
   scenario 1:
     cards all display colors 1 and 2
     players get colors 3 and 4
@@ -296,11 +295,11 @@
     bank has plenty of colors 3 and 4
      --> players continue to make exchanges unti all cards disappear
  here
-    ])
-    (simple+ Complex/ (list 2players `[,r=bbbb] gs-10++) adam-eve "strange-1"))
+         ])
+    (simple+ Complex/ (list 2players `[,r=bbbb] gs-10++) [adam-eve] "strange-1"))
 
   (let ([strange-2
-    #<< here
+         #<< here
    scenario 2: 
     bank has no colors showing up in any of the equations 
     card has only colors from bank 
@@ -308,28 +307,135 @@
     players can request pebbles until bank is exchausted 
      --> referee terminates game per force 
  here
-    ])
-    (simple+ Complex/ (list 2players `[,ggb=rw] gs-10--) adam-eve "strange-2"))
+         ])
+    (simple+ Complex/ (list 2players `[,ggb=rw] gs-10--) [adam-eve] "strange-2"))
 
-  (let ([r `[ [] ["Zeina" "Xena" "Yolanda"]]])
-    (simple+ Complex/ (list 3exn-players `[,ggb=rw] gs-3-zeros) r "3 drops"))
+  (simple+ Complex/ (list x-y-z `[,ggb=rw] gs-3-zeros) (default z x y) "3 drops")
+  (simple+ Complex/ (list x-y-z-w-a-e eq1 gs-6-players++) (default z w x y) "good ones lose")
+  (simple+ Complex/ (list v-x-y-z-w-a eq1 gs-6-players++) (default z w x y v) "2 bad ws")
+  (simple+ Complex/ (list v-x-y-z-w-second-of-2 eq1 gs-6-players++) (eve z w x y v) "1 w, 5 drops")
+  (simple+ Complex/ (list '[] '[] gs-no-players) [default] "no players, stop immediately")
+  (simple+ Complex/ (list 3players eq1 gs-3-zeros++) [eve] "2 buys, 2 winners")
+  (simple+ Complex/ (list 6players eq1 gs-6-players++) [adam] "all get turns")
+  (simple+ Complex/ (list v-x-y-z-w-u eq1 gs-6-players++) (default u z w x y v) "6 drop outs"))
 
-  (let ([r `[[] ["Zeina" "Willhelmina" "Xena" "Yolanda"]]])
-    (simple+ Complex/ (list 2+4-players eq++ gs-6-players++) r "good one lose, bad wins"))
+;                                                                               
+;                                                                               
+;    ;;;;                                                      ;                
+;   ;    ;                                                                      
+;   ;    ;         ;;;    ;;;    ;;;   ; ;;   ;;;;    ;;;;   ;;;    ;;;    ;;;  
+;   ;    ;        ;   ;  ;;  ;  ;;  ;  ;;  ;      ;   ;;  ;    ;   ;; ;;  ;   ; 
+;    ;;;;         ;      ;      ;   ;; ;   ;      ;   ;        ;   ;   ;  ;     
+;   ;;  ;;         ;;;   ;      ;;;;;; ;   ;   ;;;;   ;        ;   ;   ;   ;;;  
+;   ;    ;            ;  ;      ;      ;   ;  ;   ;   ;        ;   ;   ;      ; 
+;   ;    ;        ;   ;  ;;     ;      ;   ;  ;   ;   ;        ;   ;; ;;  ;   ; 
+;    ;;;;          ;;;    ;;;;   ;;;;  ;   ;   ;;;;   ;      ;;;;;  ;;;    ;;;  
+;                                                                               
+;                                                                               
+;                                                                               
 
-  (let ([r `[[] ["Zeina" "Willhelmina" "Xena" "Yolanda" "Veronica"]]])
-    (simple+ Complex/ (list a-1+5-players eq++ gs-6-players++) r "2 bad winners"))
+(module+ examples ;; cheating players for milestone 8
+  #;{String [Purchase -> Natural] String -> PlayerObject}
+  (define (create-cheating-player name which xn)
+    (define factory (retrieve-factory xn cheater-table-for-8))
+    (create-player name which #:bad factory))
 
-  (let ([r `[["Eve"] ["Zeina" "Willhelmina" "Xena" "Yolanda" "Veronica"]]])
-    (simple+ Complex/ (list b-1+5-players eq++ gs-6-players++) r "an actual winner, five drops"))
+  (define q (create-cheating-player "Quixote" purchase-size "bank-cannot-trade"))
+  (define p (create-cheating-player "Paul" purchase-points "use-non-existent-equation"))
+  (define o (create-cheating-player "Olivia" purchase-points "use-non-existent-equation"))
+  (define n (create-cheating-player "Norma" purchase-size "wallet-cannot-trade"))
+  (define m (create-cheating-player "Michelle" purchase-points "buy-invisible-card"))
+  (define l (create-cheating-player "Laura" purchase-size "wallet-cannot-buy-card"))
 
-  (simple+ Complex/ (list '[] '[] gs-no-players) `[[] []] "no players, stop immediately")
-  (simple+ Complex/ (list 3players eq++ gs-3-zeros++) `[["Eve"] []] "2 buys, 2 winners")
-  (simple+ Complex/ (list 6players eq++ gs-6-players++) adam "all get turns")
+  (define o-a-e (cons o 2players))
+  (define o-p-a (list o p a))
+  (define o-p-v-x-y-z (list o v x p y z))
+  (define o-p-v-x-a-q (list o p v x a q))
+  (define n-o-a-d-f-g (list* n o a d-f-g))
+  (define m-l-a-d-f-g (list* m l a d-f-g))
+  (define q-p-o-n-m-l (list q p o n m l))
+  (define v-n-m       (list v n m)))
 
-  (let ([r `[[] ["Uria" "Zeina" "Willhelmina" "Xena" "Yolanda" "Veronica"]]])
-    (simple+ Complex/ (list 6-exn-players eq++ gs-6-players++) r "6 drop outs")))
+(module+ examples ;; ForsTudents/ in 8
+  (setup-scenarios 8simple+ 8Simple/ 8Complex/)
+  
+  (8simple+ 8Simple/ (list o-a-e `[,ggb=rw] gs-3-zeros) (eve o) "wrong eq")
+  (8simple+ 8Simple/ (list o-p-v-x-y-z `[,ggb=rw] gs-6-players++) (default o p v x y z) "exn & weq")
+  (8simple+ 8Simple/ (list o-p-v-x-a-q `[,ggb=rw] gs-6-players++) (adam o p v x q) "ok, exn & bt"))
 
+(module+ examples ;; Tests/ in 8
+  (8simple+ 8Complex/ (list x-y-z `[,ggb=rw] gs-3-zeros) (default z x y) "3 drops")
+  (8simple+ 8Complex/ (list q-p-o-n-m-l eq1 gs-6-players++) (default q p o n m l) "all cheating")
+  (8simple+ 8Complex/ (list x-y-z-w-a-e eq1 gs-6-players++) (default z w x y) "good ones lose")
+  (8simple+ 8Complex/ (list v-x-y-z-w-a eq1 gs-6-players++) (default z w x y v) "2 bad ws")
+  (8simple+ 8Complex/ (list v-x-y-z-w-second-of-2 eq1 gs-6-players++) (eve z w x y v) "1 w, 5 drops")
+  (8simple+ 8Complex/ (list o-p-v-x-a-q `[,ggb=rw] gs-6-players) (adam o p v x) "ok, exn & bt")
+  (8simple+ 8Complex/ (list o-p-a `[,ggb=rw] gs-3-zeros) (adam o p) "wrong eq")
+  (8simple+ 8Complex/ (list m-l-a-d-f-g `[,ggb=rw] gs-6-players++) (felix m l) "ok, exn & bt")
+  (8simple+ 8Complex/ (list n-o-a-d-f-g `[,ggb=rw] gs-6-players) (felix n o) "ok, wt, weq")
+  (8simple+ 8Complex/ (list v-n-m `[,ggb=rw] gs-3-zeros) (default v n m) "ok, wt, weq"))
+
+;                                                                               
+;                                                                               
+;    ;;;;                                                      ;                
+;   ;;  ;                                                                       
+;   ;    ;         ;;;    ;;;    ;;;   ; ;;   ;;;;    ;;;;   ;;;    ;;;    ;;;  
+;   ;    ;        ;   ;  ;;  ;  ;;  ;  ;;  ;      ;   ;;  ;    ;   ;; ;;  ;   ; 
+;   ;;  ;;        ;      ;      ;   ;; ;   ;      ;   ;        ;   ;   ;  ;     
+;    ;;; ;         ;;;   ;      ;;;;;; ;   ;   ;;;;   ;        ;   ;   ;   ;;;  
+;        ;            ;  ;      ;      ;   ;  ;   ;   ;        ;   ;   ;      ; 
+;   ;   ;         ;   ;  ;;     ;      ;   ;  ;   ;   ;        ;   ;; ;;  ;   ; 
+;    ;;;           ;;;    ;;;;   ;;;;  ;   ;   ;;;;   ;      ;;;;;  ;;;    ;;;  
+;                                                                               
+;                                                                               
+;                                                                               
+
+(module+ examples ;; infinite loops players for milestone 9
+
+  #;{String [Purchase -> Natural] String -> PlayerObject}
+  (define (create-inf-player name which xn)
+    (define factory (retrieve-factory xn infinite-loop-table-for-9))
+    (create-player name which #:bad factory))
+
+  (define t (create-inf-player "Theresa" purchase-size "setup-1"))
+  (define s (create-inf-player "Susanne" purchase-size "request-cards-2"))
+  (define k (create-inf-player "Klaus" purchase-points "request-cards-1"))
+  (define j (create-inf-player "John" purchase-size "request-pebble-or-trades-5"))
+  (define i (create-inf-player "Ian" purchase-size "request-pebble-or-trades-3"))
+  (define h (create-inf-player "Hannah" purchase-points "win-1"))
+
+  (define t-a-e (cons t 2players))
+  (define s-a-e (cons s 2players))
+
+  (define s-t-k-d-f-g (list* s t k d-f-g))
+  (define s-t-k-b-f-g (list  s t k f b g))
+  (define j-t-k-d-f-g (list* j t k d-f-g))
+  (define i-t-k-d-f-g (list* i t k d-f-g))
+  (define h-t-k-d-f-g (list  f t k d h g)))
+
+#;
+(module+ examples
+  [observe #true] (referee/state s-t-k-b-f-g eq2 gs-6-players++)) #; (felix s t k)
+
+(module+ examples ;; ForsTudents/ in 9
+  (setup-scenarios 9simple+ 9Simple/ 9Complex/)
+  (9simple+ 9Simple/ (list o-a-e `[,ggb=rw] gs-3-zeros) (eve o) "wrong eq")
+  (9simple+ 9Simple/ (list s-t-k-d-f-g eq1 gs-6-players++) (felix s t k) "2 for 9")
+  (9simple+ 9Simple/ (list s-t-k-b-f-g eq2 gs-6-players++) (bettina s t k) "bettina"))
+   
+(module+ examples ;; Tests/ in 9
+  (9simple+ 9Complex/ (list x-y-z-w-a-e eq1 gs-6-players++) (default z w x y) "good ones lose")
+  (9simple+ 9Complex/ (list v-x-y-z-w-a eq1 gs-6-players++) (default z w x y v) "2 bad ws")
+  (9simple+ 9Complex/ (list v-x-y-z-w-second-of-2 eq1 gs-6-players++) (eve z w x y v) "1 w, 5 drops")
+  (9simple+ 9Complex/ (list o-p-v-x-a-q `[,ggb=rw] gs-6-players) (adam o p v x) "ok, exn & bt")
+  (9simple+ 9Complex/ (list o-p-a `[,ggb=rw] gs-3-zeros) (adam o p) "wrong eq")
+  (9simple+ 9Complex/ (list `[,a  ,b ,c] eq2 gs-3-zeros) (adam) "just fine")
+  (9simple+ 9Complex/ (list s-a-e eq1 gs-3-zeros) `[["Susanne"] []] "inf 2")
+  (9simple+ 9Complex/ (list i-t-k-d-f-g eq2 gs-6-players++++) (felix i t k) "grace: 2 trades, 2 buys")
+  (9simple+ 9Complex/ (list j-t-k-d-f-g eq2 gs-6-players++++) (felix j t k) "large")
+  (9simple+ 9Complex/ (list h-t-k-d-f-g eq2 gs-6-players++++) (default h t k) "win lose")
+  )
+  
 ;                                     
 ;                                     
 ;     ;                    ;          
@@ -381,4 +487,10 @@
     
 
   (run-scenario* 'simple Simple/)
-  (run-scenario* 'complex Complex/))
+  (run-scenario* 'complex Complex/)
+
+  (run-scenario* '8simple 8Simple/)
+  (run-scenario* '8complex 8Complex/)
+
+  (run-scenario* '9simple 9Simple/)
+  (run-scenario* '9complex 9Complex/))
