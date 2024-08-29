@@ -448,7 +448,8 @@
 (define buy-invisible-card%
   (class/fail
    1
-   [(request-cards t)
+   [(request-cards t*)
+    (define t (first t*)) ;; because class/fail uses . args
     (define visibles (turn-cards t))
     (for/first ([c ALL-CARDS] #:unless (member c visibles))
       (list c))]))
@@ -474,11 +475,11 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 (define all-cheater-classes
-  `[ [,use-non-existent-equation% "make up a equation to trade that is not a given equation"]
-     [,bank-cannot-trade%         "pick an equation to trade that the bank cannot support"]
-     [,wallet-cannot-trade%       "pick an equation to trade that the active player's wallet cannot support"]
-     [,buy-invisible-card%        "attempt to buy a card that is not visible"]
-     [,wallet-cannot-buy-card%    ""] ])
+  `[ [,use-non-existent-equation% "a trade that is not according to any given equation"]
+     [,bank-cannot-trade%         "a trade that the bank cannot support"]
+     [,wallet-cannot-trade%       "a trade that its wallet does not support"]
+     [,buy-invisible-card%        "the purchase of a card that is not visible"]
+     [,wallet-cannot-buy-card%    "the purchase of a card without owning the needed pebbles"] ])
 
 ;; ALSO CHECK THAT THE RETURNS ARE ILLEGAL! 
 
