@@ -14,7 +14,7 @@
       [(not (= sop# player#))
        (eprintf "player counts dont match:\n in state:   ~a\n in players: ~a\n" sop# player#)
        #false]
-      [(not (<= #; MIN-PLAYERS sop# MAX-PLAYERS))
+      [(not (<= sop# MAX-PLAYERS))
        (eprintf "player count doesn't match Bazaar rules: ~a\n" sop#)
        #false]
       [else #true])))
@@ -100,13 +100,58 @@
   (define eq0 (e:create-random-equations))
   (referee/state player* eq0 gs0))
 
-#; {[Listof PlayerObject] Equations GameState -> [List [Listof Player] [Listof Player]]}
-(define (referee/state player* equations gs)
-  (let*-values ([(gs0)                           (gs:connect gs player*)]
-                [(gs-post-setup setup-drop-outs) (apply values (setup equations gs0 player*))]
-                [(gs-post-turns turn-drop-outs)  (apply values (run-turns equations gs-post-setup))]
-                [(winners win-lose-drop-outs)    (apply values (inform-players gs-post-turns))])
+#; {[Listof PlayerObject] Equations GameState [Listof Observer]
+                          ->
+                          [List [Listof Player] [Listof Player]]}
+(define (referee/state player* equations gs (observer* `[]))
+  (define mo (new manage-observers%))
+  (send mo add* observer*)
+  (send mo state 'initial gs)
+  (let*-values ([(gs0)                        (gs:connect gs player*)]
+                [(gs->setup setup-drop-outs)  (apply values (setup equations gs0 player* mo))]
+                [(gs->turns turn-drop-outs)   (apply values (run-turns equations gs->setup mo))]
+                [(winners win-lose-drop-outs) (apply values (inform-players gs->turns))])
+    (send mo state '"final state" gs->turns)
+    (send mo end)
     [list winners (append setup-drop-outs turn-drop-outs win-lose-drop-outs)]))
+
+;                                                   
+;                                      ;            
+;                   ;                  ;            
+;                   ;                  ;            
+;  ;;;;;;   ;;;;  ;;;;;          ;;;   ;;;;    ;;;  
+;  ;  ;  ; ;;  ;    ;           ;; ;;  ;; ;;  ;   ; 
+;  ;  ;  ; ;   ;    ;           ;   ;  ;   ;  ;     
+;  ;  ;  ; ;   ;    ;           ;   ;  ;   ;   ;;;  
+;  ;  ;  ; ;   ;    ;           ;   ;  ;   ;      ; 
+;  ;  ;  ; ;; ;;    ;           ;; ;;  ;; ;;  ;   ; 
+;  ;  ;  ;  ;;;;    ;;;          ;;;   ;;;;    ;;;  
+;              ;                                    
+;           ;  ;                                    
+;            ;;                                     
+
+#;{type MO = (instanceof/c manage-observers%)}
+
+#; (class/c
+    [add*  (->m (listof any/c) any)]
+    [end   (->m any)]
+    [state (->m (or/c symbol? string?) gs:game? any)])
+
+(define manage-observers%
+  (class object%
+    (super-new)
+    (define *observers (list))
+
+    (define/public (add* o*)
+      (set! *observers (append o* *observers)))
+
+    (define/public (end)
+      (for ([o *observers])
+        (xsend o end)))
+
+    (define/public (state msg gs)
+      (for ([o *observers])
+        (xsend o state msg gs)))))
 
 ;                                     
 ;                                     
@@ -123,18 +168,25 @@
 ;                               ;     
 ;                               ;     
 
-#; {Equations GameState -> [List GameState [Listof PlayerObject]]}
-(define (setup equations gs0 players)
+#; {Equations GameState [Listof PlayerObject] MO -> [List GameState [Listof PlayerObject]]}
+;; the PlayerOhjects and and the GameState players are aligned
+;; OUCH || data structure 
+(define (setup equations gs0 players observers)
   (for/fold ([gs gs0] [kicked '()] #:result (list gs kicked)) ([active players])
-    (setup-1-player equations active gs kicked)))
+    (match (setup-1-player equations active gs)
+      [(list (? gs:game? gs) active)
+       (send observers state 'setup gs)
+       (values gs (cons active kicked))]
+      [gs
+       (values gs kicked)])))
 
-#;{Equations PlayerObject GameState [Listof PlayerObject] -> (values GameState [Listof PlayerObject])}
-(define (setup-1-player equations active gs kicked)
+#;{Equations PlayerObject GameState -> (values GameState [Listof PlayerObject])}
+(define (setup-1-player equations active gs)
   (define return (xsend active setup equations))
   (match return
-    [(? failed?) (values (gs:kick gs) (cons active kicked))]
-    [(? string?) (values (gs:kick gs) (cons active kicked))]
-    [_           (values (gs:rotate gs) kicked)]))
+    [(? failed?) (list (gs:kick gs) active)]
+    [(? string?) (list (gs:kick gs) active)]
+    [_           (gs:rotate gs)]))
 
 ;                                     
 ;                                     
@@ -151,35 +203,41 @@
 ;                                     
 ;                                     
 
-#; {Equations GameState -> [List GameState [Listof PlayerObject]]}
-(define (run-turns equations gs-post-setup)
+#; {Equations GameState MO -> [List GameState [Listof PlayerObject]]}
+(define (run-turns equations gs-post-setup observers)
   (let until-end ([gs gs-post-setup] [kicked '()])
-    (when [observe] (pretty-print (list (e:render* equations) (gs:render gs)) (current-error-port)))
     (cond
       [(gs:game-over? gs) (list gs kicked)]
       [else
-       (match (one-turn equations gs)
+       (match (one-turn equations gs observers)
          [(list gs active) (until-end gs (cons active kicked))]
-         [gs (until-end gs kicked)])])))
+         [(list gs)        (until-end gs kicked)])])))
 
-#; {Equations GameState -> (U GameState [List GameState PlayerObject])}
-(define (one-turn equations gs)
-  (define active  (gs:game-active gs))
-  (define action1 (xsend active request-pebble-or-trades (gs:extract-turn gs)))
-  (when [observe] (eprintf "~a is trading ~a\n" (xsend active name) action1))
-  (match (gs:legal-pebble-or-trade-request equations action1 gs)
-    [#false (list (gs:kick gs) active)]
-    [gs
-     (define action2 (xsend active request-cards (gs:extract-turn gs)))
-     (when [observe] (eprintf "~a is buying ~a\n" (xsend active name) action2))
+#; {Equations GameState MO -> (U GameState [List GameState PlayerObject])}
+(define (one-turn equations gs0 observers)
+  (define report (report-to observers))
+  (define active  (gs:game-active gs0))
+  (define action1 (xsend active request-pebble-or-trades (gs:extract-turn gs0)))
+  (match (gs:legal-pebble-or-trade-request equations action1 gs0)
+    [#false
+     (report "requesting pebblble of exchanges, failed" (gs:kick gs0) active)]
+    [gs++
+     (report "requesting pebble or exchanges, success" gs++)
+     (define action2 (xsend active request-cards (gs:extract-turn gs++)))
      (cond
-       [(failed? action2) (list (gs:kick gs) active)]
+       [(failed? action2)
+        (report "buying cards, failed due to communication protocol problem" (gs:kick gs++) active)]
        [else 
-        (match (gs:legal-purchase-request action2 gs)
-          [#false  (list (gs:kick gs) active)]
-          [gs (gs:rotate gs)])])]))
+        (match (gs:legal-purchase-request action2 gs++)
+          [#false
+           (report "buying cards, failed due to game logic problem" (gs:kick gs++) active)]
+          [gs
+           (report "buying cards/success" (gs:rotate gs))])])]))
 
-(define observe (make-parameter #false))
+#; {String GameState [[Listof PlayerObject]] -> [Cons GameState [Listof PlayerObject]]}
+(define ((report-to observers) msg gs++ . active)
+  (send observers state msg gs++)
+  (cons gs++ active))
 
 ;                                                   
 ;                                                   
@@ -209,7 +267,7 @@
     (match (xsend p win msg)
       [(? failed?) (values winners (cons p kicked))]
       [(? string?) (values winners (cons p kicked))]
-      [_      (values (cons p winners) kicked)])))
+      [_           (values (cons p winners) kicked)])))
 
 ;                                                                               
 ;                                                                               
