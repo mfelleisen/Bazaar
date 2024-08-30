@@ -23,6 +23,7 @@
  (contract-out
   [referee/state
    (->i ([players (listof player/c)] [eqs (listof e:1eq?)] [gs gs:game?])
+        ([observers (listof any/c)])
         #:pre/name (players) "players must have distince names"
         (distinct? (map (λ (p) (send p name)) players))
         #:pre/name (gs players) "matching number of players"
@@ -31,7 +32,7 @@
 
 (module+ examples
   #; {RefScenarios  = [Listof 1RefScenario]}
-  #; {1RefScenario = [List [List [Listof PlayerObject] Equations GameState] Result]}
+  #; {1RefScenario = [List [List [Listof Actor] Equations GameState] Result]}
   #; {Result       = [List [Listof Player] [Listof Player]]} 
   (provide Simple/ Complex/)
 
@@ -56,6 +57,7 @@
 
 (require Bazaar/scribblings/spec)
 
+(require Bazaar/Referee/manage-observers)
 (require (prefix-in e: Bazaar/Common/equations))
 (require Bazaar/Common/player-interface)
 (require Bazaar/Player/strategies)
@@ -66,7 +68,6 @@
 (require SwDev/Contracts/unique)
 
 (module+ examples
-  (require (submod ".."))
   (require (except-in (submod Bazaar/Common/equations examples) ForStudents/ Tests/))
   (require (submod Bazaar/Referee/game-state examples))
   (require Bazaar/Player/mechanism)
@@ -100,58 +101,22 @@
   (define eq0 (e:create-random-equations))
   (referee/state player* eq0 gs0))
 
-#; {[Listof PlayerObject] Equations GameState [Listof Observer]
-                          ->
-                          [List [Listof Player] [Listof Player]]}
-(define (referee/state player* equations gs (observer* `[]))
+#; {[Listof Actor] Equations GameState [Listof Observer] -> [List [Listof Player] [Listof Player]]}
+(define (referee/state actor* equations gs0 (observer* `[]))
   (define mo (new manage-observers%))
   (send mo add* observer*)
-  (send mo state 'initial gs)
-  (let*-values ([(gs0)                        (gs:connect gs player*)]
-                [(gs->setup setup-drop-outs)  (apply values (setup equations gs0 player* mo))]
+  (send mo state 'initial gs0)
+  (let*-values ([(gs->setup setup-drop-outs)  (apply values (setup equations gs0 actor* mo))]
                 [(gs->turns turn-drop-outs)   (apply values (run-turns equations gs->setup mo))]
                 [(winners win-lose-drop-outs) (apply values (inform-players gs->turns))])
-    (send mo state '"final state" gs->turns)
-    (send mo end)
-    [list winners (append setup-drop-outs turn-drop-outs win-lose-drop-outs)]))
+    (define drop-outs (append setup-drop-outs turn-drop-outs win-lose-drop-outs))
+    (send mo end (get-names winners) (get-names drop-outs))
+    [list winners drop-outs]))
 
-;                                                   
-;                                      ;            
-;                   ;                  ;            
-;                   ;                  ;            
-;  ;;;;;;   ;;;;  ;;;;;          ;;;   ;;;;    ;;;  
-;  ;  ;  ; ;;  ;    ;           ;; ;;  ;; ;;  ;   ; 
-;  ;  ;  ; ;   ;    ;           ;   ;  ;   ;  ;     
-;  ;  ;  ; ;   ;    ;           ;   ;  ;   ;   ;;;  
-;  ;  ;  ; ;   ;    ;           ;   ;  ;   ;      ; 
-;  ;  ;  ; ;; ;;    ;           ;; ;;  ;; ;;  ;   ; 
-;  ;  ;  ;  ;;;;    ;;;          ;;;   ;;;;    ;;;  
-;              ;                                    
-;           ;  ;                                    
-;            ;;                                     
-
-#;{type MO = (instanceof/c manage-observers%)}
-
-#; (class/c
-    [add*  (->m (listof any/c) any)]
-    [end   (->m any)]
-    [state (->m (or/c symbol? string?) gs:game? any)])
-
-(define manage-observers%
-  (class object%
-    (super-new)
-    (define *observers (list))
-
-    (define/public (add* o*)
-      (set! *observers (append o* *observers)))
-
-    (define/public (end)
-      (for ([o *observers])
-        (xsend o end)))
-
-    (define/public (state msg gs)
-      (for ([o *observers])
-        (xsend o state msg gs)))))
+#; {[Lisof Actor] -> [Listof String]}
+(define (get-names actors)
+  (map (λ (x) (send x name)) actors))
+  
 
 ;                                     
 ;                                     
@@ -168,25 +133,27 @@
 ;                               ;     
 ;                               ;     
 
-#; {Equations GameState [Listof PlayerObject] MO -> [List GameState [Listof PlayerObject]]}
+#; {Equations GameState [Listof Actor] MO -> [List GameState [Listof Actor]]}
 ;; the PlayerOhjects and and the GameState players are aligned
 ;; OUCH || data structure 
-(define (setup equations gs0 players observers)
-  (for/fold ([gs gs0] [kicked '()] #:result (list gs kicked)) ([active players])
+(define (setup equations gs0 actor* observers)
+  (for/fold ([gs gs0] [kicked '()] #:result (list gs kicked)) ([active actor*])
+    (define name (send active name))
     (match (setup-1-player equations active gs)
+      [(? gs:game? gs)
+       (send observers state (~a "setup/success: " name) gs)
+       (values gs kicked)]
       [(list (? gs:game? gs) active)
-       (send observers state 'setup gs)
-       (values gs (cons active kicked))]
-      [gs
-       (values gs kicked)])))
+       (send observers state (~a "setup/failure: " name) gs)
+       (values gs (cons active kicked))])))
 
-#;{Equations PlayerObject GameState -> (values GameState [Listof PlayerObject])}
+#;{Equations Actor GameState -> (values GameState [Listof Actor])}
 (define (setup-1-player equations active gs)
   (define return (xsend active setup equations))
   (match return
     [(? failed?) (list (gs:kick gs) active)]
     [(? string?) (list (gs:kick gs) active)]
-    [_           (gs:rotate gs)]))
+    [_           (gs:rotate (gs:connect gs active))]))
 
 ;                                     
 ;                                     
@@ -203,7 +170,7 @@
 ;                                     
 ;                                     
 
-#; {Equations GameState MO -> [List GameState [Listof PlayerObject]]}
+#; {Equations GameState MO -> [List GameState [Listof Actor]]}
 (define (run-turns equations gs-post-setup observers)
   (let until-end ([gs gs-post-setup] [kicked '()])
     (cond
@@ -213,30 +180,32 @@
          [(list gs active) (until-end gs (cons active kicked))]
          [(list gs)        (until-end gs kicked)])])))
 
-#; {Equations GameState MO -> (U GameState [List GameState PlayerObject])}
+#; {Equations GameState MO -> (U GameState [List GameState Actor])}
 (define (one-turn equations gs0 observers)
   (define report (report-to observers))
   (define active  (gs:game-active gs0))
+  (define name    (send active name))
   (define action1 (xsend active request-pebble-or-trades (gs:extract-turn gs0)))
   (match (gs:legal-pebble-or-trade-request equations action1 gs0)
     [#false
-     (report "requesting pebblble of exchanges, failed" (gs:kick gs0) active)]
+     (report name "requesting a pebble or pebble exchanges and failed" (gs:kick gs0) active)]
     [gs++
-     (report "requesting pebble or exchanges, success" gs++)
+     (report name "requesting a pebble or pebble exchanges with success" gs++)
      (define action2 (xsend active request-cards (gs:extract-turn gs++)))
      (cond
        [(failed? action2)
-        (report "buying cards, failed due to communication protocol problem" (gs:kick gs++) active)]
+        (report name "buying cards, failed due to communication problem" (gs:kick gs++) active)]
        [else 
         (match (gs:legal-purchase-request action2 gs++)
           [#false
-           (report "buying cards, failed due to game logic problem" (gs:kick gs++) active)]
+           (report name "buying cards, failed due to game logic problem" (gs:kick gs++) active)]
           [gs
-           (report "buying cards/success" (gs:rotate gs))])])]))
+           (report name "buying cards with success" (gs:rotate gs))])])]))
 
-#; {String GameState [[Listof PlayerObject]] -> [Cons GameState [Listof PlayerObject]]}
-(define ((report-to observers) msg gs++ . active)
-  (send observers state msg gs++)
+#; {MO -> [String String GameState [[Listof Actor]] -> [Cons GameState [Listof Actor]]]}
+;; send a message to the observers about `name`s actions and return the game state with the 1 drop-out
+(define ((report-to observers) name msg gs++ . active)
+  (send observers state (~a name " is " msg) gs++)
   (cons gs++ active))
 
 ;                                                   
@@ -254,14 +223,14 @@
 ;                        ;                    ;     
 ;                        ;                    ;     
 
-#; {GameStatr -> [List [Listof PlayerObject] [Listof PlayerObject]]}
+#; {GameStatr -> [List [Listof Actor] [Listof Actor]]}
 (define (inform-players gs-post-turns)
   (match-define [list winners losers] (gs:determine-winners-and-losers gs-post-turns))
   (match-define [list true-winners w-drop-outs] (final-inform winners #true))
   (match-define [list true-losers l-drop-outs]  (final-inform losers #false))
   (list true-winners (append w-drop-outs l-drop-outs)))
 
-#; {[Listof PlayerObject] Boolean -> [List [Listof PlayerObject] [Listof PlayerObject]]}
+#; {[Listof Actor] Boolean -> [List [Listof Actor] [Listof Actor]]}
 (define (final-inform players msg)
   (for/fold ([winners '()] [kicked '()] #:result (list winners kicked)) ([p players])
     (match (xsend p win msg)
@@ -301,7 +270,7 @@
   (define 3players (append 2players (list c)))
   (define 6players (append 3players d-f-g))
 
-  #;{String [Purchase -> Natural] String -> PlayerObject}
+  #;{String [Purchase -> Natural] String -> Actor}
   (define (create-exn-player name which xn)
     (define factory (retrieve-factory xn exn-raising-table-for-7))
     (create-player name which #:bad factory))
@@ -393,7 +362,7 @@
 ;                                                                               
 
 (module+ examples ;; cheating players for milestone 8
-  #;{String [Purchase -> Natural] String -> PlayerObject}
+  #;{String [Purchase -> Natural] String -> Actor}
   (define (create-cheating-player name which xn)
     (define factory (retrieve-factory xn cheater-table-for-8))
     (create-player name which #:bad factory))
@@ -450,7 +419,7 @@
 
 (module+ examples ;; infinite loops players for milestone 9
 
-  #;{String [Purchase -> Natural] String -> PlayerObject}
+  #;{String [Purchase -> Natural] String -> Actor}
   (define (create-inf-player name which xn)
     (define factory (retrieve-factory xn infinite-loop-table-for-9))
     (create-player name which #:bad factory))
@@ -532,12 +501,9 @@
     (pretty-print (actor*->jsexpr players) (current-error-port))
     (eprintf "--------------------------------------------------------\n"))
 
-  #; {[List [Listof PlayerObject] [Listof PlayerObject]] -> [List [Listof String] [Listof String]]}
-  (define (w+do->names p)
-    (let* ([s p]
-           [t (map (λ (player) (xsend player name)) (first s))]
-           [u (map (λ (player) (xsend player name)) (second s))])
-      (sort2 (list t u))))
+  #; {[List [Listof Actor] [Listof Actor]] -> [List [Listof String] [Listof String]]}
+  (define (w+do->names s)
+    (sort2 (list (get-names (first s)) (get-names (second s)))))
 
   (define (sort2 l)
     (match-define [list t u] l)
