@@ -12,10 +12,10 @@
  ; game-players
  player-count
 
- #; {GameState -> PlayerObject}
+ #; {GameState -> Actor}
  game-active 
 
- #; {GameState [Listof PlayerObject] -> GameState}
+ #; {GameState Actor -> GameState}
  connect
 
  #; {GameState -> GameState}
@@ -27,7 +27,7 @@
  #; {GameState -> TurnState}
  extract-turn
  
- #; {GameState -> [List [Listof PlayerObject] [Listof PlayerObject]] }
+ #; {GameState -> [List [Listof Actor] [Listof Actor]] }
  determine-winners-and-losers
 
  #; {GameState -> Boolean}
@@ -212,14 +212,13 @@
 (define (player-count gs)
   (length (game-players gs)))
 
-(define (connect gs lop)
-  (match-define [game bank visibles cards players-] gs)
-  (define players 
-    (for/list ([p+ players-] [p lop])
-      (match p+
-        {[player+ proper _] (player+ proper p)}
-        {_                  (player+ p+ p)})))
-  (game bank visibles cards players))
+(define (connect gs actor)
+  (match-define [game bank visibles cards (cons player-without others)] gs)
+  (define player-with
+    (match player-without
+      {[player+ proper _] (player+ proper actor)}
+      {_                  (player+ player-without actor)}))
+  (game bank visibles cards (cons player-with others)))
 
 (define (game-active gs)
   (player+-connection (first (game-players gs))))
@@ -509,7 +508,7 @@
   (map (compose p:player-score player+-player) players+))
 
 ;; ---------------------------------------------------------------------------------------------------
- #; {GameState -> [List [Listof PlayerObject] [Listof PlayerObject]] }
+ #; {GameState -> [List [Listof Actor] [Listof Actor]] }
 (define (determine-winners-and-losers gs)
   (define players (game-players gs))
   (define winners (if (empty? players) '[] (all-argmax player+-score players)))
