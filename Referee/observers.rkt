@@ -19,7 +19,7 @@
  ;; from the referee perspective
  #; {class/c [state (-> Any GameState Void)] [end (-> Void)]}
  ;; from the connector's perspective, also 
- #; (class/c [show (-> Natural)])
+ #; (class/c [save (-> Void)] [show (-> Natural)])
  observer%)
 
 ;                                                                                      
@@ -36,6 +36,8 @@
 ;                 ;                                                                    
 ;                 ;                                                                    
 ;                 ;                                                                    
+
+(require Bazaar/scribblings/spec)
 
 (require Bazaar/Referee/game-state)
 (require (submod Bazaar/Referee/game-state json))
@@ -85,6 +87,8 @@
 ;; -- the referee uses `end` and `state` to send the sequence of states during a game 
 ;; -- after it sends `end` the observer can be called with `show`,
 ;;    which displays the collected states in a separate window
+;; -- ... the observer can be called with `save`,
+;;    which saves all states as bitmaps in Tmp/ .. as pngs 
 
 (define observer%
   (class object%
@@ -136,7 +140,18 @@
            [to-draw       (λ (x) (display x))]
            [stop-when     negative?]
            [on-key        (λ (x ke) (back-or-forth x ke))])]))
-    
+
+    #; {-> Void}
+    ;; saves all states as bitmaps in Tmp/..png files 
+    (define/public (save)
+      (define tmp Tmp/)
+      (when (directory-exists? tmp) (delete-directory tmp))
+      (make-directory tmp)
+      (parameterize ([current-directory tmp])
+        (for ([x (in-vector *cache)] [i (in-naturals)])
+          (define bm (display i))
+          (save-image bm (~a i ".png")))))
+        
     #; {Natural -> Bitmap}
     (define/private (display i)
       (match (vector-ref *cache i)
