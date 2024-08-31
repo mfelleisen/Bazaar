@@ -145,7 +145,7 @@
     ;; saves all states as bitmaps in Tmp/..png files 
     (define/public (save)
       (define tmp Tmp/)
-      (when (directory-exists? tmp) (delete-directory tmp))
+      (when (directory-exists? tmp) (delete-directory/files tmp))
       (make-directory tmp)
       (parameterize ([current-directory tmp])
         (for ([x (in-vector *cache)] [i (in-naturals)])
