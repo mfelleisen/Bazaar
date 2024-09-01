@@ -17,9 +17,14 @@
  ;; "x"    exit
 
  ;; from the referee perspective
- #; {class/c [state (-> Any GameState Void)] [end (-> Void)]}
+ #; {class/c
+     [state (-> Any GameState Void)]
+     [end (-> Void)]}
+                     
  ;; from the connector's perspective, also 
- #; (class/c [save (-> Void)] [show (-> Natural)])
+ #; (class/c
+     [save (-> Void)]
+     [show (-> Natural)])
  observer%)
 
 ;                                                                                      
@@ -232,5 +237,6 @@
 
   (apply referee/state (append (first (second 8Simple/)) (list (list q o p q r))))
 
-  '----
+  ;; uncomment for interactive tests 
+  #;
   (send o show))
