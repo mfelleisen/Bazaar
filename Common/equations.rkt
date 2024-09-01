@@ -249,15 +249,17 @@
 (define (1eq<? e f)
   (match-define [1eq e-lhs e-rhs] e)
   (match-define [1eq f-lhs f-rhs] f)
-  (b:bag<? (b:bag-add e-lhs e-rhs) (b:bag-add f-lhs f-rhs)))
+  (or (b:bag<? e-lhs f-lhs) (and (b:bag-equal? e-lhs f-lhs) (b:bag<? e-rhs f-rhs))))
 
 (module+ test
+  (check-true  (1eq<? r=bbbb w=bbbb))
   (check-true  (1eq<? r=bbbb r=gggg))
-  (check-false (1eq<? rg=bbbb ggg=r))
+  (check-false (1eq<? ggg=r rg=bbbb))
   (check-false (1eq<? ggg=r rg=bbbb))
   (check-false (1eq<? ggg=r ggg=r-))
 
-  (check-true (equations<? (list r=bbbb r=bbbb) (list r=gggg r=gggg)))
+  (check-true  (equations<? (list ggg=r- r=bbbb) (list r=bbbb w=bbbb)))
+  (check-true  (equations<? (list r=bbbb r=bbbb) (list r=gggg r=gggg)))
   (check-false (equations<? [list rg=bbbb ggg=r]  (list rg=bbbb ggg=r-)))
   (check-false (equations<? [list rg=bbbb ggg=r]  (list ggg=r- rg=bbbb)))
   (check-false (equations<? [list rg=bbbb ggg=r-] (list rg=bbbb ggg=r))))

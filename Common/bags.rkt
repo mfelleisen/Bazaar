@@ -162,8 +162,9 @@
 #; {Bag Bag -> Boolean}
 ;; one bag is below another if the words formed from the sorted first chars are string<=?
 (define (bag<? 1bag 2bag)
-  (and (= (bag-size 1bag) (bag-size 2bag))
-       (string<? (bag->string 1bag) (bag->string 2bag))))
+  (if (= (bag-size 1bag) (bag-size 2bag))
+      (string<? (bag->string 1bag) (bag->string 2bag))
+      (< (bag-size 1bag) (bag-size 2bag))))
 
 #; {Bag -> String}
 ;; bag -> list of colors, take first letter, sort, create string
