@@ -218,11 +218,19 @@
 (module+ pict
   (require (submod "referee.rkt" examples))
   (require "referee.rkt")
+
+  (define failing-observer%
+    (class object% [init-field name]
+      (super-new)
+      (define/public (state msg gs) (eprintf "calling state ~a\n" name) (/ 1 0))
+      (define/public (end winners drop-outs) (eprintf "calling end ~a\n" name) (/ 1 0))))
   
   (define o (new observer%))
   (define p (new void-observer%))
+  (define q (new failing-observer% [name 'q]))
+  (define r (new failing-observer% [name 'r]))
 
-  (apply referee/state (append (first (second 8Simple/)) (list (list o #;p))))
+  (apply referee/state (append (first (second 8Simple/)) (list (list q o p q r))))
 
   '----
   (send o show))
