@@ -20,13 +20,22 @@
     (super-new)
     (define *observers (list))
 
+    #; {}
+    (define/private (send-all do)
+      (let all ([observers *observers] [survivors '()])
+        (match observers 
+          [(list)
+           (set! *observers survivors)]
+          [(cons first others)
+           (match (xcall do first)
+             [(or (? string?) (? failed?)) (all (remove* `[,first] others) survivors)]
+             [_                            (all others (cons first survivors))])])))
+    
     (define/public (add* o*)
       (set! *observers (append o* *observers)))
 
     (define/public (end winners drop-outs)
-      (for ([o *observers])
-        (xsend o end winners drop-outs)))
+      (send-all (λ (o) (send o end winners drop-outs))))
 
     (define/public (state msg gs)
-      (for ([o *observers])
-        (xsend o state msg gs)))))
+      (send-all (λ (o) (send o state msg gs))))))
