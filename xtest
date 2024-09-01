@@ -16,6 +16,7 @@ echo "testing Common" >> errors.txt
 time raco test Common/*.rkt 2>> errors.txt
 
 echo "testing Referee" >> errors.txt
+time raco test -s pict Referee/observers.rkt 2>> errors.txt
 time raco test Referee/game-state.rkt 2>> errors.txt
 time raco test Referee/referee.rkt 2>> errors.txt
 #  Referee/referee.rkt
