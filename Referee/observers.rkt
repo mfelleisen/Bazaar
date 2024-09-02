@@ -6,8 +6,6 @@
 ;;          Also, when the call is done, `xsend` tears down the thread and the call to the observer.
 
 (provide
- void-observer%
-
  ;; visual observer:
  ;; collect game states for viewing and inspection after the game is complete 
  ;; <--    previous state
@@ -52,28 +50,7 @@
 (require (only-in 2htdp/image save-image))
 (require (except-in pict rotate circle))
 (require json)
-(require (only-in racket/gui make-eventspace current-eventspace get-file get-text-from-user))
-
-;                              
-;                            ; 
-;                    ;       ; 
-;                            ; 
-;   ;   ;   ;;;    ;;;    ;;;; 
-;   ;   ;  ;; ;;     ;   ;; ;; 
-;    ; ;   ;   ;     ;   ;   ; 
-;    ; ;   ;   ;     ;   ;   ; 
-;    ; ;   ;   ;     ;   ;   ; 
-;     ;    ;; ;;     ;   ;; ;; 
-;     ;     ;;;    ;;;;;  ;;;; 
-;                              
-;                              
-;                              
-
-(define void-observer%
-  (class object%
-    (super-new)
-    (define/public (state msg equationsaction gs) (eprintf "state ~a\n" msg))
-    (define/public (end winners drop-outs) (eprintf "the end:\n ~a\n ~a\n" winners drop-outs))))
+(require (only-in racket/gui get-file get-text-from-user))
 
 ;                                            
 ;                                            
@@ -161,7 +138,8 @@
          (ht-append 5 (tt (~a msg)) (tt ":") (tt "[") (c:render* action) (tt "]"))]
         [(list (? e:1eq?) ...)
          (ht-append 5 (tt (~a msg)) (tt ":") (tt "[") (e:render* action) (tt "]"))]
-        [_ (tt (~a msg))]))
+        [_
+         (ht-append 5 (tt (~a msg)) (tt ":") (tt (~a action)))]))
 
     (define/private (tt msg) (text msg "roman" 22))
     (define/private (names tag los) (tt (~a "the final " tag " are: " (string-join los ", "))))
@@ -227,7 +205,7 @@
 
     #; {Natural -> Natural}
     (define/private (add1/nat i)
-      (min *size (+ i 1)))
+      (min (sub1 *size) (+ i 1)))
 
     #; {Natural -> Natural}
     (define/private (sub1/nat i)
@@ -267,16 +245,23 @@
   (define failing-observer%
     (class object% [init-field name]
       (super-new)
-      (define/public (state msg gs) (eprintf "calling state ~a\n" name) (/ 1 0))
+      (define/public (state msg equations action gs) (eprintf "calling state ~a\n" name) (/ 1 0))
       (define/public (end winners drop-outs) (eprintf "calling end ~a\n" name) (/ 1 0))))
-  
+
   (define o (new observer%))
   (define p (new void-observer%))
   (define q (new failing-observer% [name 'q]))
-  (define r (new failing-observer% [name 'r]))
+  (define r (new failing-observer% [name 'r])))
 
+(module+ pict
   (apply referee/state (append (first (second 8Simple/)) (list (list q o p q r))))
 
   ;; uncomment for interactive tests 
-  
+  #;
   (send o show))
+
+(module+ pict
+  (run-scenario-with-observer 9Complex/ 7 o)
+  #;
+  (send o show))
+

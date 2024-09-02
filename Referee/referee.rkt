@@ -31,6 +31,8 @@
         (r [list/c [listof player/c] [listof player/c]]))]))
 
 (module+ examples
+  (provide run-scenario-with-observer void-observer%)
+
   #; {RefScenarios  = [Listof 1RefScenario]}
   #; {1RefScenario = [List [List [Listof Actor] Equations GameState] Result]}
   #; {Result       = [List [Listof Player] [Listof Player]]} 
@@ -57,10 +59,9 @@
 
 (require Bazaar/scribblings/spec)
 
-(require Bazaar/Referee/manage-observers)
-(require (prefix-in e: Bazaar/Common/equations))
 (require Bazaar/Common/player-interface)
-(require Bazaar/Player/strategies)
+(require (prefix-in mo: Bazaar/Referee/manage-observers))
+(require (prefix-in e: Bazaar/Common/equations))
 (require (prefix-in gs: Bazaar/Referee/game-state))
 
 (require Bazaar/Lib/xsend)
@@ -71,6 +72,7 @@
   (require (except-in (submod Bazaar/Common/equations examples) ForStudents/ Tests/))
   (require (submod Bazaar/Referee/game-state examples))
   (require Bazaar/Player/mechanism)
+  (require Bazaar/Player/strategies)
   (require SwDev/Testing/scenarios))
 
 (module+ test
@@ -103,7 +105,7 @@
 
 #; {[Listof Actor] Equations GameState [Listof Observer] -> [List [Listof Player] [Listof Player]]}
 (define (referee/state actor* equations gs0 (observer* `[]))
-  (define mo (new manage-observers%))
+  (define mo (new mo:manage-observers%))
   (send mo add* observer*)
   (send mo state 'initial equations 'setup gs0)
   (let*-values ([(gs->setup setup-drop-outs)  (apply values (setup equations gs0 actor* mo))]
@@ -262,7 +264,7 @@
 ;                                                                               
 ;                                                                               
 ;                                                                               
-           
+
 (module+ examples ;; players for milestone 7
   (define eq1 `[,ggg=b ,r=bbbb ,r=gggg])
   (define eq2 `[,w=bbbb ,rg=bbbb ,ggb=rw ,ggg=b ,r=bbbb ,r=gggg, ggg=r])
@@ -317,7 +319,7 @@
   (simple+ Simple/ (list 2players '[] gs-20) [adam] "no action, 1 winner")
   (simple+ Simple/ (list 3players '[] gs-3-zeros) [carl-adam] "2 buys, 2 winners")
   (simple+ Simple/ (list z-a-e `[,ggb=rw] gs-3-zeros) (eve z) "setup exn")
-  (simple+ Simple/ (list 6players `[,ggg=b] gs-6-players) [adam] "1 trade, 1 buy, 1 winner")
+  (simple+ Simple/ (list 6players `[,ggg=b] gs-6-players) [felix] "1 trade, 1 winner")
   (simple+ Simple/ (list z-y-a `[,ggb=rw] gs-3-zeros) `[["Adam"] ["Zeina" "Yolanda"]] "2"))
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -410,7 +412,7 @@
   (8simple+ 8Complex/ (list o-p-a `[,ggb=rw] gs-3-zeros) (adam o p) "wrong eq")
   (8simple+ 8Complex/ (list m-l-a-d-f-g `[,ggb=rw] gs-6-players++) (felix m l) "ok, exn & bt")
   (8simple+ 8Complex/ (list n-o-a-d-f-g `[,ggb=rw] gs-6-players) (felix n o) "ok, wt, weq")
-  (8simple+ 8Complex/ (list v-n-m `[,ggb=rw] gs-3-zeros) (default v n m) "ok, wt, weq"))
+  (8simple+ 8Complex/ (list v-n-m `[,ggb=rw] gs-3-zeros) (default v n) "ok, wt, weq"))
 
 ;                                                                               
 ;                                                                               
@@ -462,12 +464,44 @@
   (9simple+ 9Complex/ (list v-x-y-z-w-second-of-2 eq1 gs-6-players++) (eve z w x y v) "1 w, 5 drops")
   (9simple+ 9Complex/ (list o-p-v-x-a-q `[,ggb=rw] gs-6-players) (adam o p v x) "ok, exn & bt")
   (9simple+ 9Complex/ (list o-p-a `[,ggb=rw] gs-3-zeros) (adam o p) "wrong eq")
-  (9simple+ 9Complex/ (list `[,a  ,b ,c] eq2 gs-3-zeros) (adam) "just fine")
-  (9simple+ 9Complex/ (list s-a-e eq1 gs-3-zeros) `[["Susanne"] []] "inf 2")
+  (9simple+ 9Complex/ (list `[,a  ,b ,c] eq2 gs-3-zeros) `[["Adam" "Bettina" "Carl"] []] "just fine")
+  (9simple+ 9Complex/ (list s-a-e eq1 gs-3-zeros) `[["Adam" "Eve" "Susanne"] []] "inf 2")
   (9simple+ 9Complex/ (list i-t-k-d-f-g eq2 gs-6-players++++) (felix i t k) "grace: 2 trades, 2 buys")
   (9simple+ 9Complex/ (list j-t-k-d-f-g eq2 gs-6-players++++) (felix j t k) "large")
-  (9simple+ 9Complex/ (list h-t-k-d-f-g eq2 gs-6-players++++) (default h t k) "win lose")
-  )
+  (9simple+ 9Complex/ (list h-t-k-d-f-g eq2 gs-6-players++++) (default h t k) "win lose"))
+
+;                                                                                      
+;          ;                                                                           
+;          ;                                                                 ;         
+;          ;                                                                           
+;    ;;;   ;;;;    ;;;           ;;;    ;;;    ;;;   ; ;;   ;;;;    ;;;;   ;;;    ;;;  
+;   ;; ;;  ;; ;;  ;   ;         ;   ;  ;;  ;  ;;  ;  ;;  ;      ;   ;;  ;    ;   ;; ;; 
+;   ;   ;  ;   ;  ;             ;      ;      ;   ;; ;   ;      ;   ;        ;   ;   ; 
+;   ;   ;  ;   ;   ;;;           ;;;   ;      ;;;;;; ;   ;   ;;;;   ;        ;   ;   ; 
+;   ;   ;  ;   ;      ;             ;  ;      ;      ;   ;  ;   ;   ;        ;   ;   ; 
+;   ;; ;;  ;; ;;  ;   ;         ;   ;  ;;     ;      ;   ;  ;   ;   ;        ;   ;; ;; 
+;    ;;;   ;;;;    ;;;           ;;;    ;;;;   ;;;;  ;   ;   ;;;;   ;      ;;;;;  ;;;  
+;                                                                                      
+;                                                                                      
+;                                                                                      
+
+(module+ examples
+  (define void-observer%
+  (class object%
+    (super-new)
+    (define/public (state msg equations action gs)
+      (eprintf "state ~a : ~a\n" msg action))
+    (define/public (end winners drop-outs)
+      (eprintf "the end:\n ~a\n ~a\n" winners drop-outs))))
+
+  (define (run-scenario-with-observer scenarios i observer)
+    (match-define [list args expected msg] (list-ref scenarios (sub1 i)))
+    (match-define [list actors equations gs] args)
+    (referee/state actors equations gs (list observer))
+    (eprintf "should yield ~a\n [~a]\n" expected msg))
+
+  #;
+  (run-scenario-with-observer Simple/ 5 (new void-observer%)))
   
 ;                                     
 ;                                     
@@ -493,34 +527,27 @@
       (set! count i) 
       (match-define (list args exp msg) s)
       (match-define (list players equations gs) args)
-      #;
-      (show t i msg equations players gs)
-      (eprintf "-- test ~a ~a\n" msg i)
-      (check-equal? (dev/null (w+do->names (referee/state players equations gs))) (sort2 exp) msg))
+      (eprintf "-- test ~a  ~a: ~a\n" msg t i)
+      (define o (list (new void-observer%)))
+      (check-equal? (dev/null (-->names (referee/state players equations gs #;o))) (sort2 exp) msg))
     (eprintf "done: ~a tests\n" count))
-
-  #; {Symbol N Equations* [Listof OlayerObject] GameState -> Void}
-  (define (show t i  msg equations players gs)
-    (eprintf "~a ~a ~a\n" t msg i)
-    (pretty-print (e:render* equations) (current-error-port))
-    (pretty-print (gs:render (gs:connect gs players)) (current-error-port))
-    (pretty-print (actor*->jsexpr players) (current-error-port))
-    (eprintf "--------------------------------------------------------\n"))
-
+  
   #; {[List [Listof Actor] [Listof Actor]] -> [List [Listof String] [Listof String]]}
-  (define (w+do->names s)
+  (define (-->names s)
     (sort2 (list (get-names (first s)) (get-names (second s)))))
 
   (define (sort2 l)
     (match-define [list t u] l)
-    (list (sort t string<=?) (sort u string<=?)))
-    
+    (list (sort t string<=?) (sort u string<=?))))
 
+(module+ test
   (run-scenario* 'simple Simple/)
-  (run-scenario* 'complex Complex/)
+  (run-scenario* 'complex Complex/))
 
+(module+ test
   (run-scenario* '8simple 8Simple/)
-  (run-scenario* '8complex 8Complex/)
+  (run-scenario* '8complex 8Complex/))
 
+(module+ test
   (run-scenario* '9simple 9Simple/)
   (run-scenario* '9complex 9Complex/))
