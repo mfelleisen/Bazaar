@@ -105,7 +105,7 @@
 (define (referee/state actor* equations gs0 (observer* `[]))
   (define mo (new manage-observers%))
   (send mo add* observer*)
-  (send mo state 'initial gs0)
+  (send mo state 'initial equations gs0)
   (let*-values ([(gs->setup setup-drop-outs)  (apply values (setup equations gs0 actor* mo))]
                 [(gs->turns turn-drop-outs)   (apply values (run-turns equations gs->setup mo))]
                 [(winners win-lose-drop-outs) (apply values (inform-players gs->turns))])
@@ -141,10 +141,10 @@
     (define name (send active name))
     (match (setup-1-player equations active gs)
       [(? gs:game? gs)
-       (send observers state (~a "setup/success: " name) gs)
+       (send observers state (~a "setup/success: " name) equations gs)
        (values gs kicked)]
       [(list (? gs:game? gs) active)
-       (send observers state (~a "setup/failure: " name) gs)
+       (send observers state (~a "setup/failure: " name) equations gs)
        (values gs (cons active kicked))])))
 
 #;{Equations Actor GameState -> (values GameState [Listof Actor])}
@@ -182,7 +182,7 @@
 
 #; {Equations GameState MO -> (U GameState [List GameState Actor])}
 (define (one-turn equations gs0 observers)
-  (define report (report-to observers))
+  (define report (report-to observers equations))
   (define active  (gs:game-active gs0))
   (define name    (send active name))
   (define action1 (xsend active request-pebble-or-trades (gs:extract-turn gs0)))
@@ -202,10 +202,10 @@
           [gs
            (report name "buying cards with success" (gs:rotate gs))])])]))
 
-#; {MO -> [String String GameState [[Listof Actor]] -> [Cons GameState [Listof Actor]]]}
+#; {MO Equations -> [String String GameState [[Listof Actor]] -> [Cons GameState [Listof Actor]]]}
 ;; send a message to the observers about `name`s actions and return the game state with the 1 drop-out
-(define ((report-to observers) name msg gs++ . active)
-  (send observers state (~a name " is " msg) gs++)
+(define ((report-to observers equations) name msg gs++ . active)
+  (send observers state (~a name " is " msg) equations gs++)
   (cons gs++ active))
 
 ;                                                   

@@ -44,7 +44,8 @@
 
 (require Bazaar/scribblings/spec)
 
-(require Bazaar/Referee/game-state)
+(require (prefix-in e: Bazaar/Common/equations))
+(require (prefix-in gs: Bazaar/Referee/game-state))
 (require (submod Bazaar/Referee/game-state json))
 (require 2htdp/universe)
 (require (only-in 2htdp/image save-image))
@@ -70,7 +71,7 @@
 (define void-observer%
   (class object%
     (super-new)
-    (define/public (state msg gs) (eprintf "state ~a\n" msg))
+    (define/public (state msg equations gs) (eprintf "state ~a\n" msg))
     (define/public (end winners drop-outs) (eprintf "the end:\n ~a\n ~a\n" winners drop-outs))))
 
 ;                                            
@@ -106,9 +107,11 @@
     ;; when the observer has compeleted its task, this field contains [List GameState Bitmap] in order
     #; {[Option [Vector (U [List GameState Pict] [List GameState Pict BitMap])]]}
     (field [*cache      #false])
+    (field [*eqs        '()])
     
     #; {Any GameState -> Void}
-    (define/public (state msg gs)
+    (define/public (state msg equations gs)
+      (set! *eqs equations)
       (unless *cache (set! *live-list (cons (list msg gs) *live-list))))
 
     #; {-> Natural}
@@ -120,7 +123,7 @@
         (set! *cache (make-vector (add1 *c-size)))
         (for ([s cached-states] [i (in-naturals)])
           (match-define [list msg gs] s)
-          (define gs-as-pict  (render gs))
+          (define gs-as-pict  (gs:render gs))
           (define msg-as-pict (tt (~a msg)))
           (define the-pict (vl-append 22 gs-as-pict msg-as-pict))
           (define height (pict-height the-pict))
@@ -159,10 +162,12 @@
         
     #; {Natural -> Bitmap}
     (define/private (display i)
+      (when (cons? *eqs)
+        (set! *eqs (e:render* *eqs)))
       (match (vector-ref *cache i)
         [(list s p b) b]
-        [(list (? game? s) (? pict? p))
-         (define b (pict->bitmap (vl-append 22 (tt documentation) p)))
+        [(list (? gs:game? s) (? pict? p))
+         (define b (pict->bitmap (vl-append 22 (tt documentation) p *eqs)))
          (vector-set! *cache i (list s p b))
          b]))
     
@@ -238,5 +243,5 @@
   (apply referee/state (append (first (second 8Simple/)) (list (list q o p q r))))
 
   ;; uncomment for interactive tests 
-  #;
+  
   (send o show))
