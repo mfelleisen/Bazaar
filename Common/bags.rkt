@@ -194,11 +194,11 @@
 ;; ---------------------------------------------------------------------------------------------------
 #; {Bag -> Pebble}
 (define (bag-pick bank)
-  (for/first ([p p:PEBBLES]  #:when (member p bank))
+  (for*/first ([c COLORS] [p bank] #:when (equal? (p:pebble-color p) c))
     p))
 
 (module+ test
-  (check-equal? (bag-pick b-r) p:RED "random pick"))
+  (check-equal? (bag-pick b-yyrwb) p:RED "random pick"))
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {NEBag -> Bag}
