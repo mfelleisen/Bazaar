@@ -129,6 +129,7 @@
       `[,my-name ,(policy->jsexpr which)])
 
     (define/public (reset)
+      (set! *to-be-bought #false)
       (void))
 
     (define/public (setup equations0)
@@ -291,6 +292,7 @@
          ;; Otherwise the new count is 0, because no other method has been called yet. 
          (field [count 0])
          (define/override (reset)
+           (super reset)
            (set! count (if (eq? 'method-that-goes-bad 'setup) 1 0)))
        
          (define/override (method-that-goes-bad . args)
