@@ -42,5 +42,5 @@
       (send-all (λ (o) (send o end winners drop-outs))))
 
     #; {Any GameState -> Void}
-    (define/public (state msg equstions gs)
-      (send-all (λ (o) (send o state msg equstions gs))))))
+    (define/public (state msg equstions action gs)
+      (send-all (λ (o) (send o state msg equstions action gs))))))

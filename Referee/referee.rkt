@@ -105,7 +105,7 @@
 (define (referee/state actor* equations gs0 (observer* `[]))
   (define mo (new manage-observers%))
   (send mo add* observer*)
-  (send mo state 'initial equations gs0)
+  (send mo state 'initial equations 'setup gs0)
   (let*-values ([(gs->setup setup-drop-outs)  (apply values (setup equations gs0 actor* mo))]
                 [(gs->turns turn-drop-outs)   (apply values (run-turns equations gs->setup mo))]
                 [(winners win-lose-drop-outs) (apply values (inform-players gs->turns))])
@@ -141,10 +141,10 @@
     (define name (send active name))
     (match (setup-1-player equations active gs)
       [(? gs:game? gs)
-       (send observers state (~a "setup/success: " name) equations gs)
+       (send observers state (~a "setup/success: " name) equations 'okay gs)
        (values gs kicked)]
       [(list (? gs:game? gs) active)
-       (send observers state (~a "setup/failure: " name) equations gs)
+       (send observers state (~a "setup/failure: " name) equations 'fail gs)
        (values gs (cons active kicked))])))
 
 #;{Equations Actor GameState -> (values GameState [Listof Actor])}
@@ -181,32 +181,42 @@
          [(list gs)        (until-end gs kicked)])])))
 
 #; {Equations GameState MO -> (U GameState [List GameState Actor])}
-(define (one-turn equations gs0 observers)
-  (define report (report-to observers equations))
-  (define active  (gs:game-active gs0))
+(define (one-turn equations gs observers)
+  (define active  (gs:game-active gs))
   (define name    (send active name))
-  (define action1 (xsend active request-pebble-or-trades (gs:extract-turn gs0)))
-  (match (gs:legal-pebble-or-trade-request equations action1 gs0)
-    [#false
-     (report name "requesting a pebble or pebble exchanges and failed" (gs:kick gs0) active)]
-    [gs++
-     (report name "requesting a pebble or pebble exchanges with success" gs++)
+  (define report  (report-to observers equations name))
+  ;; let the turn begin:
+  (define action1 (xsend active request-pebble-or-trades (gs:extract-turn gs)))
+  (define gs++    (gs:legal-pebble-or-trade-request equations action1 gs))
+  (cond
+    [(false? gs++)
+     (report trade-bad action1 (gs:kick gs) active)]
+    [(gs:game-over? gs++)
+     (report trade-ok-end  action1 gs++)]
+    [else
+     (report trade-ok action1 gs++)
      (define action2 (xsend active request-cards (gs:extract-turn gs++)))
      (cond
        [(failed? action2)
-        (report name "buying cards, failed due to communication problem" (gs:kick gs++) active)]
+        (report buy-bad-comm action2 (gs:kick gs++) active)]
        [else 
         (match (gs:legal-purchase-request action2 gs++)
-          [#false
-           (report name "buying cards, failed due to game logic problem" (gs:kick gs++) active)]
-          [gs
-           (report name "buying cards with success" (gs:rotate gs))])])]))
+          [#false (report buy-bad-logic action2 (gs:kick gs++) active)]
+          [gs++++ (report buy-ok action2 (gs:rotate gs++++))])])]))
 
-#; {MO Equations -> [String String GameState [[Listof Actor]] -> [Cons GameState [Listof Actor]]]}
+#; {MO Equations String-> [String String GameState [[Listof Actor]] -> [Cons Game [Listof Actor]]]}
 ;; send a message to the observers about `name`s actions and return the game state with the 1 drop-out
-(define ((report-to observers equations) name msg gs++ . active)
-  (send observers state (~a name " is " msg) equations gs++)
+(define ((report-to observers equations name) msg action gs++ . active)
+  (send observers state (~a name " is " msg) equations action gs++)
   (cons gs++ active))
+
+;; constants for reporting actions 
+(define trade-bad     "requesting a pebble or pebble exchanges and failed")
+(define trade-ok-end  "requesting a pebble or pebble exchanges with success and ending the game")
+(define trade-ok      "requesting a pebble or pebble exchanges with success")
+(define buy-bad-comm  "buying cards, failed due to communication problem")
+(define buy-bad-logic "buying cards, failed due to game logic problem")
+(define buy-ok        "buying cards with success")
 
 ;                                                   
 ;                                                   
@@ -439,10 +449,6 @@
   (define j-t-k-d-f-g (list* j t k d-f-g))
   (define i-t-k-d-f-g (list* i t k d-f-g))
   (define h-t-k-d-f-g (list  f t k d h g)))
-
-#;
-(module+ examples
-  [observe #true] (referee/state s-t-k-b-f-g eq2 gs-6-players++)) #; (felix s t k)
 
 (module+ examples ;; ForsTudents/ in 9
   (setup-scenarios 9simple+ 9Simple/ 9Complex/)

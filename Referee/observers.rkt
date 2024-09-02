@@ -18,7 +18,7 @@
 
  ;; from the referee perspective
  #; {class/c
-     [state (-> Any GameState Void)]
+     [state (-> Any Equations Action GameState Void)]
      [end (-> Void)]}
                      
  ;; from the connector's perspective, also 
@@ -44,6 +44,7 @@
 
 (require Bazaar/scribblings/spec)
 
+(require (prefix-in c: Bazaar/Common/cards))
 (require (prefix-in e: Bazaar/Common/equations))
 (require (prefix-in gs: Bazaar/Referee/game-state))
 (require (submod Bazaar/Referee/game-state json))
@@ -71,7 +72,7 @@
 (define void-observer%
   (class object%
     (super-new)
-    (define/public (state msg equations gs) (eprintf "state ~a\n" msg))
+    (define/public (state msg equationsaction gs) (eprintf "state ~a\n" msg))
     (define/public (end winners drop-outs) (eprintf "the end:\n ~a\n ~a\n" winners drop-outs))))
 
 ;                                            
@@ -99,6 +100,15 @@
 (define observer%
   (class object%
     (super-new)
+
+    ;; what the GUI supports 
+    (field
+     [*commands
+      `(["x"     ,(λ (i) -999) "exit"]
+        ["s"     ,(λ (i) (save-state third i save-image) i) "save PNG"]
+        [" "     ,(λ (i) (save-state (compose game->jsexpr first) i save-json)  i) "save GAME STATE"]
+        ["left"  ,(λ (i) (sub1/nat i)) "←"]
+        ["right" ,(λ (i) (add1/nat i)) "→"])])
    
     ;; while the game is on-going, this field contains the states in reverse order
     #;{[Listof GameState]}
@@ -106,44 +116,82 @@
 
     ;; when the observer has compeleted its task, this field contains [List GameState Bitmap] in order
     #; {[Option [Vector (U [List GameState Pict] [List GameState Pict BitMap])]]}
-    (field [*cache      #false])
-    (field [*eqs        '()])
-    
-    #; {Any GameState -> Void}
-    (define/public (state msg equations gs)
-      (set! *eqs equations)
-      (unless *cache (set! *live-list (cons (list msg gs) *live-list))))
+    (field [*cache #false])
+    (field [*size  -1])
+    (field [*eqs  '()])
 
+    ;; -----------------------------------------------------------------------------------------------
+    #; {Any GameState -> Void}
+    (define/public (state msg equations action gs)
+      (set! *eqs equations)
+      (unless *cache (set! *live-list (cons (list msg action gs) *live-list))))
+
+    ;; -----------------------------------------------------------------------------------------------
     #; {-> Natural}
     (define/public (end winners drop-outs)
       (when (cons? *live-list)
+        (set! *eqs (e:render* *eqs))
         (define cached-states (reverse *live-list))
-        (define tallest 0)
-        (set! *c-size (length cached-states))
-        (set! *cache (make-vector (add1 *c-size)))
-        (for ([s cached-states] [i (in-naturals)])
-          (match-define [list msg gs] s)
-          (define gs-as-pict  (gs:render gs))
-          (define msg-as-pict (tt (~a msg)))
-          (define the-pict (vl-append 22 gs-as-pict msg-as-pict))
-          (define height (pict-height the-pict))
-          (when (> height tallest) (set!-values [tallest *t-index] (values height i)))
-          (vector-set! *cache i (list gs the-pict)))
-        (define last (vl-append 22 (names 'winners winners) (names "drop outs" drop-outs)))
-        (vector-set! *cache *c-size `[,(first (vector-ref *cache (- *c-size 2))) ,last])))
+        (populate-cache-with-picts cached-states)
+        (add-last winners drop-outs)
+        (frame-all-to-keep-steady)))
+
+    #; {[Listof GameState] -> Void}
+    ;; EFFECT set up *cache with (list GameState ItsPict) except for last slot
+    (define/private (populate-cache-with-picts cached-states)
+      (set! *size  (add1 (length cached-states)))
+      (set! *cache (make-vector *size))
+      (for ([s cached-states] [i (in-naturals)])
+        (match-define [list msg action gs] s)
+        (define the-pict (vl-append 22 [documentation] *eqs (gs:render gs) (explanation msg action)))
+        (vector-set! *cache i (list gs the-pict))))
+
+    #; {[Listof String] [Listof String] -> Void}
+    ;; EFFECT set up last slot in *cache with (list Result PictOfFinalState) 
+    (define (add-last winners drop-outs)
+      (define last (vl-append 22 (names 'winners winners) (names "drop outs" drop-outs)))
+      (vector-set! *cache (- *size 1) `[,(first (vector-ref *cache (- *size 2))) ,last]))
+
+    #; {Any (U False [Listof Card] [Listof Equation] Any) -> Pict}
+    (define/private (explanation msg action)
+      (match action
+        [#false
+         (ht-append 5 (tt (~a msg)) (tt ":") (tt "requesting a pebble"))]
+        [(list (? c:card?) ...)
+         (ht-append 5 (tt (~a msg)) (tt ":") (tt "[") (c:render* action) (tt "]"))]
+        [(list (? e:1eq?) ...)
+         (ht-append 5 (tt (~a msg)) (tt ":") (tt "[") (e:render* action) (tt "]"))]
+        [_ (tt (~a msg))]))
 
     (define/private (tt msg) (text msg "roman" 22))
     (define/private (names tag los) (tt (~a "the final " tag " are: " (string-join los ", "))))
 
-    (field [*t-index 0])
-    (field [*c-size  -1])
+    #; {-> Pict}
+    (define/private [documentation]
+      (for/fold ([r '()] #:result (tt (~a "valid commands: " (string-join r ", ")))) ([c *commands])
+        (match c
+          [(list x _) (cons x r)]
+          [(list x _ y) (cons (~a y " (" (~s x) ")") r)])))
+    
+    #; {-> Void}
+    ;; EFFECT set up *t-index
+    (define/private (frame-all-to-keep-steady)
+      (define cache  (vector->list *cache))
+      (define width  (pict-width (second (argmax (compose pict-width second) cache))))
+      (define height (pict-height (second (argmax (compose pict-height second) cache))))
+      (define area   (rectangle (+ width 8) (+  height 8) #:border-color "salmon" #:border-width 2))
+      (for ([x (in-vector *cache)] [i (in-naturals)])
+        (match-define [list gs pict] x)
+        (define framed (lt-superimpose area (ht-append (blank 4 1) (vl-append (blank 1 4) pict))))
+        (vector-set! *cache i (list gs framed))))
+      
     ;; -----------------------------------------------------------------------------------------------
     #; {-> Natural}
     (define/public (show)
       (cond
         [(false? *cache) -999]
         [else 
-         (big-bang *t-index
+         (big-bang 0
            [close-on-stop #true]
            [to-draw       (λ (x) (display x))]
            [stop-when     negative?]
@@ -161,38 +209,25 @@
           (save-image bm (~a i ".png")))))
         
     #; {Natural -> Bitmap}
+    ;; EFFECT cache bitmap once made
     (define/private (display i)
-      (when (cons? *eqs)
-        (set! *eqs (e:render* *eqs)))
       (match (vector-ref *cache i)
         [(list s p b) b]
         [(list (? gs:game? s) (? pict? p))
-         (define b (pict->bitmap (vl-append 22 (tt documentation) p *eqs)))
+         (define b (pict->bitmap p))
          (vector-set! *cache i (list s p b))
          b]))
     
-    (define commands
-      `(["x"     ,(λ (i) -999) "exit"]
-        ["s"     ,(λ (i) (save-state third i save-image) i) "save PNG"]
-        [" "     ,(λ (i) (save-state (compose game->jsexpr first) i save-json)  i) "save GAME STATE"]
-        ["left"  ,(λ (i) (sub1/nat i)) "←"]
-        ["right" ,(λ (i) (add1/nat i)) "→"]))
-    (define documentation
-      (for/fold ([r '()] #:result (~a "valid commands: " (string-join r ", "))) ([c commands])
-        (match c
-          [(list x _) (cons x r)]
-          [(list x _ y) (cons (~a y " (" (~s x) ")") r)])))
-
     #; {Natural -> Natural}
     ;; EFFECT for some keystrokes 
     (define/private (back-or-forth i key-event)
-      (match (assoc key-event commands)
+      (match (assoc key-event *commands)
         [#false i]
         [(list* ke f extra) (f i)]))
 
     #; {Natural -> Natural}
     (define/private (add1/nat i)
-      (min *c-size (+ i 1)))
+      (min *size (+ i 1)))
 
     #; {Natural -> Natural}
     (define/private (sub1/nat i)
