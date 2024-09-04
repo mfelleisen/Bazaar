@@ -13,4 +13,3 @@ $ raco doc Bazaar
 
 - cross-check the number of cards and pebbles in Turn and Game
 - check illegality of results of cheating
-

@@ -21,13 +21,14 @@
 (define (ok-1eq-size b)
   (<= 1 (b:bag-size b) [MAX-EQ-SIDE]))
 
-(define equations/c (and/c (listof (λ (x) (1eq? x))) ok-#equations distinct-equations ok-equations))
+(define equations? (and/c (listof (λ (x) (1eq? x))) ok-#equations distinct-equations ok-equations))
 
 (define trades/c (and/c ok-equations))
 
 ;; ---------------------------------------------------------------------------------------------------
 (provide
  #; {type Equation* = [Setof 1Equation]}
+ equations?
 
  #; {type Trades = [Listof Equations]}
  ;; these 'equations' are used in a left-to-right direction only & an 1eq can show up more than once
@@ -53,7 +54,7 @@
  ;; enough Xs to swap one side and `bank`has enough Xs for the other;
  ;; orient the resulting equations so that `my-wallet` covers the left
  (contract-out 
-  [useful (-> equations/c b:bag? b:bag? (and/c (listof 1eq?) distinct?))])
+  [useful (-> equations? b:bag? b:bag? (and/c (listof 1eq?) distinct?))])
 
  #; {Equations -> Trades}
  ;; create a trade that is not an equation 
@@ -90,8 +91,11 @@
 ;; ---------------------------------------------------------------------------------------------------
 (module+ json
   (provide
-   #;{1Equation -> JSExpr}
+   #;{Equations -> JSExpr}
    equations->jsexpr
+
+   #; {!Eq -> JSexpr}
+   1eq->jsexpr
 
    #; {[JSExpr -> (U False 1Equation)]}
    jsexpr->1eq
@@ -336,7 +340,7 @@
     (define eq* (jsexpr->equations j))
     
     (cond
-      [(and eq* (equations/c eq*)) eq*]
+      [(and eq* (equations? eq*)) eq*]
       [else (eprintf "distinct set of equations expected, given ~a\n" j) #false]))
 
   (define (jsexpr->trades j)

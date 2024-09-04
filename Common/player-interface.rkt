@@ -25,7 +25,7 @@
 (define player%/c
   (class/c
    [name                     (->m string?)]
-   [setup                    (->m (listof e:1eq?) void?)]
+   [setup                    (->m e:equations? void?)]
    [request-pebble-or-trades (->m turn? (or/c a:want-pebble? a:trades?))]
    [request-cards            (->m turn? a:buy-cards?)]
    [win                      (->m boolean? void?)]))

@@ -22,6 +22,9 @@
  #;    (jsexpr->name-object j)
  ;; -- a scribble rendering as a "schema definition" named
  #;    [name->text]
+
+ define-configuration
+ 
  define-object
 
  struct/description
@@ -191,6 +194,58 @@
          (error tag "object key expected, given ~a" k))
        (dict-set h k v))]))
 
+;; ---------------------------------------------------------------------------------------------------
+(define-syntax (define-configuration stx)
+  (syntax-parse stx
+    [(_ name
+        [key value0
+         (~optional (~seq #:to-jsexpr to #;function) #:defaults ([to #'identity]))
+         (~optional (~seq #:from-jsexpr from #;function) #:defaults ([from #'identity]))
+         (~optional (~seq #:is-a is-a ... #;string) #:defaults ([(is-a 1) null]))]
+        ...)
+     #:do   [(define n (syntax-e #'name))]
+     #:with (keyv ...)   (generate-temporaries #'(key ...))
+     #:with name-options (format-id stx "~a-options" n #:source #'name #:props stx)
+     #:with name/c       (format-id stx "~a-config/c" n #:source #'name #:props stx)
+     #:with default-name (format-id stx "default-~a-config" n #:source #'name #:props stx)
+     #:with set-name     (format-id stx "set-~a-config" n #:source #'name #:props stx)
+     #:with name->jsexpr (format-id stx "~a-config->jsexpr" n #:source #'name #:props stx)
+     #:with jsexpr->name (format-id stx "jsexpr->~a-config" n #:source #'name #:props stx)
+     #:with name->def    (format-id stx "~a-config->definition" n #:source #'name #:props stx)
+     #'(begin
+         (define key (gensym 'key)) ...
+         (define name-options [list key ...])
+         (define default-name (add-to 'default (hash) [list [list key value0] ...] "" name-options))
+
+         #; {Contract}
+         (define name/c [hash-carrier/c name-options])
+         
+         #; {(set-name c Key1 Value1 ... KeyN ValueN) : Void}
+         (define (set-name config . key-value-pairs0)
+           (define key-value-pairs (is-list-of-key-value-pairs key-value-pairs0))
+           (add-to 'set-name config key-value-pairs key-value-pairs0 name-options))
+           
+         #; {Configuration -> JSexpr}
+         (define key*   `[,(normalize 'key) ...])
+         (define g-key* `[,key ...])
+         (define to*    `[,to ...])
+         (define [name->jsexpr c] (config->jsexpr c key* g-key* to*))
+
+         #; {JSexpr -> [Option Configuration]}
+         (define [jsexpr->name j]
+           (match j
+             [(hash-table
+               [(? (curry eq? (normalize 'key))) (app from keyv)] ...)
+              (add-to 'jsexpr (hash) [list [list key keyv] ...] "can't happen" name-options)]
+             [_ (eprintf "JSON value does not match ~a schema:\n ~a\n" 'name (jsexpr->string j))
+                #false]))
+
+         #; {Configuration -> ScribbleTable}
+         (define t* 
+           (for/list ([k key*] [c `((,is-a ...) ...)])
+             (list (~a k) c)))
+         (define [name->def] (fields->data-def 'name t*)))]))
+
 ;                              
 ;      ;                       
 ;                              
@@ -213,9 +268,15 @@
 
    struct->jsexpr 
 
-   jsexpr->string)
+   jsexpr->string
+
+   config->jsexpr)
 
   (require json)
+
+   (define (config->jsexpr c key* g-key* to*)
+    (for/fold ([h (hash)]) ([k key*] [g-key g-key*] [to to*])
+      (dict-set h k (to (dict-ref c g-key)))))
   
   (define (struct->jsexpr s field-names+to*)
     (define values (rest (vector->list (struct->vector s))))

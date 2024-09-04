@@ -1,0 +1,13 @@
+## Remotes 
+
+this component support the implementationn of a remote-proxy protocol,
+which is key to turning a monolithic (game) system into a distributed one:
+
+### Table of Content
+
+@@table 
+
+
+
+
+

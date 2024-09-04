@@ -21,7 +21,8 @@
 
 (module+ json
   (provide
-   action->jsexpr
+   (contract-out
+    [action->jsexpr (-> action? jsexpr?)])
    jsexpr->action))
 
 ;; -----------------------------------------------------------------------------

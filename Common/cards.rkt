@@ -35,6 +35,8 @@
 ;; ---------------------------------------------------------------------------------------------------
 (module+ json
   (provide
+   FACE PEBBLES ;; for creating ill-formed JSON 
+
    #; {[Listof Card] -> JSexpr}
    card*->jsexpr
 
@@ -122,6 +124,10 @@
   (define (hash2-proc x re-hash2)
     (+ (* 891 (re-hash2 (card-pebbles x)))
        (* 999 (re-hash2 (card-face? x)))))])
+
+;; AWKWARD: OTHERWISE JSON DOESN'T WORK PROPERLY
+(define PEBBLES 'pebbles)
+(define FACE 'face?)
 
 #; {type Card = (card Bag Boolean)}
 
@@ -253,10 +259,6 @@
 ;    ;;                        
 
 (module+ json
-
-  (define PEBBLES 'pebbles)
-  (define FACE 'with-face)
-
   (define (card*->jsexpr lo-cards)
     (map card->jsexpr lo-cards))
 

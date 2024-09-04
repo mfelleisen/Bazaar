@@ -10,6 +10,8 @@
 (define factory-table  (listof (list/c string? player-factory)))
 
 (provide
+ player% ;; for reflection 
+
  (contract-out
   [create-player
    #; (create-player name which)
