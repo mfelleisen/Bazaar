@@ -4,12 +4,12 @@
 ;; and that then participate in a distributed games 
 
                         
-(require Bazaar/Common/player-interface)
+(require Qwirkle/Common/player-interface)
 (require (only-in SwDev/Testing/make-client port/c))
 
 (provide
  ;; for homework
- ACTOR* PORT HOST WAIT QUIET
+ PLAYERS PORT HOST WAIT QUIET
  WAIT-BETWEEN-THREADS ;; s between launching threads
  
  client-config->definition
@@ -58,9 +58,9 @@
 ;                     ;                                    
 ;                     ;                                    
 
-(require Bazaar/Client/referee)
-(require (submod Bazaar/Player/mechanism json))
-(require Bazaar/Lib/configuration)
+(require Qwirkle/Client/referee)
+(require (submod Qwirkle/Player/mechanics json))
+(require Qwirkle/Lib/configuration)
 
 ;                                                                                             
 ;                           ;;                                                                
@@ -86,10 +86,10 @@
   [HOST LOCAL #:is-a "String" "either an IP address or a domain name"] ;; `ip` is LOCALHOST
   [WAIT WAIT-BETWEEN-THREADS #:is-a "Natural" "less than 10s"]
   [QUIET #true #:is-a "Boolean"]
-  [ACTOR*
+  [PLAYERS
    '()
-   #:to-jsexpr   actor*->jsexpr
-   #:from-jsexpr (λ (x) (jsexpr->actor* x #:loops #true #:cheating #true))
+   #:to-jsexpr   player*->jsexpr
+   #:from-jsexpr (λ (x) (jsexpr->player* x #:loops #true #:cheating #true))
    #:is-a        "*ActorsB"])
 
 ;                                                   
@@ -109,7 +109,7 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 (define (clients cc (wait? #f) #:baddies [bad-clients '()])
-  (define clients-for-players (map (make-client-for-player cc) (dict-ref cc ACTOR*)))
+  (define clients-for-players (map (make-client-for-player cc) (dict-ref cc PLAYERS)))
   (define running-clients     (launch-all-clients (append clients-for-players bad-clients)))
   (when wait?
     (wait-for-all running-clients)

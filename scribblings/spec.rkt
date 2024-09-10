@@ -45,8 +45,6 @@
      (list 1 3 5)
      (list 0 5 8)))
 
-  (define BONUS 10)
-
   (define PLAYER-WINS 20)
 
   (define SearchDepth (make-parameter 4))
