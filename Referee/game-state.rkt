@@ -143,16 +143,17 @@
   (require pict)
 
   (struct player+ [player connection] #:prefab)
+
+  #; {[X] [Player X -> Player] -> Player+ X -> Player+}
+  (define ((player+-update-player f) active y)
+    (match-define [player+ p c] active)
+    (struct-copy player+ active [player (f p y)]))
   
   #; {Player+ Bag -> Player+}
-  (define (update-player+-wallet active wallet)
-    (match-define [player+ p c] active)
-    (struct-copy player+ active [player (p:update-player-wallet p wallet)]))
+  (define update-player+-wallet (player+-update-player p:update-player-wallet))
 
   #; {Player N -> Player}
-  (define (update-player+-score active delta)
-    (match-define [player+ p c] active)
-    (struct-copy player+ active [player (p:update-player-score p delta)]))
+  (define update-player+-score (player+-update-player p:update-player-score))
 
   #; {[Listof Player+] -> Pict}
   (define (render* player+*) (-> (listof player+?) (listof pict?))
@@ -222,6 +223,11 @@
 
 (define (game-active gs)
   (player+-connection (first (game-players gs))))
+
+#; {[X] [Player+ X -> Player+] -> GameState X -> GameState}
+(define ((game-update-active f) gs y)
+  (match-define [cons active others] (game-players gs))
+  (struct-copy game gs [players (cons (f active y) others)]))
 
 (module+ examples
   (define gs0 (game b-ggggg (list) (list) (list (player+ p-r6 'unknown))))
@@ -324,14 +330,10 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {GameState Bag -> GameState}
-(define (update-player-wallet gs wallet)
-  (match-define [cons active others] (game-players gs))
-  (struct-copy game gs [players (cons (update-player+-wallet active wallet) others)]))
+(define update-player-wallet (game-update-active update-player+-wallet))
 
 #; {GameState N -> GameState}
-(define (update-player-score gs delta)
-  (match-define [cons active others] (game-players gs))
-  (struct-copy game gs [players (cons (update-player+-score active delta) others)]))
+(define update-player-score (game-update-active update-player+-score))
 
 #; {GameState [Lustof Card] -> GameState}
 (define (replenish-visibles gs visibles0)
