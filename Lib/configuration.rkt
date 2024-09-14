@@ -57,7 +57,8 @@
 (define-syntax (struct/description stx)
   (syntax-parse stx
     [(_ name
-        [key 
+        [key
+         (~optional (~seq #:hidden hide? #;boolean) #:defaults ([hide? #'#false]))
          (~optional (~seq #:to-jsexpr to #;function) #:defaults ([to #'identity]))
          (~optional (~seq #:from-jsexpr from #;function) #:defaults ([from #'identity]))
          (~optional (~seq #:is-a is-a ... #;string) #:defaults ([(is-a 1) (list #'"")]))]
@@ -97,7 +98,9 @@
               #false]))
          
          #; {Struct -> ScribbleTable}
-         (define t* (map (λ (k c) (list (~a k) c)) key*  `((,is-a ...) ...)))
+         (define t*
+           (for/list ([k key*] [c `((,is-a ...) ...)] [h (list hide? ...)] #:unless h)
+             (list (~a k) c)))
          (define [name->def] (fields->data-def 'name t*)))]))
 
 ;                                     
