@@ -3,6 +3,7 @@
 ;; for generating serializing and deserializing plain values from and to JSexpr
 
 (provide
+ jsexpr?
   jsexpr->boolean boolean->jsexpr
   jsexpr->natural natural->jsexpr
   jsexpr->void    void->jsexpr

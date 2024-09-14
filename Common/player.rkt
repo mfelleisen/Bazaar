@@ -109,12 +109,13 @@
  player
  [wallet #:to-jsexpr bag->jsexpr     #:from-jsexpr jsexpr->bag     #:is-a "*Pebbles"]
  [score  #:to-jsexpr natural->jsexpr #:from-jsexpr jsexpr->natural #:is-a "Natural"]
+ [cards #:hidden #true #:to-jsexpr (λ (_) "_") #:from-jsexpr (λ (j) (if (jsexpr? j) '[] (error)))]
  #:transparent
  #:methods gen:equal+hash
  [(define equal-proc
     (λ (x y recursive-equal?)
-      (match-define [player x-wallet x-score] x)
-      (match-define [player y-wallet y-score] y)
+      (match-define [player x-wallet x-score c] x)
+      (match-define [player y-wallet y-score d] y)
       (and (= x-score y-score) (b:bag-equal? x-wallet y-wallet))))
   (define (hash-proc x re-hash)
     (+ (* 1000 (re-hash (player-wallet x)))
@@ -146,33 +147,33 @@
   (struct-copy player p [score (+ (player-score p) delta)]))
 
 (module+ examples
-  (define p-rg1 (player b-rg 1))
-  (define p-rg2 (player b-rg 2))
-  (define p-bbbb3 (player b-bbbb 3))
-  (define p-bbbbb3 (player b-bbbbb 3))
-  (define p-4xb-3xg4 (player b-4xb-3xg 4))
-  (define p-ggg5 (player b-ggg 5))
-  (define p-r6 (player b-r 6))
-  (define p-g7 (player b-g 7))
-  (define p-ggb8 (player b-ggb 8))
-  (define p-gw9 (player b-gw 9))
+  (define p-rg1      (player b-rg 1 '[]))
+  (define p-rg2      (player b-rg 2 '[]))
+  (define p-bbbb3    (player b-bbbb 3 '[]))
+  (define p-bbbbb3   (player b-bbbbb 3 '[]))
+  (define p-4xb-3xg4 (player b-4xb-3xg 4 '[]))
+  (define p-ggg5     (player b-ggg 5 '[]))
+  (define p-r6       (player b-r 6 '[]))
+  (define p-g7       (player b-g 7 '[]))
+  (define p-ggb8     (player b-ggb 8 '[]))
+  (define p-gw9      (player b-gw 9 '[]))
   
-  (define p-ggggg (player b-ggggg 0))
-  (define p-rgbrg (player b-rgbrg 0))
-  (define p-wyrbb (player b-wyrbb 0))
+  (define p-ggggg    (player b-ggggg 0 '[]))
+  (define p-rgbrg    (player b-rgbrg 0 '[]))
+  (define p-wyrbb    (player b-wyrbb 0 '[]))
   
-  (define p-rrbrr-20 (player b-rrbrr PLAYER-WINS)))
+  (define p-rrbrr-20 (player b-rrbrr PLAYER-WINS '[])))
 
 (module+ examples ;; from turn 
   (provide p-rg-0 p-ggg-9 p-r-9 p-rg-9 p-rr-9 p-bbbbb-0 p-5b-5g-0)
   
-  (define p-5b-5g-0 (player (b:bag-add b-bbbbb b-ggggg) 0))
-  (define p-bbbbb-0 (player b-bbbbb 0))
-  (define p-rr-9 (player (b:bag-add b-r b-r) 9))
-  (define p-rg-9 (player b-rg 9))
-  (define p-r-9 (player b-r 9))
-  (define p-rg-0 (player b-rg 0))
-  (define p-ggg-9 (player b-ggg 9)))
+  (define p-5b-5g-0  (player (b:bag-add b-bbbbb b-ggggg) 0 '[]))
+  (define p-bbbbb-0  (player b-bbbbb 0 '[]))
+  (define p-rr-9     (player (b:bag-add b-r b-r) 9 '[]))
+  (define p-rg-9     (player b-rg 9 '[]))
+  (define p-r-9      (player b-r 9 '[]))
+  (define p-rg-0     (player b-rg 0 '[]))
+  (define p-ggg-9    (player b-ggg 9 '[])))
 
 (module+ examples ;; for strategies
   (provide p-6g-3r-4b p-3r-2y-1w p-4r-2y-1w p-2r-2y-1w px-1 px-2)
@@ -181,13 +182,13 @@
 
   (define wallet-test (b:bag-add b-rr b-yyw))
   
-  (define p-2r-2y-1w (player b-2r-2y-1w 0))
-  (define p-3r-2y-1w (player b-3r-2y-1w 0))
-  (define p-4r-2y-1w (player b-4r-2y-1w 0))
-  (define p-6g-3r-4b (player b-6g-3r-4b 0))
+  (define p-2r-2y-1w (player b-2r-2y-1w 0 '[]))
+  (define p-3r-2y-1w (player b-3r-2y-1w 0 '[]))
+  (define p-4r-2y-1w (player b-4r-2y-1w 0 '[]))
+  (define p-6g-3r-4b (player b-6g-3r-4b 0 '[]))
 
-  (define px-1 (player (b:bag-add (b:bag WHITE GREEN) b-bbbb b-gggg) 0))
-  (define px-2 (player (b:bag-add (b:bag-add b-rr b-b) b-g) 0)))
+  (define px-1       (player (b:bag-add (b:bag WHITE GREEN) b-bbbb b-gggg) 0 '[]))
+  (define px-2       (player (b:bag-add (b:bag-add b-rr b-b) b-g) 0 '[])))
 
 
 ;                                                                                             
@@ -207,21 +208,21 @@
 
 #; {Player Bag Bag -> Player}
 (define (update-pebbles p plus minus)
-  (match-define [player wallet score] p)
+  (match-define [player wallet score c] p)
   (let* ([s wallet]
          [s (b:bag-minus s minus)]
          [s (b:bag-add s plus)])
-    (player s score)))
+    (player s score c)))
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {Player Natural -> Player}
 (define (update-score p delta)
-  (match-define [player wallet score] p)
-  (player wallet (+ score delta)))
+  (match-define [player wallet score c] p)
+  (player wallet (+ score delta) c))
 
 ;; ---------------------------------------------------------------------------------------------------
 (define (winning-points? p)
-  (match-define [player _wallet score] p)
+  (match-define [player _wallet score _cards] p)
   (>= score PLAYER-WINS))
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -232,7 +233,7 @@
 
 #; {Player -> Pict}
 (define (render ps #:name (name ""))
-  (match-define [player wallet score] ps)
+  (match-define [player wallet score _cards] ps)
   (define p-name   (text name "roman" 12))
   (define p-wallet (b:render wallet))
   (define p-score  (render-scores [list score]))
