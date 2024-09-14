@@ -109,7 +109,7 @@
  player
  [wallet #:to-jsexpr bag->jsexpr     #:from-jsexpr jsexpr->bag     #:is-a "*Pebbles"]
  [score  #:to-jsexpr natural->jsexpr #:from-jsexpr jsexpr->natural #:is-a "Natural"]
- [cards #:hidden #true #:to-jsexpr (λ (_) "_") #:from-jsexpr (λ (j) (if (jsexpr? j) '[] (error)))]
+ [cards #:hidden '()]
  #:transparent
  #:methods gen:equal+hash
  [(define equal-proc

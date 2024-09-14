@@ -64,8 +64,12 @@
          (~optional (~seq #:is-a is-a ... #;string) #:defaults ([(is-a 1) (list #'"")]))]
         ...
         options ...)
-     #:do   [(define n (syntax-e #'name))]
-     #:with (keyv ...)   (generate-temporaries #'(key ...))
+
+     ;; check that hide? is a non-false value only if jsexpr and is-a aren't specified
+
+     #:do   [(define n (syntax-e #'name))
+             (define keys (syntax->list #'(key ...)))
+             (define keyv (generate-temporaries #'(key ...)))]
      #:with name->jsexpr (format-id stx "~a->jsexpr" n #:source #'name #:props stx)
      #:with jsexpr->name (format-id stx "jsexpr->~a" n #:source #'name #:props stx)
      #:with name->def    (format-id stx "~a-struct->definition" n #:source #'name #:props stx)
@@ -78,18 +82,21 @@
      #`(begin
          (struct name [key ...] +option ...)
          (define key* [list 'key ...])
+         (define hidden (for/list ([k key*] [h (list hide? ...)] #:when h) k))
          
          #; {Struct -> JSexpr}
          (define key+to* (map cons key* `[,to ...]))
          (define [name->jsexpr s-instance]
            (unless (name? s-instance)
              (error 'name->jsexpr "expected ~a instance, given ~a" 'name s-instance))
-           (struct->jsexpr s-instance key+to*))
+           (struct->jsexpr s-instance key+to* #:hidden hidden))
 
          #; {JSexpr -> Struct}
          (define [jsexpr->name j]
            (match j
-             [(hash-table [(? (curry eq? 'key)) (app from keyv)] ...) (name keyv ...)]
+             [#,(make-hash-pattern-for-struct keys keyv (syntax->list #'(from ...)) #'(hide? ...))
+              (let #,(make-binders-for-hidden keys keyv #'(hide? ...))
+                #,(cons #'name keyv))]
              [(? jsexpr?)
               (eprintf "JSON value does not match ~a schema:\n ~a\n" 'name (jsexpr->string j))
               #false]
@@ -102,6 +109,19 @@
            (for/list ([k key*] [c `((,is-a ...) ...)] [h (list hide? ...)] #:unless h)
              (list (~a k) c)))
          (define [name->def] (fields->data-def 'name t*)))]))
+
+(define-for-syntax (make-binders-for-hidden key* key-var* hidden)
+  (define hide (map syntax-e (syntax->list hidden)))
+  (for/list ([k key*] [kv key-var*] [h hide] #:when h)
+    #`(#,kv #,h)))
+
+(define-for-syntax (make-hash-pattern-for-struct key* key-var* from* hidden)
+  (define hide (map syntax-e (syntax->list hidden)))
+  (define field-patterns
+    (for/list ([k key*] [kv key-var*] [f from*] [h hide] #:unless h)
+      #`[(? (curry eq? '#,k)) (app #,f #,kv)]))
+  #`(hash-table #,@field-patterns))
+
 
 ;                                     
 ;       ;                             
@@ -241,7 +261,7 @@
                [(? (curry eq? (normalize 'key))) (app from keyv)] ...)
               (add-to 'jsexpr (hash) [list [list key keyv] ...] "can't happen" name-options)]
              [_ (eprintf "JSON value does not match ~a schema:\n ~a\n" 'name (jsexpr->string j))
-                #false]))
+              #false]))
 
          #; {Configuration -> ScribbleTable}
          (define t* 
@@ -277,14 +297,14 @@
 
   (require json)
 
-   (define (config->jsexpr c key* g-key* to*)
+  (define (config->jsexpr c key* g-key* to*)
     (for/fold ([h (hash)]) ([k key*] [g-key g-key*] [to to*])
       (dict-set h k (to (dict-ref c g-key)))))
   
-  (define (struct->jsexpr s field-names+to*)
+  (define (struct->jsexpr s field-names+to* #:hidden (hidden '()))
     (define values (rest (vector->list (struct->vector s))))
     (define j
-      (for/fold ([h (hasheq)]) ([k+to field-names+to*] [v values])
+      (for/fold ([h (hasheq)]) ([k+to field-names+to*] [v values] #:unless (member (car k+to) hidden))
         (match-define (cons k to) k+to)
         (dict-set h k (to v))))
     j)
@@ -416,13 +436,14 @@
   (struct/description turn 
                       {cards #:to-jsexpr values}
                       {me #:to-jsexpr values}
+                      {baddy #:hidden '()}
                       {scores})
 
-  (define b (turn 1 2 3))
+  (define b (turn 1 2 '() 4))
 
   #;
   [turn-struct->definition]
-  
+
   (check-true (jsexpr? (turn->jsexpr b)))
   (check-equal? (jsexpr->turn (turn->jsexpr b)) b))
 
