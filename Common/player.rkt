@@ -9,17 +9,24 @@
  player?
  player-score
  player-wallet
+ player-cards
  update-player-wallet
  update-player-score
  
  #; {Player -> Boolean}
  winning-points?
 
+ #; {Player -> N}
+ player-award-red-white-and-blue-bonus
+
  #; {Player Natural -> Player}
  update-score
 
  #; {Player Bag Bag  -> Player}
- update-pebbles 
+ update-pebbles
+
+ #; {Player [Listof Card] -> Player}
+ update-player-cards 
  
  #; {[Listof Player] -> Pict}
  render*
@@ -69,11 +76,16 @@
 
 (require Bazaar/scribblings/spec)
 
+(require (prefix-in p: (submod Bazaar/Common/pebbles examples)))
+
 (require (submod Bazaar/Common/bags json))
 (require (prefix-in b: Bazaar/Common/bags))
+(require (prefix-in c: Bazaar/Common/cards))
+
 (require Bazaar/Lib/configuration)
 (require Bazaar/Lib/json)
 (require pict)
+
 
 (module+ examples
   (require (submod Bazaar/Common/bags examples)))
@@ -84,7 +96,6 @@
 (module+ test
   (require (submod ".." examples))
   (require (submod ".." json))
-  (require (submod Bazaar/Common/pebbles examples))
   (require rackunit))
 
 (module+ json
@@ -130,7 +141,7 @@
 
   (check-true (b:bag-equal? e-wallet a-wallet) "ben's failure for wallets")
 
-   (define e-active
+  (define e-active
     (jsexpr->player 
      #hasheq((score . 4) (wallet . ("blue" "blue" "blue" "blue" "green" "green" "green")))))
 
@@ -139,6 +150,9 @@
      #hasheq((score . 4) (wallet . ("green" "green" "green" "blue" "blue" "blue" "blue")))))
 
   (check-equal? e-active a-active "ben's failure for players"))
+
+(define (update-player-cards p cards)
+  (struct-copy player p [cards (append cards (player-cards p))]))
 
 (define (update-player-wallet p wallet)
   (struct-copy player p [wallet wallet]))
@@ -226,6 +240,12 @@
   (>= score PLAYER-WINS))
 
 ;; ---------------------------------------------------------------------------------------------------
+#; {Player -> N}
+(define (player-award-red-white-and-blue-bonus p)
+  (define cards (player-cards p))
+  (if (c:contains-all (list p:RED p:WHITE p:BLUE) cards) (update-score p BONUS) p))
+
+;; ---------------------------------------------------------------------------------------------------
 #; {[Listof Player] -> Pict}
 (define (render* players)
   (define p-states (map render players))
@@ -299,8 +319,8 @@
 
   (check-equal? (update-score p-rg1 1) p-rg2)
 
-  (check-equal? (update-pebbles p-bbbb3 `[,BLUE] '[]) p-bbbbb3)
-  (check-equal? (update-pebbles p-bbbbb3 '[] `[,BLUE]) p-bbbb3)
+  (check-equal? (update-pebbles p-bbbb3 `[,p:BLUE] '[]) p-bbbbb3)
+  (check-equal? (update-pebbles p-bbbbb3 '[] `[,p:BLUE]) p-bbbb3)
 
   (define lon '[1 2 3])
   (check-equal? (jsexpr->score* (score*->jsexpr lon)) lon)

@@ -23,7 +23,8 @@
  (contract-out
   [referee/state
    (->i ([players (listof player/c)] [eqs (listof e:1eq?)] [gs gs:game?])
-        ([observers (listof any/c)])
+        ([observers (listof any/c)]
+         #:award-bonus (aw  any/c))
         #:pre/name (players) "players must have distince names"
         (distinct? (map (λ (p) (send p name)) players))
         #:pre/name (gs players) "matching number of players"
@@ -78,7 +79,8 @@
 (module+ test
   (require (submod ".."))
   (require (submod ".." examples))
-  (require (submod Bazaar/Player/mechanism json))
+  (require (prefix-in p: Bazaar/Common/player))
+  ; (require (submod Bazaar/Player/mechanism json))
   (require SwDev/Lib/should-be-racket)
   (require rackunit))
 
@@ -103,15 +105,19 @@
   (define eq0 (e:create-random-equations))
   (referee/state player* eq0 gs0))
 
-#; {[Listof Actor] Equations GameState [Listof Observer] -> [List [Listof Player] [Listof Player]]}
-(define (referee/state actor* equations gs0 (observer* `[]))
+#; {[Listof Actor] Equations GameState
+                   ;; optional : [Listof Observer]
+                   ;; optional : #:award-bonus [Player -> Player]
+                   -> [List [Listof Player] [Listof Player]]}
+(define (referee/state actor* equations gs0 (observer* `[]) #:award-bonus (aw identity))
   (define mo (new mo:manage-observers%))
   (send mo add* observer*)
   (send mo state 'initial equations 'setup gs0)
-  (let*-values ([(gs->setup setup-drop-outs)  (apply values (setup equations gs0 actor* mo))]
-                [(gs->turns turn-drop-outs)   (apply values (run-turns equations gs->setup mo))]
-                [(winners win-lose-drop-outs) (apply values (inform-players gs->turns))])
-    (define drop-outs (append setup-drop-outs turn-drop-outs win-lose-drop-outs))
+  (let*-values ([(gs-setup setup-drops) (apply values (setup equations gs0 actor* mo))]
+                [(gs-turns turn-drops)  (apply values (run-turns equations gs-setup mo))]
+                [[winners0 losers0]     (apply values (gs:determine-winners-and-losers gs-turns aw))]
+                [(winners final-drops)  (apply values (inform-players winners0 losers0))])
+    (define drop-outs (append setup-drops turn-drops final-drops))
     (send mo end (get-names winners) (get-names drop-outs))
     [list winners drop-outs]))
 
@@ -235,9 +241,8 @@
 ;                        ;                    ;     
 ;                        ;                    ;     
 
-#; {GameStatr -> [List [Listof Actor] [Listof Actor]]}
-(define (inform-players gs-post-turns)
-  (match-define [list winners losers] (gs:determine-winners-and-losers gs-post-turns))
+#; {[Listof Actor] [Listof Actor] -> [List [Listof Actor] [Listof Actor]]}
+(define (inform-players winners losers)
   (match-define [list true-winners w-drop-outs] (final-inform winners #true))
   (match-define [list true-losers l-drop-outs]  (final-inform losers #false))
   (list true-winners (append w-drop-outs l-drop-outs)))
@@ -529,7 +534,8 @@
       (match-define (list players equations gs) args)
       (eprintf "-- test ~a  ~a: ~a\n" msg t i)
       (define o (list (new void-observer%)))
-      (check-equal? (dev/null (-->names (referee/state players equations gs #;o))) (sort2 exp) msg))
+      (define aw p:player-award-red-white-and-blue-bonus)
+      (check-equal? (dev/null (-->names (referee/state players equations gs #:award-bonus aw #;o))) (sort2 exp) msg))
     (eprintf "done: ~a tests\n" count))
   
   #; {[List [Listof Actor] [Listof Actor]] -> [List [Listof String] [Listof String]]}

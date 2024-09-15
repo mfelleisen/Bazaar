@@ -131,6 +131,8 @@
    (struct-out player+)
    update-player+-wallet
    update-player+-score
+   update-player+-cards
+   player+-award-bonus
    
    render*
    player+*->jsexpr
@@ -155,6 +157,12 @@
   #; {Player N -> Player}
   (define update-player+-score (player+-update-player p:update-player-score))
 
+  #; {Player+ [Listof Card] -> Player+}
+  (define update-player+-cards (player+-update-player p:update-player-cards))
+
+  #; {[Player -> Player] -> Player+ -> Player+}
+  (define ((player+-award-bonus f) p+) [(player+-update-player (λ (p _) (f p))) p+ '_])
+  
   #; {[Listof Player+] -> Pict}
   (define (render* player+*) (-> (listof player+?) (listof pict?))
     (for/fold ([p (blank 1 1)]) ([q player+*])
@@ -324,6 +332,7 @@
     [(list delta visibles wallet bank)
      (let* ([gs (update-player-score gs delta)]
             [gs (update-player-wallet gs wallet)]
+            [gs (update-player-cards gs cards)]
             [gs (replenish-visibles gs visibles)]
             [gs (struct-copy game gs [bank bank])])
        gs)]))
@@ -334,6 +343,9 @@
 
 #; {GameState N -> GameState}
 (define update-player-score (game-update-active update-player+-score))
+
+#; {HameState [Listof Card] -> GameState}
+(define update-player-cards (game-update-active update-player+-cards))
 
 #; {GameState [Lustof Card] -> GameState}
 (define (replenish-visibles gs visibles0)
@@ -510,9 +522,9 @@
   (map (compose p:player-score player+-player) players+))
 
 ;; ---------------------------------------------------------------------------------------------------
- #; {GameState -> [List [Listof Actor] [Listof Actor]] }
-(define (determine-winners-and-losers gs)
-  (define players (game-players gs))
+#; {GameState [#:award-bonus (Player -> Player)] -> [List [Listof Actor] [Listof Actor]] }
+(define (determine-winners-and-losers gs (award-bonus (λ (p) p)))
+  (define players (map (player+-award-bonus award-bonus) (game-players gs)))
   (define winners (if (empty? players) '[] (all-argmax player+-score players)))
   (define losers  (if (empty? players) '[] (set-subtract players winners)))
   (list (map player+-connection winners) (map player+-connection losers)))

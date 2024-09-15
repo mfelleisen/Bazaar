@@ -13,6 +13,9 @@
  #; {[NEListof Card] -> Boolean}
  card*<?
  
+ #; {[Listof COLOR ][Listof Card] -> Boolean}
+ contains-all
+ 
  #; {[Listof Card] -> Pict}
  render*
 
@@ -202,6 +205,13 @@
   (check-true (card<? c-ggggg c-ggggg*))
   (check-false (card<? c-ggggg* c-bbbbb*))
   (check-false (card<? c-ywywy* c-ggggg*)))
+
+;; ---------------------------------------------------------------------------------------------------
+#; {[Listof Pebble][Listof Card] -> Boolean}
+(define (contains-all pebbles loc)
+  (define all-pebbles (append-map card-pebbles loc))
+  (for/and ([p pebbles])
+    (member p all-pebbles)))
 
 ;; ---------------------------------------------------------------------------------------------------
 (define (render* c*)
