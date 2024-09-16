@@ -29,7 +29,7 @@
         (distinct? (map (λ (p) (send p name)) players))
         #:pre/name (gs players) "matching number of players"
         (matching-number gs players)
-        (r [list/c [listof player/c] [listof player/c]]))]))
+        (r [list/c [listof string?] [listof string?]]))]))
 
 (module+ examples
   (provide run-scenario-with-observer void-observer%)
@@ -116,15 +116,21 @@
   (let*-values ([(gs-setup setup-drops) (apply values (setup equations gs0 actor* mo))]
                 [(gs-turns turn-drops)  (apply values (run-turns equations gs-setup mo))]
                 [[winners0 losers0]     (apply values (gs:determine-winners-and-losers gs-turns aw))]
-                [(winners final-drops)  (apply values (inform-players winners0 losers0))])
-    (define drop-outs (append setup-drops turn-drops final-drops))
-    (send mo end (get-names winners) (get-names drop-outs))
-    [list winners drop-outs]))
+                [(winners inform-drops) (apply values (inform-players winners0 losers0))])
+    (define drop-outs (append setup-drops turn-drops inform-drops))
+    (define named-winners (get-names winners))
+    (define named-drops   (get-names drop-outs))
+    (send mo end named-winners named-drops)
+    (sort2 [list named-winners named-drops])))
 
 #; {[Lisof Actor] -> [Listof String]}
 (define (get-names actors)
   (map (λ (x) (send x name)) actors))
-  
+
+#; {[List [Listof String] [Listof String]] -> [List [Listof String] [Listof String]]}
+(define (sort2 l)
+  (match-define [list t u] l)
+  (list (sort t string<=?) (sort u string<=?)))
 
 ;                                     
 ;                                     
@@ -492,12 +498,12 @@
 
 (module+ examples
   (define void-observer%
-  (class object%
-    (super-new)
-    (define/public (state msg equations action gs)
-      (eprintf "state ~a : ~a\n" msg action))
-    (define/public (end winners drop-outs)
-      (eprintf "the end:\n ~a\n ~a\n" winners drop-outs))))
+    (class object%
+      (super-new)
+      (define/public (state msg equations action gs)
+        (eprintf "state ~a : ~a\n" msg action))
+      (define/public (end winners drop-outs)
+        (eprintf "the end:\n ~a\n ~a\n" winners drop-outs))))
 
   (define (run-scenario-with-observer scenarios i observer)
     (match-define [list args expected msg] (list-ref scenarios (sub1 i)))
@@ -530,21 +536,14 @@
     (eprintf "--------------- ~a\n" t)
     (for ([s scenario*] [i (in-naturals 1)])
       (set! count i) 
-      (match-define (list args exp msg) s)
+      (match-define (list args exp0 msg) s)
       (match-define (list players equations gs) args)
       (eprintf "-- test ~a  ~a: ~a\n" msg t i)
-      (define o (list (new void-observer%)))
-      (define aw p:player-award-red-white-and-blue-bonus)
-      (check-equal? (dev/null (-->names (referee/state players equations gs #:award-bonus aw #;o))) (sort2 exp) msg))
-    (eprintf "done: ~a tests\n" count))
-  
-  #; {[List [Listof Actor] [Listof Actor]] -> [List [Listof String] [Listof String]]}
-  (define (-->names s)
-    (sort2 (list (get-names (first s)) (get-names (second s)))))
-
-  (define (sort2 l)
-    (match-define [list t u] l)
-    (list (sort t string<=?) (sort u string<=?))))
+      (define exp (sort2 exp0))
+      (define ob  (list (new void-observer%)))
+      (define aw  p:player-award-red-white-and-blue-bonus)
+      (check-equal? (dev/null (referee/state players equations gs #:award-bonus aw #;ob)) exp msg))
+    (eprintf "done: ~a tests\n" count)))
 
 (module+ test
   (run-scenario* 'simple Simple/)
