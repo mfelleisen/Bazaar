@@ -37,7 +37,7 @@
 (require (prefix-in old: (only-in json write-json jsexpr->string)))
 
 (module+ test
-  (require Qwirkle/Lib/check-message)
+  (require Bazaar/Lib/check-message)
   (require rackunit))
 
 ;; ---------------------------------------------------------------------------------------------------
