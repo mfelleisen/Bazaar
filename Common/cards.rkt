@@ -188,7 +188,8 @@
 
 #; {[NEListof Card] [NEListof Card] -> Boolean}
 (define (card*<? 1loc 2loc)
-  (for/and ([c 1loc] [d 2loc]) (card<? c d)))
+  (or (< (length 1loc) (length 2loc))
+      (for/and ([c 1loc] [d 2loc]) (card<? c d))))
 
 #; {Card Card -> Boolean}
 ;; one card is smaller than another if either
