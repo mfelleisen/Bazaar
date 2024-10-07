@@ -61,7 +61,6 @@
 (require Bazaar/Lib/configuration)
 
 (require SwDev/Testing/communication)
-(require (only-in SwDev/Lib/should-be-racket all-but-last))
 
 (module+ examples
   (require (submod ".."))
@@ -69,9 +68,7 @@
     (prefix-in
      c: (only-in
          Bazaar/Client/client
-         make-client-for-name-sender default-client-config set-client-config QUIET PORT ACTOR*)))
-  (require (submod Bazaar/Referee/referee examples))
-  (require (prefix-in c: Bazaar/Client/referee)))
+         make-client-for-name-sender default-client-config set-client-config QUIET PORT ACTOR*))))
 
 (module+ test
   (require (submod ".."))
@@ -161,12 +158,8 @@
                        (eprintf "~a\n" (exn-message n))
                        DEFAULT-RESULT)])
       (apply referee/state actor* for-referee)))
-  (send-message (f result))
-  (optionally-return-result (f result)))
-
-(define (f result)
-  (match-define [list w do] result)
-  (list (map (λ (o) (send o name)) w) (map (λ (o) (send o name)) do)))
+  (send-message result)
+  (optionally-return-result result))
 
 #; {[Listof Player] ServerConfig -> [Listof Player]}
 ;; collect list of playaers in reverse order of sign-up [youngest first]
@@ -286,7 +279,6 @@
 
 ;; these tests are entirely independent of the game that's run
 
-#;
 (module+ test ;; timing
   
   #; {Port-Number (U False n:N) -> (U False [Listof 0]: (=/c (length) n))}
@@ -397,6 +389,13 @@
     (list refc sc cc client* nu-expected label)))
 
 ;; ---------------------------------------------------------------------------------------------------
+(module+ examples
+  (require Bazaar/Client/referee)
+  (require Bazaar/Player/mechanism)
+
+  (define bad-json-players (map (λ (n) (create-player (first n))) *referee-list)))
+
+
 ;; ---------------------------------------------------------------------------------------------------
 (module+ examples  ;; bad name senders
   (provide special-scenario-client-from-port)
@@ -507,33 +506,16 @@
   ; (provide sc1)
   (require (submod Bazaar/Referee/referee examples))
   (define sc1 (scenario* 7 Simple/))
+
+  '---7---
   (for-each run-server-client-scenario (scenario* 7 Simple/))
-  '---
   (for-each run-server-client-scenario (scenario* 7 Complex/))
-  '---+++)
 
-;; ---------------------------------------------------------------------------------------------------
+  '---8---
+  (for-each run-server-client-scenario (scenario* 8 8Simple/))
+  (for-each run-server-client-scenario (scenario* 8 8Complex/))
 
-#;
-(module+ test
-  'special-1
-  (run-server-client-scenario scenario-special-1)
-  'special-2
-  (run-server-client-scenario scenario-special-2))
+  '---9---
+  (for-each run-server-client-scenario (scenario* 9 9Simple/))
+  (for-each run-server-client-scenario (scenario* 9 9Complex/)))
 
-
-#;
-(module+ test ;; running scenarios as unit tests
-  7
-  (for-each run-server-client-scenario scenarios-for-7)
-  (for-each run-server-client-scenario scenarios-for-7/s)
-  8
-  (for-each run-server-client-scenario scenarios-for-8)
-  (for-each run-server-client-scenario scenarios-for-8/s)
-  9
-  (for-each run-server-client-scenario scenarios-for-9)
-  (for-each run-server-client-scenario scenarios-for-9/s)
-  'A
-  (for-each run-server-client-scenario scenarios-for-A)
-  'B
-  (for-each run-server-client-scenario scenarios-for-B))

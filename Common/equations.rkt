@@ -247,7 +247,9 @@
 #; {Equations Equations -> Boolean}
 ;; `e*` and `f*` are interpreted as exchanges, i.e., they apply from left to right only
 (define (equations<? e* f*)
-  (for/and ([e e*] [f f*]) (1eq<? e f)))
+  (or  (< (length e*) (length f*))
+       (and (= (length e*) (length f*))
+            (for/and ([e e*] [f f*]) (1eq<? e f)))))
 
 #; {1Equations 1Equations -> Boolean}
 (define (1eq<? e f)
