@@ -314,7 +314,7 @@
   (define v-x-y-z-w-u (list v x y z w u)))
 
 (module+ examples ;; outcomes for games abstracted over drop-outs
-  (define (ff x) (map (λ (a) (send a name)) x))
+  (define (ff x) (sort (map (λ (a) (send a name)) x) string<?))
   (define [default . x]    `[[] ,(ff x)])
   (define [adam . x]       `[["Adam"] ,(ff x)])
   (define [bettina . x]    `[["Bettina"] ,(ff x)])
@@ -331,7 +331,7 @@
   (simple+ Simple/ (list 3players '[] gs-3-zeros) [carl-adam] "2 buys, 2 winners")
   (simple+ Simple/ (list z-a-e `[,ggb=rw] gs-3-zeros) (eve z) "setup exn")
   (simple+ Simple/ (list 6players `[,ggg=b] gs-6-players) [felix] "1 trade, 1 winner")
-  (simple+ Simple/ (list z-y-a `[,ggb=rw] gs-3-zeros) `[["Adam"] ["Zeina" "Yolanda"]] "2"))
+  (simple+ Simple/ (list z-y-a `[,ggb=rw] gs-3-zeros) `[["Adam"] ["Yolanda" "Zeina"]] "2"))
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ examples ;; Tests/ in 7
@@ -539,10 +539,9 @@
       (match-define (list args exp0 msg) s)
       (match-define (list players equations gs) args)
       (eprintf "-- test ~a  ~a: ~a\n" msg t i)
-      (define exp (sort2 exp0))
       (define ob  (list (new void-observer%)))
       (define aw  p:player-award-red-white-and-blue-bonus)
-      (check-equal? (dev/null (referee/state players equations gs #:award-bonus aw #;ob)) exp msg))
+      (check-equal? (dev/null (referee/state players equations gs #:award-bonus aw #;ob)) exp0 msg))
     (eprintf "done: ~a tests\n" count)))
 
 (module+ test
