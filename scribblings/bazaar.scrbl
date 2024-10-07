@@ -101,7 +101,7 @@ There are @(~a EQUATIONS#) equations overall. & |
 @; -----------------------------------------------------------------------------
 @bold{Setting up the Game}
 
-The @emph{referee} picks @(~a EQUATIONS#) equations at random and makes them
+The @emph{referee} @strike{picks} @purple{generates} @(~a EQUATIONS#) equations at random and makes them
 available to the players. It also puts @VISIBLE#-as-str cards on the playing field, again
 visible to all players. Finally, it endows its bank with all of the colored
 pebbles. That's it. 
