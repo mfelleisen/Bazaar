@@ -172,7 +172,7 @@ The game ends if
 
  @item{all players have been kicked at the end of a player's turn;}
 
- @item{a player has @(~a PLAYER-WINS) points at the end of its turn;}
+ @item{a player has @(~a PLAYER-WINS) @purple{or more} points at the end of its turn;}
 
  @item{no more cards are available for purchase; or}
 
