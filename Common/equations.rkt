@@ -353,7 +353,7 @@
 
     (cond
       [(and eq* (trades/c eq*)) eq*]
-      [else (eprintf "distinct set of equations expected, given ~a\n" j) #false]))
+      [else (eprintf "distinct rules expected, given ~a\n" j) #false]))
   
   (define (1eq->jsexpr eq)
     (match-define [1eq left right] eq)
@@ -404,7 +404,13 @@
 
 (module+ test ;; json testing 
   (check-equal? (jsexpr->equations (equations->jsexpr (list rg=bbbb))) (list rg=bbbb))
-  (check-false (dev/null (jsexpr->equations '[[-1] [1]]))))
+  (check-false (dev/null (jsexpr->equations '[[-1] [1]])))
+
+  (check-false (dev/null (jsexpr->equations '[[["red"] ["blue"]] [["blue" "red"]]])))
+  (check-equal? (jsexpr->trades '[[["red"] ["blue"]] [["blue"] ["red"]]])
+                [list (1eq [list p:RED] (list p:BLUE))
+                      (1eq (list p:BLUE) [list p:RED])]))
+                                           
 
 (module+ test ;; scenario testing
   #; {Symbol UsefulScenarios {#:check [Equality Thunk Any String -> Void]} -> Void}
