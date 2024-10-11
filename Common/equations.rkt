@@ -134,12 +134,14 @@
 
 (module+ json
   (require (submod Bazaar/Common/bags json))
-  (require Bazaar/Lib/parse-json))
+  (require Bazaar/Lib/parse-json)
+  )
   
 (module+ test
   (require (submod ".."))
   (require (submod ".." examples))
   (require (submod ".." json))
+  (require SwDev/Lib/should-be-racket)
   (require rackunit))
 
 (module+ pict
@@ -363,6 +365,9 @@
                (1eq left right)])
     (jsexpr->1eq j)))
 
+(module+ test
+  )
+
 
 ;                                     
 ;                                     
@@ -398,7 +403,8 @@
   
 
 (module+ test ;; json testing 
-  (check-equal? (jsexpr->equations (equations->jsexpr (list rg=bbbb))) (list rg=bbbb)))
+  (check-equal? (jsexpr->equations (equations->jsexpr (list rg=bbbb))) (list rg=bbbb))
+  (check-false (dev/null (jsexpr->equations '[[-1] [1]]))))
 
 (module+ test ;; scenario testing
   #; {Symbol UsefulScenarios {#:check [Equality Thunk Any String -> Void]} -> Void}

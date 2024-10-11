@@ -244,9 +244,13 @@
 
   (define (jsexpr->bag j)
     (define b (lib:jsexpr->bag j p:pebble-color? jsexpr->pebble))
-    (unless (pebbles#? (bag-size b))
-      (error 'jsexpr->bag "bad contains more pebbels than the game specs allow"))
-    b))
+    (define s (jsexpr->string/ j))
+    (cond
+      [(false? b)
+       (eprintf "~a : object does not match bag schema: ~a\n" 'jsexpr->bag s)]
+      [(not (pebbles#? (bag-size b)))
+       (eprintf "~a : bad contains an more pebbels than allowed: ~a\n" 'jsexpr->bag s)]
+      [else b])))
 
 (module+ test
   (check-true (jsexpr? (bag->jsexpr b-rrbrr)))
