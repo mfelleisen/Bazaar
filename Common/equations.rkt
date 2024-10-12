@@ -348,12 +348,12 @@
       [else (eprintf "distinct set of equations expected, given ~a\n" j) #false]))
 
   (define (jsexpr->trades j)
-    (def/jsexpr-> equations #:array [(list (app jsexpr->1eq (? 1eq? 1eq)) ...) 1eq])
-    (define eq* (jsexpr->equations j))
+    (def/jsexpr-> rules #:array [(list (app jsexpr->1eq (? 1eq? 1eq)) ...) 1eq])
+    (define eq* (jsexpr->rules j))
 
     (cond
       [(and eq* (trades/c eq*)) eq*]
-      [else (eprintf "distinct rules expected, given ~a\n" j) #false]))
+      [else (eprintf "proper rules expected, given ~a\n" j) #false]))
   
   (define (1eq->jsexpr eq)
     (match-define [1eq left right] eq)

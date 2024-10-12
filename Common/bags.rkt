@@ -247,9 +247,10 @@
     (define s (jsexpr->string/ j))
     (cond
       [(false? b)
-       (eprintf "~a : object does not match bag schema: ~a\n" 'jsexpr->bag s)]
+       #false]
       [(not (pebbles#? (bag-size b)))
-       (eprintf "~a : bad contains an more pebbels than allowed: ~a\n" 'jsexpr->bag s)]
+       (eprintf "~a : bad contains an more pebbels than allowed: ~a\n" 'jsexpr->bag s)
+       #false]
       [else b])))
 
 (module+ test
