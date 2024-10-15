@@ -394,7 +394,7 @@
   (define p (create-cheating-player "Paul" purchase-points "use-non-existent-equation"))
   (define o (create-cheating-player "Olivia" purchase-points "use-non-existent-equation"))
   (define n (create-cheating-player "Norma" purchase-size "wallet-cannot-trade"))
-  (define m (create-cheating-player "Michelle" purchase-points "buy-invisible-card"))
+  (define m (create-cheating-player "Michelle" purchase-points "buy-unavailable-card"))
   (define l (create-cheating-player "Laura" purchase-size "wallet-cannot-buy-card"))
 
   (define o-a-e (cons o 2players))
