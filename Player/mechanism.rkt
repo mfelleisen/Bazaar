@@ -423,10 +423,10 @@
     (define t (first t*)) ;; because class/fail uses . args
     (make-trade-w/o-support (t:turn-bank t) equations)]))
 
-(define (make-trade-w/o-support wallet equations)
+(define (make-trade-w/o-support pebbles equations)
   (or
-   (for/first ([e equations] #:unless (b:subbag? (e:1eq-left e) wallet))  (list e))
-   (for/first ([e equations] #:unless (b:subbag? (e:1eq-right e) wallet)) (list (e:1eq-flip e)))))
+   (for/first ([e equations] #:unless (b:subbag? (e:1eq-left e) pebbles))  (list e))
+   (for/first ([e equations] #:unless (b:subbag? (e:1eq-right e) pebbles)) (list (e:1eq-flip e)))))
 
 (module+ test
   (let* ([f (retrieve-factory "wallet-cannot-trade" cheater-table-for-8)]
@@ -453,7 +453,7 @@
     (check-equal? (send a request-pebble-or-trades ts0) (list w=bbbb))))
 
 ;; ---------------------------------------------------------------------------------------------------
-(define buy-invisible-card%
+(define buy-unavailable-card%
   (class/fail
    1
    [(request-cards t*)
@@ -481,11 +481,16 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 (define all-cheater-classes
-  `[ [,use-non-existent-equation% "a trade that is not according to any given equation"]
-     [,bank-cannot-trade%         "a trade that the bank cannot support"]
-     [,wallet-cannot-trade%       "a trade that its wallet does not support"]
-     [,buy-invisible-card%        "the purchase of a card that is not visible"]
-     [,wallet-cannot-buy-card%    "the purchase of a card without owning the needed pebbles"] ])
+  `[ [,use-non-existent-equation%
+      "an exchange that is not according to any given equation"]
+     [,bank-cannot-trade%
+      "an exchange accoding to a given equation that the bank cannot support"]
+     [,wallet-cannot-trade%
+      "an exchange accoding to a given equation that its wallet does not support"]
+     [,buy-unavailable-card%
+      "the purchase of a card that is among the currently visible ones"]
+     [,wallet-cannot-buy-card%
+      "the purchase of a card that its wallet cannot afford"] ])
 
 ;; ALSO CHECK THAT THE RETURNS ARE ILLEGAL! 
 
