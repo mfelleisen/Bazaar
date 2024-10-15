@@ -484,13 +484,13 @@
   `[ [,use-non-existent-equation%
       "an exchange that is not according to any given equation"]
      [,bank-cannot-trade%
-      "an exchange accoding to a given equation that the bank cannot support"]
+      "an exchange according to some given equation that the bank cannot currently support"]
      [,wallet-cannot-trade%
-      "an exchange accoding to a given equation that its wallet does not support"]
+      "an exchange according to some given equation that its wallet does not currently support"]
      [,buy-unavailable-card%
-      "the purchase of a card that is among the currently visible ones"]
+      "the purchase of a card that is not among the currently visible ones"]
      [,wallet-cannot-buy-card%
-      "the purchase of a card that its wallet cannot afford"] ])
+      "the purchase of a card that its wallet cannot currently afford"] ])
 
 ;; ALSO CHECK THAT THE RETURNS ARE ILLEGAL! 
 
