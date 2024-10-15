@@ -48,7 +48,7 @@
   (provide sample))
 
 (module+ json
-  (provide actor->jsexpr jsexpr->actor actor*->jsexpr jsexpr->actor*))
+  (provide actor->jsexpr jsexpr->actor actor*->jsexpr jsexpr->actor* lax-names-okay?))
 
 ;                                                                                      
 ;       ;                                  ;                                           
@@ -303,9 +303,9 @@
              [(< count go-bad-after-this-many-times)
               (super method-that-goes-bad . args)]
              [(>= count go-bad-after-this-many-times)
-              (begin ;; call super to get the effects (it either times out or goes bad)
-                (super method-that-goes-bad . args)
-                (let () body ...))])))]))
+              (let* ([s (super method-that-goes-bad . args)]
+                     [x (let () body ...)])
+                (or x s))])))]))
 
 ;                                                                                                    
 ;                                                                                                    
@@ -405,6 +405,10 @@
 ;                                                          
 
 ;; ---------------------------------------------------------------------------------------------------
+;; a cheating method that returns #false falls back on the `super` method
+
+;; TODO: check which of the methods will always succceed or may fail 
+
 (define wallet-cannot-trade%
   (class/fail
    1
@@ -465,10 +469,8 @@
     (define t (first t*)) ;; because class/fail uses . args
     (define visibles (turn-cards t))
     (define wallet   (p:player-wallet (t:turn-active t)))
-    (define badcard 
-      (for/first ([c visibles] #:unless (b:subbag? (c:card-pebbles c) wallet))
-        (list c)))
-    (or badcard '[])]))
+    (for/first ([c visibles] #:unless (b:subbag? (c:card-pebbles c) wallet))
+      (list c))]))
 
 (module+ test
   ts1
