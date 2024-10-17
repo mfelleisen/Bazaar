@@ -33,7 +33,8 @@
      
   (provide c-rrbrr  c-rgbrg  c-wyrbb  c-ggggg  c-rbbbb c-rbbbb*   c-rgggg c-rgggg* c-bbbbb
            c-ywywy c-ywywy* c-rrbrr* c-rgbrg* c-wyrbb* c-ggggg* c-yyrwg c-yyrwg* c-bbbbb*
-           c-wgwgw c-wgwgw*))
+           c-wgwgw c-wgwgw*
+           c-bad))
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ json
@@ -106,8 +107,8 @@
 ;                                                          
 
 (define (size-check b)
-  (unless (<= (bag-size b) P-ON-CARD)
-    (error 'jsexpr->card "too many pebbles for a card"))
+  (unless (= (bag-size b) P-ON-CARD)
+    (error 'jsexpr->card "wrong number of pebbles for a card"))
   b)
 
 (struct/description
@@ -160,6 +161,8 @@
   (define c-ywywy* (card b-ywywy #true))
   (define c-wgwgw  (card b-wgwgw #false))
   (define c-wgwgw* (card b-wgwgw #true))
+
+  (define c-bad (card (bag) #false))
   
   (define ALL-CARDS
     (list
@@ -306,6 +309,8 @@
   (render* c*))
 
 (module+ test
+  (check-exn #px"wrong number" (λ () (jsexpr->card (card->jsexpr c-bad))))
+
   (check-equal? (jsexpr->card (card->jsexpr c-rrbrr)) c-rrbrr)
   (check-equal? (jsexpr->card* (card*->jsexpr (list c-rrbrr))) (list c-rrbrr)))
   
