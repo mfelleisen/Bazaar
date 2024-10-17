@@ -42,6 +42,10 @@
  1eq-right
  1eq-flip
 
+ random-equation
+
+ random-equation*
+
  equations<?
 
  #; {Equations Equations -> Boolean}
@@ -134,8 +138,7 @@
 
 (module+ json
   (require (submod Bazaar/Common/bags json))
-  (require Bazaar/Lib/parse-json)
-  )
+  (require Bazaar/Lib/parse-json))
   
 (module+ test
   (require (submod ".."))
@@ -199,7 +202,11 @@
   (define ggb=rw   (1eq b-ggb b-gw))
   (define ggb=rw-  (1eq-flip ggb=rw))
 
-  (define ggg=b    (1eq b-ggg b-b)))
+  (define ggg=b    (1eq b-ggg b-b))
+
+  
+
+  )
 
 
 ;                                                                 
@@ -291,6 +298,22 @@
 #; {1Equation -> 1Equation}
 (define (1eq-flip e)
   (1eq (1eq-right e) (1eq-left e)))
+
+;; ---------------------------------------------------------------------------------------------------
+(define (random-equation)
+  (define mx (+ (random (- [MAX-EQ-SIDE] 1)) 1))
+  (let loop ()
+    [define lhs (b:random-bag mx)]
+    (define rhs (b:random-bag mx))
+    (if (no-overlap lhs rhs) (1eq lhs rhs) (loop))))
+
+(define (random-equation*)
+  (let loop ([e* '()])
+    (cond
+      [(= (length e*) EQUATIONS#) e*]
+      [else 
+       (define next (random-equation))
+       (if (member next e*) (loop e*) (loop (cons next e*)))])))
 
 ;; ---------------------------------------------------------------------------------------------------
 (define (make-non-existent-equation equations0)

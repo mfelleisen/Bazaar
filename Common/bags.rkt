@@ -24,6 +24,8 @@
  ;; randomly pick a pebble from a bag 
  bag-pick-random 
  bag-equal?
+
+ random-bag
  
  (contract-out
   [bag-replace-first
@@ -50,7 +52,8 @@
            ;; for strategies
            b-6g-3r-4b b-2r-2y-1w b-3r-2y-1w b-4r-2y-1w
            ;; for cards 
-           b-bbbbb b-ggggg b-rgbrg b-wyrbb b-rrbrr b-rbbbb b-rgggg b-yyrwb b-ywywy b-wgwgw))
+           b-bbbbb b-ggggg b-rgbrg b-wyrbb b-rrbrr b-rbbbb b-rgggg b-yyrwb b-ywywy b-wgwgw
+           b-full))
 
 
 ;                                                                                      
@@ -142,7 +145,10 @@
   (define b-6g-3r-4b (bag-add b-rg b-rg b-rg b-4xb-3xg))
   (define b-2r-2y-1w (bag-add b-rr b-yyw))
   (define b-3r-2y-1w (bag-add b-rr b-r b-yyw))
-  (define b-4r-2y-1w (bag-add b-rr b-rr b-yyw)))
+  (define b-4r-2y-1w (bag-add b-rr b-rr b-yyw))
+
+  (define per (/ PEBBLES# COLOR#))
+  (define b-full (apply append (map (λ (c) (apply bag (make-list per c))) p:PEBBLES))))
 
 ;                                                                                             
 ;      ;;                                                                                     
@@ -207,6 +213,10 @@
 
 (module+ test
   (check-equal? (bag-replace-first b-rg p:GREEN) b-gg))
+
+;; ---------------------------------------------------------------------------------------------------
+(define (random-bag size)
+  (build-list size (λ _ (p:random-pebble))))
 
 ;; ---------------------------------------------------------------------------------------------------
 (define (render b) (lib:render b p:render))

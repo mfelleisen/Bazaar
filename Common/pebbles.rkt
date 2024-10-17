@@ -15,7 +15,9 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ examples
-  (provide PEBBLES RED WHITE GREEN YELLOW BLUE))
+  (provide PEBBLES RED WHITE GREEN YELLOW BLUE
+           #; {-> Pebble}
+           random-pebble))
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ json
@@ -77,7 +79,9 @@
   (define GREEN  (pebble "green"))
   (define YELLOW (pebble "yellow"))
   (define WHITE  (pebble "white"))
-  (define BLUE   (pebble "blue")))
+  (define BLUE   (pebble "blue"))
+
+  (define (random-pebble) (list-ref PEBBLES (random COLOR#))))
 
 (define (pebble-color? x)
   (cons? (member x COLORS)))

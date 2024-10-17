@@ -12,6 +12,9 @@
  player-cards
  update-player-wallet
  update-player-score
+
+ #; {Bag -> Player}
+ random-player 
  
  #; {Player -> Boolean}
  winning-points?
@@ -116,9 +119,14 @@
 ;                                                          
 ;                                                          
 
+(define (size-check b)
+  (unless (pebbles#? (b:bag-size b))
+    (error 'jsexpr->card "wrong number of pebbles for a player's wallet"))
+  b)
+
 (struct/description
  player
- [wallet #:to-jsexpr bag->jsexpr     #:from-jsexpr jsexpr->bag     #:is-a "*Pebbles"]
+ [wallet #:to-jsexpr bag->jsexpr     #:from-jsexpr (compose size-check jsexpr->bag) #:is-a "*Pebbles"]
  [score  #:to-jsexpr natural->jsexpr #:from-jsexpr jsexpr->natural #:is-a "Natural"]
  [cards #:hidden '()]
  #:transparent
@@ -244,6 +252,9 @@
 (define (player-award-red-white-and-blue-bonus p)
   (define cards (player-cards p))
   (if (c:contains-all (list p:RED p:WHITE p:BLUE) cards) (update-score p BONUS) p))
+
+(define (random-player b)
+  (player b (random 9) '()))
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {[Listof Player] -> Pict}

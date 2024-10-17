@@ -14,6 +14,9 @@
  turn-wallet
  turn-scores
 
+ #; {-> (values Bag Turn)}
+ random-turn
+
  render
 
  combine)
@@ -239,6 +242,13 @@
          [s (apply hb-append 10 s)]
          [s (frame (inset s 12))])
     s))
+
+#; {-> (values [Listof Pebble] Turn)}
+(define (random-turn)
+  (define cc (list (c:random-card) (c:random-card) (c:random-card) (c:random-card)))
+  (define pp (shuffle b-full))
+  (define hf (/ (length pp) 2))
+  (turn (drop pp hf) cc (p:random-player (take pp hf)) '[]))
 
 ;                                     
 ;                                     

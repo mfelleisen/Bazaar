@@ -401,6 +401,32 @@
   
   (run-scenario* 'Extras Extras/))
 
+(module+ stress ;; test
+
+  (require (submod ".." json))
+  (require (submod Bazaar/Common/equations json))
+  (require (submod Bazaar/Common/turn-state json))
+  (require json)
+
+  (define ee (e:random-equation*))
+  (define tt (t:random-turn))
+  (define cc (t:turn-cards tt))
+  (define ww (p:player-wallet (t:turn-active tt)))
+  (define bb (t:turn-bank tt))
+  (define po purchase-points)
+
+  (define j-ee (equations->jsexpr ee))
+  (define j-tt (turn->jsexpr tt))
+  (define j-po (policy->jsexpr po))
+
+  (with-output-to-file (build-path "Stress/" (~a "test" (random 1000)))
+    #:exists 'replace 
+    (λ ()
+      (write-json j-ee #:indent 4) (newline)
+      (write-json j-tt #:indent 4) (newline)
+      (write-json j-po) (newline)))
+
+  (time (f-trade-then-purchase ee cc ww bb po)))
 
 ;                       
 ;   ;                   

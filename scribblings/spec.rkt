@@ -15,6 +15,7 @@
   (define BLUE   "blue")
 
   (define COLORS (list RED WHITE BLUE GREEN YELLOW))
+  (define COLOR# (length COLORS))
   
   (define MAX-EQ-SIDE (make-parameter 4))
   (define EQUATIONS# 10)
@@ -29,7 +30,7 @@
   (define VISIBLE# 4)
   (define VISIBLE#-as-str "four")
   
-  (define (cards#? x) (and (natural? x) (<= x PEBBLES#)))
+  (define (cards#? x) (and (natural? x) (<= x CARDS#)))
 
   (define TRADES# 3)
   (define TRADES#-as-str "three")

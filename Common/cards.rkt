@@ -10,6 +10,8 @@
  card-pebbles
  card-face?
 
+ random-card 
+
  #; {[NEListof Card] -> Boolean}
  card*<?
  
@@ -219,6 +221,10 @@
     (member p all-pebbles)))
 
 ;; ---------------------------------------------------------------------------------------------------
+(define (random-card)
+  (card (random-bag P-ON-CARD) #false))
+
+;; ---------------------------------------------------------------------------------------------------
 (define (render* c*)
   (define how-many 6)
   (define L (length c*))
@@ -280,8 +286,8 @@
   (define (jsexpr->card* j)
     (def/jsexpr-> card* #:array [(list (app jsexpr->card (? card? c)) ...) c])
     (define cards (jsexpr->card* j))
-    (unless (<= (length cards) CARDS#)
-      (error 'jsexpr->card* "*Cards contained more cards than the game specs allow"))
+    (unless (cards#? (length cards))
+      (error 'jsexpr->card* "*Cards contained more cards than the game specs allow; given"))
     cards))
     
 ;                                     
