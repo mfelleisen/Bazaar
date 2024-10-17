@@ -98,7 +98,7 @@
     (let loop ()
       (with-handlers ([void (λ (xn)
                               (eprintf "remote proxy-context caught exn:\n")
-                              (eprintf (exn-message xn))
+                              (eprintf "~a\n" (exn-message xn))
                               (set-box! done? xn)
                               (custodian-shutdown-all custodian))])
         (receiver dispatcher)

@@ -12,6 +12,7 @@
  ;; for homework 
  server-config->definition
  set-server-config
+ QUIET
  PORT 
  
  jsexpr->server-config
@@ -64,11 +65,15 @@
 
 (module+ examples
   (require (submod ".."))
+  (require (only-in (submod Bazaar/Common/equations examples) ggb=rw))
+  (require (submod Bazaar/Referee/game-state examples))
   (require
     (prefix-in
      c: (only-in
          Bazaar/Client/client
-         make-client-for-name-sender default-client-config set-client-config QUIET PORT ACTOR*))))
+         make-client-for-name-sender default-client-config set-client-config QUIET PORT ACTOR*)))
+  (require Bazaar/Lib/parse-json)
+  (require SwDev/Testing/scenarios))
 
 (module+ test
   (require (submod ".."))
@@ -261,6 +266,202 @@
   [if (string? name)
       (if (regexp-match #px"Timed" name) "timed out" name)
       (~a "not a string: " name)])
+;                                                                 
+;                                                                 
+;                                                ;                
+;                                                                 
+;    ;;;    ;;;    ;;;   ; ;;   ;;;;    ;;;;   ;;;    ;;;    ;;;  
+;   ;   ;  ;;  ;  ;;  ;  ;;  ;      ;   ;;  ;    ;   ;; ;;  ;   ; 
+;   ;      ;      ;   ;; ;   ;      ;   ;        ;   ;   ;  ;     
+;    ;;;   ;      ;;;;;; ;   ;   ;;;;   ;        ;   ;   ;   ;;;  
+;       ;  ;      ;      ;   ;  ;   ;   ;        ;   ;   ;      ; 
+;   ;   ;  ;;     ;      ;   ;  ;   ;   ;        ;   ;; ;;  ;   ; 
+;    ;;;    ;;;;   ;;;;  ;   ;   ;;;;   ;      ;;;;;  ;;;    ;;;  
+;                                                                 
+;                                                                 
+;                                                                 
+
+;; turn Ref scenarios into Server-Client scenarios so that it is possible to add "evil" actors 
+(module+ examples
+  (provide scenario*)
+
+  #; {type ServerClientScenario =
+           [List RefereeData ServerConfiguration ClientConfiguration [Listof BadClients] Any String]}
+  #; {type RefereeData = [List Equations GameState]}
+
+  #; {Natural [Listof RefereeScenario] -> [Listof ServerClientScenario]}
+  (define (scenario* milestone# ref-scenario* #:quiet (quiet #true) #:extras (client* '[]))
+    (for/list ([r ref-scenario*])
+      (match-define [list args expected msg] r)
+      (match-define [list actor* equations gs] args)
+      (define refc  (list equations gs))
+      (define label (~a milestone# " " msg))
+      (server-client-scenario refc actor* expected label #:quiet quiet #:extras client*)))
+  
+  #; {RefereeData [Listof ActorObject] Any String -> ServerClientScenario}
+  #; { #:quiet Boolean #:extras [Listof Client] }
+
+  ;; set up basics, then: 
+  ;; create a server-client scenario from a referee scenario
+  (define p# 45674)
+  (define (server-client-scenario refc actor* expected label #:quiet (q #true) #:extras (client* '[]))
+    (set! p# (+ p# 1))
+    (define cc (c:set-client-config c:default-client-config c:ACTOR* actor* c:QUIET q c:PORT p#))
+    (define sc (set-server-config default-server-config QUIET q PORT p#))
+    (list refc sc cc client* expected label)))
+
+;; ---------------------------------------------------------------------------------------------------
+(module+ examples ;; actors with bad names and bad JSON communication 
+  (provide Names/ Baddies/)
+
+  (require Bazaar/Client/referee)
+  (require Bazaar/Player/mechanism)
+
+  (define playing-with-baddies
+    (for/list ([i 5]) (create-player (~a "goodie" i))))
+
+  (define bad-json-players
+    (map (λ (n) (create-player (first n))) *referee-list))
+
+  (define badly-named-players
+    (list (create-player "ouch ouch")
+          (create-player "ouchouchouchouchouchouchouchouch")))
+
+  (setup-scenarios s+ Names/ Baddies/)
+
+  (for ([bjp bad-json-players])
+    (s+ Baddies/
+        (list (cons bjp playing-with-baddies) `[,ggb=rw] gs-6-players)
+        `[["goodie3"] [,(~a (send bjp name))]]
+        (~a "1 bad JSON player, with all 5 goodies: " (send bjp name)(send bjp name))))
+
+  (s+ Names/
+      (list (append (take playing-with-baddies 3) badly-named-players) `[,ggb=rw] gs-3-zeros)
+      '[["goodie0"] []]
+      "2 bad names, need at least 2 surviving players, so we take 3 to match up with gs-3-zeros"))
+
+;; ---------------------------------------------------------------------------------------------------
+(module+ examples ;; players whose registrtation goes bad
+  (provide scenario-special-1 scenario-special-2 special-scenario-client-from-port)
+  (provide special->jsexpr jsexpr->special)
+
+  (struct special-scenario [client-from-port type])
+
+  (define special1 "a client that connects but does not complete the registration")
+  (define name1 "AAdivergeBeforeSending")
+  (define [client-diverge-before-sending-name port#]
+    (c:make-client-for-name-sender name1 (λ (_ ip) (let L () (L))) port#))
+  (define scenario-special-1
+    (server-client-scenario
+     (list `[,ggb=rw] gs-3-zeros) (take playing-with-baddies 3) `[["goodie0"] []] special1
+     #:extras (list [special-scenario client-diverge-before-sending-name name1])))
+ 
+  ;; thne next one should be observationally equivalent to a player that goes infinite in setup
+  (define special2 "a client that connects but does not complete the registration")
+  (define name2  "AAsendnameloop")
+  (define [client-diverge-after-sending-name port#]
+    (c:make-client-for-name-sender name2 (λ (n ip) (send-message n ip) (let L () (L))) port#))
+  (define scenario-special-2
+    (server-client-scenario
+     (list `[,ggb=rw] gs-3-zeros) (take playing-with-baddies 2) `[["goodie0"] [,name2]] special2
+     #:extras (list [special-scenario client-diverge-after-sending-name name2])))
+  
+  (define (special->jsexpr fc)
+    (special-scenario-type fc))
+
+  (define (jsexpr->special j)
+    (match j
+      [(== name2) client-diverge-after-sending-name]
+      [(== name1) client-diverge-before-sending-name]
+      [_ (eprintf "jsexpr->special : ~a is not a special scenario\n" j)
+         (eprintf "jsexpr->special names: ~a\n" (list name1 name2))
+         #false])))
+
+(module+ examples
+  (provide specials bonus1 bonus2 simple-7 simple-8 simple-9 complex-7 complex-8 complex-9)
+
+  (require (submod Bazaar/Referee/referee examples))
+
+  (define specials (list scenario-special-1 scenario-special-2))
+  (define bonus1 (scenario* 10 Names/))
+  (define bonus2 (scenario* 10 Baddies/))
+  (define simple-7 (scenario* 7 Simple/))
+  (define complex-7 (scenario* 7 Complex/))
+  (define simple-8 (scenario* 8 8Simple/))
+  (define complex-8 (scenario* 8 8Complex/))
+  (define simple-9 (scenario* 9 9Simple/))
+  (define complex-9 (scenario* 9 9Complex/)))
+  
+;                                                                        
+;      ;;                                                                
+;     ;           ;;;    ;;;             ;                    ;          
+;     ;             ;      ;             ;                    ;          
+;   ;;;;;  ;   ;    ;      ;           ;;;;;   ;;;    ;;;   ;;;;;   ;;;  
+;     ;    ;   ;    ;      ;             ;    ;;  ;  ;   ;    ;    ;   ; 
+;     ;    ;   ;    ;      ;             ;    ;   ;; ;        ;    ;     
+;     ;    ;   ;    ;      ;             ;    ;;;;;;  ;;;     ;     ;;;  
+;     ;    ;   ;    ;      ;             ;    ;          ;    ;        ; 
+;     ;    ;   ;    ;      ;             ;    ;      ;   ;    ;    ;   ; 
+;     ;     ;;;;     ;;     ;;           ;;;   ;;;;   ;;;     ;;;   ;;;  
+;                                                                        
+;                                                                        
+;                                                                        
+
+(module+ test ;; how to run scenarios as unit tests 
+  #; {ServerClientScenario -> Void}
+  ;; start a server; start regular clients then bad clients; test
+  (define (run-server-client-scenario server-client-scenario)
+    (match-define [list refc sc cc bad-clients expected msg] server-client-scenario)
+    (define special-clients (map special-scenario-client-from-port bad-clients))
+    (check-equal? (run-server-client refc sc cc special-clients) expected msg))
+  
+  (define (run-server-client refc sconfig cconfig bad-clients)
+    (parameterize ([current-custodian (make-custodian)])
+      (define client   (launch-clients cconfig bad-clients))
+      (define result   (launch-server refc sconfig))
+      (begin0
+        result
+        (sync client)
+        (custodian-shutdown-all (current-custodian)))))
+
+  #; {ServerConfiguration -> Result}
+  (define (launch-server refc sconfig)
+    (define quiet   (dict-ref sconfig QUIET))
+    (define err-out (if quiet (open-output-string) (current-error-port)))
+    (parameterize ([current-error-port err-out])
+      (server refc sconfig descending-by-age #:result values)))
+
+  #; {ServerConfiguration [Listof Player] [Listof Player] -> Thread}
+  (define (launch-clients cconfig bad-clients)
+    (define port#   (dict-ref cconfig c:PORT))
+    (define quiet   (dict-ref cconfig c:QUIET))
+    (define err-out (if quiet (open-output-string) (current-error-port)))
+    (thread
+     (λ ()
+       (parameterize ([current-error-port err-out])
+         ;; for failuers before the threads are launched
+         ;; `quiet` is passed along so that thrreads can quiet the proxy refs
+         (define baddies (map (λ (f) (f port#)) bad-clients))
+         (c:clients cconfig #:baddies baddies))))))
+
+(module+ test
+  '---Bonus---
+  (for-each run-server-client-scenario specials)
+  (for-each run-server-client-scenario bonus1)
+  (for-each run-server-client-scenario bonus2)
+
+  '---7---
+  (for-each run-server-client-scenario simple-7)
+  (for-each run-server-client-scenario complex-7)
+
+  '---8---
+  (for-each run-server-client-scenario simple-8)
+  (for-each run-server-client-scenario complex-8)
+
+  '---9---
+  (for-each run-server-client-scenario simple-9)
+  (for-each run-server-client-scenario complex-9))
+
 
 ;                                                                                      
 ;                                                                                      
@@ -279,6 +480,7 @@
 
 ;; these tests are entirely independent of the game that's run
 
+#;
 (module+ test ;; timing
   
   #; {Port-Number (U False n:N) -> (U False [Listof 0]: (=/c (length) n))}
@@ -326,196 +528,3 @@
   (check-equal? (run-server-test 45677 11 #:delay 3) the-range "sign up enough players T")
   (check-equal? (run-server-test 45677 11 #:non-string 3) the-range "sign up enough players NS")
   (check-equal? (run-server-test 45676 1) "" "sign up too few players"))
-
-;                                                                 
-;                                                                 
-;                                                ;                
-;                                                                 
-;    ;;;    ;;;    ;;;   ; ;;   ;;;;    ;;;;   ;;;    ;;;    ;;;  
-;   ;   ;  ;;  ;  ;;  ;  ;;  ;      ;   ;;  ;    ;   ;; ;;  ;   ; 
-;   ;      ;      ;   ;; ;   ;      ;   ;        ;   ;   ;  ;     
-;    ;;;   ;      ;;;;;; ;   ;   ;;;;   ;        ;   ;   ;   ;;;  
-;       ;  ;      ;      ;   ;  ;   ;   ;        ;   ;   ;      ; 
-;   ;   ;  ;;     ;      ;   ;  ;   ;   ;        ;   ;; ;;  ;   ; 
-;    ;;;    ;;;;   ;;;;  ;   ;   ;;;;   ;      ;;;;;  ;;;    ;;;  
-;                                                                 
-;                                                                 
-;                                                                 
-
- ;; turn Ref scenarios into Server-Client scenarios so that it is possible to add "evil" actors 
-(module+ examples
-
-  (provide scenario*)
-
-  #; {type ServerClientScenario =
-           [List RefereeData ServerConfiguration ClientConfiguration [Listof BadClients] Any String]}
-  #; {type RefereeData = [List Equations GameState]}
-
-  #; {Natural [Listof RefereeScenario] -> [Listof ServerClientScenario]}
-  (define (scenario* milestone# ref-scenario* #:quiet (quiet #true) #:extras (client* '[]))
-    (for/list ([r ref-scenario*])
-      (match-define [list args expected msg] r)
-      (match-define [list actor* equations gs] args)
-      (define refc  (list equations gs))
-      (define label (~a milestone# " " msg))
-      (server-client-scenario refc actor* expected label #:quiet quiet #:extras client*)))
-  
-  #; {String RefereeData [Listof ActorObject] Any String
-             #:quiet    Boolean
-             #:extras   [Listof Client]
-             #:drop     (-> [Listof Player] [Listof Player])
-             #:expected (-> Result Result)
-             -> ServerClientScenario}
-
-  ;; set up basics, then: 
-  ;; create a server-client secnarior from a referee scenario
-  (define p# 45674)
-  (define (server-client-scenario refc actor* expected label
-           #:expected (result identity)
-           #:drop     (drop-a-given-player identity)
-           #:quiet    (q #true)
-           #:extras   (client* '[])
-           ;; the update function injects the actual (bad) players into the game state to
-           ;; circumvent the naming conflict 
-           #:update-state-players (update #false)) #; (-> [Listof Player] [Listof Player])
-           
-    (set! p# (+ p# 1))
-
-    (define nu-players (drop-a-given-player actor*))
-    (define cc (c:set-client-config c:default-client-config c:ACTOR* nu-players c:QUIET q c:PORT p#))
-    (define sc (set-server-config default-server-config QUIET q PORT p#))
-    
-    (define nu-expected (result expected))
-    (list refc sc cc client* nu-expected label)))
-
-;; ---------------------------------------------------------------------------------------------------
-(module+ examples
-  (require Bazaar/Client/referee)
-  (require Bazaar/Player/mechanism)
-
-  (define bad-json-players (map (λ (n) (create-player (first n))) *referee-list)))
-
-
-;; ---------------------------------------------------------------------------------------------------
-(module+ examples  ;; bad name senders
-  (provide special-scenario-client-from-port)
-
-  (struct special-scenario [client-from-port type])
-
-  (define divBeforeSend "divergeBeforeSending")
-  (define [client-diverge-before-sending-name port#]
-    (c:make-client-for-name-sender divBeforeSend (λ (_ ip) (let L () (L))) port#))
-
-  #;
-  (define scenario-special-1
-    (mixed-all-tiles-rev-inf-exn-dag2-A
-     (server-client-scenario
-      (~a "a client that connects but does not complete the registration")
-      #:extras (list [special-scenario client-diverge-before-sending-name divBeforeSend]))
-     "dummy one"
-     "dummy two"))
- 
-  ;; thne next one should be observationally equivalent to a player that goes infinite in setup
-  (define divAfterSend  "sendnameloop")
-  (define [client-diverge-after-sending-name port#]
-    (c:make-client-for-name-sender divAfterSend (λ (n ip) (send-message n ip) (let L () (L))) port#))
-  (define remote-player-for-client
-    (create-remote divAfterSend (current-input-port) (current-output-port)))
-
-  #;
-  (define scenario-special-2
-    (mixed-all-tiles-rev-inf-exn-dag ;; four players expected 
-     (server-client-scenario 
-      (~a "a client that connects but does not complete the registration")
-      #:drop all-but-last
-      #:update-state-players (λ (given) (append given [list remote-player-for-client]))
-      #:expected (λ (x) (list (first x) (cons divAfterSend (reverse (rest (second x))))))
-      #:extras (list [special-scenario client-diverge-after-sending-name divAfterSend]))
-     "dummy one"
-     "dummy two"))
-
-  (provide special->jsexpr jsexpr->special)
-  
-  (define (special->jsexpr fc)
-    (special-scenario-type fc))
-
-  (define (jsexpr->special j)
-    (match j
-      [(== divAfterSend) client-diverge-after-sending-name]
-      [(== divBeforeSend) client-diverge-before-sending-name]
-      [_ (eprintf "jsexpr->special : ~a is not a special scenario" j)
-         #false])))
-  
-;                                                                        
-;      ;;                                                                
-;     ;           ;;;    ;;;             ;                    ;          
-;     ;             ;      ;             ;                    ;          
-;   ;;;;;  ;   ;    ;      ;           ;;;;;   ;;;    ;;;   ;;;;;   ;;;  
-;     ;    ;   ;    ;      ;             ;    ;;  ;  ;   ;    ;    ;   ; 
-;     ;    ;   ;    ;      ;             ;    ;   ;; ;        ;    ;     
-;     ;    ;   ;    ;      ;             ;    ;;;;;;  ;;;     ;     ;;;  
-;     ;    ;   ;    ;      ;             ;    ;          ;    ;        ; 
-;     ;    ;   ;    ;      ;             ;    ;      ;   ;    ;    ;   ; 
-;     ;     ;;;;     ;;     ;;           ;;;   ;;;;   ;;;     ;;;   ;;;  
-;                                                                        
-;                                                                        
-;                                                                        
-
-
-
-(module+ test ;; how to run scenarios as unit tests 
-  #; {ServerClientScenario -> Void}
-  ;; start a server; start regular clients then bad clients; test
-  (define (run-server-client-scenario server-client-scenario)
-    (match-define [list refc sc cc bad-clients expected msg] server-client-scenario)
-    (define special-clients (map special-scenario-client-from-port bad-clients))
-    (check-equal? (run-server-client refc sc cc special-clients) expected msg))
-  
-  (define (run-server-client refc sconfig cconfig bad-clients)
-    (parameterize ([current-custodian (make-custodian)])
-      (define client   (launch-clients cconfig bad-clients))
-      (define result   (launch-server refc sconfig))
-      (begin0
-        result
-        (sync client)
-        (custodian-shutdown-all (current-custodian)))))
-
-  #; {ServerConfiguration -> Result}
-  (define (launch-server refc sconfig)
-    (define quiet (dict-ref sconfig QUIET))
-    (define err-out (if quiet (open-output-string) (current-error-port)))
-    (parameterize ([current-error-port err-out])
-      (server refc sconfig descending-by-age #:result values)))
-
-  #; {ServerConfiguration [Listof Player] [Listof Player] -> Thread}
-  (define (launch-clients cconfig bad-clients)
-    (define port#   (dict-ref cconfig c:PORT))
-    (define quiet   (dict-ref cconfig c:QUIET))
-    (define err-out (if quiet (open-output-string) (current-error-port)))
-    (thread
-     (λ ()
-       (parameterize ([current-error-port err-out])
-         ;; for failuers before the threads are launched
-         ;; `quiet` is passed along so that thrreads can quiet the proxy refs
-         (define baddies (map (λ (f) (f port#)) bad-clients))
-         (c:clients cconfig #:baddies baddies))))))
-
-;; ---------------------------------------------------------------------------------------------------
-
-(module+ test
-  ; (provide sc1)
-  (require (submod Bazaar/Referee/referee examples))
-  (define sc1 (scenario* 7 Simple/))
-
-  '---7---
-  (for-each run-server-client-scenario (scenario* 7 Simple/))
-  (for-each run-server-client-scenario (scenario* 7 Complex/))
-
-  '---8---
-  (for-each run-server-client-scenario (scenario* 8 8Simple/))
-  (for-each run-server-client-scenario (scenario* 8 8Complex/))
-
-  '---9---
-  (for-each run-server-client-scenario (scenario* 9 9Simple/))
-  (for-each run-server-client-scenario (scenario* 9 9Complex/)))
-

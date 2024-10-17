@@ -119,7 +119,7 @@
 
 (define *sender (λ (name ip) (send-message name ip)))
 (define [(create-proxy-referee name port# ip quiet remote-referee (sender *sender))]
-  (with-handlers ([exn:fail:network? (λ (xn) (eprintf "fail! ~a" name) (λ (_) 'failed-connection))])
+  (with-handlers ([exn:fail:network? (λ (xn) (eprintf "fail! ~a\n" name) (λ (_) 'failed-connection))])
     (define-values (receiver custodian)
       (connect-to-server-as-receiver ip port# #:init (λ (ip) (sender name ip))))
     (remote-referee receiver custodian)))
@@ -175,15 +175,17 @@
   (define y (json:jsexpr->string (action->jsexpr x)))
   [broken (~a (make-string 4095 #\space) (substring y 0 (sub1 (string-length y))))])
 
+(require SwDev/Debugging/spy)
+
 #; {Action -> JSExpr}
 (define (invalidate-action->jsexpr a)
   (match a
     [(? false?) #true]
     [(cons (? 1eq? one) others)
-     (cons (ill-formed-1eq one) (equations->jsexpr others))]
+     (cons (spy (ill-formed-1eq one)) (equations->jsexpr others))]
     [(cons (? card? one) others)
-     (cons (ill-formed-card one) (card*->jsexpr others))]
-    [_ a]))
+     (cons (spy (ill-formed-card one)) (card*->jsexpr others))]
+    [_ (spy [list [list [list "re"] [list "red"]]])]))
 
 #; {1Eq -> JESexpr}
 ;; duplicate LHS and add at end 
@@ -196,7 +198,7 @@
 (define (ill-formed-card one)
   (match (card->jsexpr one)
     [(hash-table [(== PEBBLES) p] [(== FACE) f])
-     (define pebbles-misspelled (string->symbol (substring (~a PEBBLES) 1 5)))
+     (define pebbles-misspelled (string->symbol (substring (~a PEBBLES) 1 2)))
      (hash pebbles-misspelled p FACE f)]))
 
 (define (non-json-void->jsexpr a)

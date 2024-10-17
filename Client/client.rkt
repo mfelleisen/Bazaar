@@ -113,7 +113,7 @@
   (define running-clients     (launch-all-clients (append clients-for-players bad-clients)))
   (when wait?
     (wait-for-all running-clients)
-    (displayln "all done")))
+    (eprintf "all done\n")))
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {[Listof Client] -> [Listof Thread]}
