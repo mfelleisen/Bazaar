@@ -128,6 +128,7 @@
 
 (require (prefix-in p: (submod Bazaar/Common/pebbles examples)))
 (require (prefix-in b: Bazaar/Common/bags))
+(require Bazaar/Lib/sequence)
 
 (require SwDev/Contracts/unique)
 (require pict)
@@ -257,8 +258,7 @@
 ;; `e*` and `f*` are interpreted as exchanges, i.e., they apply from left to right only
 (define (equations<? e* f*)
   (or  (< (length e*) (length f*))
-       (and (= (length e*) (length f*))
-            (for/and ([e e*] [f f*]) (1eq<? e f)))))
+       (and (= (length e*) (length f*)) (sequence<? 1eq<? e* f*))))
 
 #; {1Equations 1Equations -> Boolean}
 (define (1eq<? e f)
@@ -273,11 +273,11 @@
   (check-false (1eq<? ggg=r rg=bbbb))
   (check-false (1eq<? ggg=r ggg=r-))
 
-  (check-true  (equations<? (list ggg=r- r=bbbb) (list r=bbbb w=bbbb)))
-  (check-true  (equations<? (list r=bbbb r=bbbb) (list r=gggg r=gggg)))
+  (check-true  (equations<? (list ggg=r- r=bbbb)  (list r=bbbb w=bbbb)))
+  (check-true  (equations<? (list r=bbbb r=bbbb)  (list r=gggg r=gggg)))
   (check-false (equations<? [list rg=bbbb ggg=r]  (list rg=bbbb ggg=r-)))
   (check-false (equations<? [list rg=bbbb ggg=r]  (list ggg=r- rg=bbbb)))
-  (check-false (equations<? [list rg=bbbb ggg=r-] (list rg=bbbb ggg=r))))
+  (check-true (equations<? [list rg=bbbb ggg=r-] (list rg=bbbb ggg=r)) "because |r| < |ggg|"))
 
 ;; ---------------------------------------------------------------------------------------------------
 (define (equations-equal? eq* fq*)

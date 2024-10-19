@@ -78,6 +78,7 @@
 
 (require Bazaar/Lib/parse-json)
 (require Bazaar/Lib/configuration)
+(require Bazaar/Lib/sequence)
 
 (require pict)
 (require pict/face)
@@ -194,8 +195,7 @@
 #; {[NEListof Card] [NEListof Card] -> Boolean}
 (define (card*<? 1loc 2loc)
   (or (< (length 1loc) (length 2loc))
-      (and (= (length 1loc) (length 2loc))
-           (for/and ([c 1loc] [d 2loc]) (card<? c d)))))
+      (and (= (length 1loc) (length 2loc)) (sequence<? card<? 1loc 2loc))))
 
 #; {Card Card -> Boolean}
 ;; one card is smaller than another if either
@@ -319,4 +319,33 @@
 
   (check-equal? (jsexpr->card (card->jsexpr c-rrbrr)) c-rrbrr)
   (check-equal? (jsexpr->card* (card*->jsexpr (list c-rrbrr))) (list c-rrbrr)))
-  
+
+(module+ test
+  (define mf
+    #<< mf
+  {"face?":false,"pebbles":["white","red","red","white","blue"]}
+  {"face?":false,"pebbles":["blue","white","blue","yellow","red"]}
+  {"face?":false,"pebbles":["white","red","blue","blue","blue"]}
+  {"face?":false,"pebbles":["red","yellow","white","green","yellow"]}
+ mf
+    )
+
+  (define ben
+    #<< ben
+{"pebbles":["white","red","blue","blue","blue"],"face?":false}
+{"pebbles":["blue","white","blue","yellow","red"],"face?":false}
+{"pebbles":["white","red","red","white","blue"],"face?":false}
+{"pebbles":["red","yellow","white","green","yellow"],"face?":false}
+ ben
+    )
+
+  (define j-mf
+    (jsexpr->card*
+     (with-input-from-string mf (λ () (list (read-json) (read-json) (read-json) (read-json))))))
+
+  (define j-ben
+    (jsexpr->card*
+     (with-input-from-string ben (λ () (list (read-json) (read-json) (read-json) (read-json))))))
+
+  (check-false (card*<? j-mf j-ben) "mf vs ben")
+  (check-true (card*<? j-ben j-mf) "ben vs mf"))
