@@ -110,7 +110,7 @@
                    ;; optional : #:award-bonus [Player -> Player]
                    -> [List [Listof Player] [Listof Player]]}
 (define (referee/state actor* equations gs0 (observer* `[]) #:award-bonus (aw identity))
-  [time-out-limit 1.8]
+  [time-out-limit 9.6]
   (define mo (new mo:manage-observers%))
   (send mo add* observer*)
   (send mo state 'initial equations 'setup gs0)
