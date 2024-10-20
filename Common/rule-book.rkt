@@ -365,8 +365,6 @@
 ;                                                     ;  ;                      
 ;                                                      ;;                       
 
-(require SwDev/Debugging/spy)
-
 (define (game-over? player* card* bank)
   (or (all-players-eliminated? player*)
       (a-player-has-good-score? player*)
