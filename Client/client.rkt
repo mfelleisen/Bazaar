@@ -113,14 +113,16 @@
   (define running-clients     (launch-all-clients (append clients-for-players bad-clients)))
   (when wait?
     (wait-for-all running-clients)
+    #;
     (eprintf "all done\n")))
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {[Listof Client] -> [Listof Thread]}
 (define (launch-all-clients clients-for-players)
   (for/list ([1-client clients-for-players])
-    (sleep WAIT-BETWEEN-THREADS) ;; to make determinism extremely likely
-    (launch 1-client)))
+    (define th (launch 1-client))
+    (sleep WAIT-BETWEEN-THREADS) ;; makes deterministic registration extremely likely
+    th))
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {[Listof Thread] -> Void}
