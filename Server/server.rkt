@@ -58,6 +58,7 @@
 (require Bazaar/Common/player-interface) ;; type Player 
 (require (prefix-in gs: Bazaar/Referee/game-state))
 (require Bazaar/Referee/referee)
+(require (only-in (submod Bazaar/Referee/referee examples) void-observer%))
 
 (require Bazaar/Lib/configuration)
 
@@ -162,7 +163,8 @@
                        (eprintf "server reports referee failure\n")
                        (eprintf "~a\n" (exn-message n))
                        DEFAULT-RESULT)])
-      (apply referee/state actor* for-referee)))
+      ;; IF AN OBSERVER IS DESIRED -------------------- VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+      (apply referee/state actor* (append for-referee #; (list (list (new void-observer%)))))))
   (send-message result)
   (optionally-return-result result))
 
@@ -251,7 +253,7 @@
 (define [(sign-up->add-to *players listener) _]
   (with-handlers ((exn:fail:network? (lambda (x) (log-error "connect: ~a" (exn-message x)) *players)))
     (define-values (in out) (tcp-accept listener))
-    (define name (read-message in)) ;; timed 
+    (define name (read-message in)) ;; timed
     (cond
       [(player-name? name)
        (define nxt (if (test-run?) (add1 (length (unbox *players))) (create-remote name in out)))
