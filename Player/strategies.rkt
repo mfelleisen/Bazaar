@@ -1,20 +1,34 @@
 #lang racket
 
 ;; two strategies for a Bazaar player for choosing
-;;  (1) whether to request a random pebble from the bank or a series of exchanges
+;;  (1) whether to request
+;;     (1a) a random pebble from the bank
+;;     or
+;;     (1b) a series of exchanges
 ;;  (2) whether to buy cards and which one 
 
 ;; ---------------------------------------------------------------------------------------------------
 
 (provide
  #; {(class/c
-      (init-field (equations Equations) (which [Purchase -> Natural]))
-      (should-the-player-request-a-random-pebble (->m Turn Boolean))
-      (trade-then-purchase (->m Turn (or/c #false Exchange)))
-      (buy-cards (->m Turn Purchases)))}
+      (init-field
+       (equations Equations)
+       (which-max [Purchase -> Natural]))
+      (should-the-player-request-a-random-pebble
+       (->m Turn Boolean))
+      (trade-then-purchase
+       ;; an exchange result contains both a sequence of pebble trades and card purchases
+       ;; the player can memoize the latter & need not call the `buy-cards` method once pebbles arrive
+       (->m Turn (or/c #false Exchange)))
+      (buy-cards
+       (->m Turn [Listof Card])))}
+ ;; strategy% object are created from the equations that the player receives and the max function
+ ;; they provided answers for the three questions that the player needs to take a turn 
  strategy%
 
- #; {type Exchange}
+ #; {type Exchange = (exchange [Listof Equation] Purchase)}
+ ;; an exchange represents a request for pebble trades, equations used from left to right,
+ ;; plus a request for purchasing cards in a given order 
  exchange?
  exchange-cards
  exchange-trades
@@ -229,47 +243,47 @@
 (module+ examples ;; for testing students
   ;; the player must make 2 trades to buy a card for 1 point
   (define wallet-test (b:bag-add b-rr b-yyw))
- 
+  
   (let*-values ([(t ω) (wallet-<--->-bank0 wallet-test ggg=r- ggg=r-)]
                 [(r) [exchange t (purchase `[,(third cards1)] 1 (b:bag-minus ω b-ggggg))]])
     (scenario+ Tests/ (list equations strat-t5 purchase-points) r "t 1"))
 
-  ;; the player must make 2 trades to buy a card for 2 points; an alterantive would yield only 1 point
-  (let*-values ([(t ω) (wallet-<--->-bank0 (b:bag-add wallet-test b-r) ggg=r- rg=bbbb)]
-                [(r) [exchange t (purchase `[,(second cards1)] 2 (b:bag-minus ω b-yyrwb))]])
-    (scenario+ Tests/ (list equations strat-t3 purchase-points) r "x 2"))
+  (let*-values ([(e) (list r=bbbb r=gggg)]
+                [(r) (exchange (list r=bbbb) (purchase (list c-rbbbb) 5 (b:bag)))])
+    (scenario+ Tests/ (list e xben-4 purchase-points) r "ben's test"))
 
-  ;; a player can buy 2 cards for 3 points if it makes three trades
-  (let*-values ([(t w1) (wallet-<--->-bank0 (b:bag-add wallet-test b-rr) ggg=r- rg=bbbb ggg=r-)]
-                [(ω) (b:bag-minus (b:bag-minus w1 b-yyrwb) b-ggggg)]
-                [(r) [exchange t (purchase (rest cards1) 3 ω)]])
-    (scenario+ Tests/ (list equations strat-t4 purchase-points) r "t 2")))
+  (let*-values ([(e) (list r=gggg r=bbbb)]
+                [(w) b-4r-2y-1w]
+                [(r) (exchange (list r=bbbb r=gggg) (purchase (list c-bbbbb c-ggggg) 6 (b:bag)))])
+    (scenario+ Tests/ (list e xstrat-2 purchase-points) r "2 rules, 2 cards, score 6, wallet: 0")))
 
 (module+ examples ;; for checking tie breaking 
   (provide Extras/)
 
+  (require (submod Bazaar/Common/pebbles examples))
+
   (setup-scenarios extra+ Extras/)
 
-  (require (submod Bazaar/Common/pebbles examples))
-  
+  ;; a player can buy 2 cards for 3 points if it makes three trades
+  (let*-values ([(t w1) (wallet-<--->-bank0 (b:bag-add wallet-test b-rr) ggg=r- ggg=r- rg=bbbb)]
+                [(ω) (b:bag-minus (b:bag-minus w1 b-yyrwb) b-ggggg)]
+                [(r) [exchange t (purchase (rest cards1) 3 ω)]])
+    (extra+ Extras/ (list equations strat-t4 purchase-points) r "t 2"))
+
+  ;; the player must make 2 trades to buy a card for 2 points; an alterantive would yield only 1 point
+  (let*-values ([(t ω) (wallet-<--->-bank0 (b:bag-add wallet-test b-r) ggg=r- rg=bbbb)]
+                [(r) [exchange t (purchase `[,(second cards1)] 2 (b:bag-minus ω b-yyrwb))]])
+    (extra+ Extras/ (list equations strat-t3 purchase-points) r "x 2"))
+
   (let*-values ([(e) (list r=gggg)]
                 [(r) (exchange '[] (purchase (list c-ggggg*) 2 (b:bag-add (b:bag WHITE) b-bbbb)))])
     (extra+ Extras/ (list e xstrat-1 purchase-size) r "same # of cards, cards differ in face (2)"))
-    
-  (let*-values ([(e) (list r=gggg r=bbbb)]
-                [(w) b-4r-2y-1w]
-                [(r) (exchange (list r=gggg r=bbbb) (purchase (list c-ggggg c-bbbbb) 6 (b:bag)))])
-    (extra+ Extras/ (list e xstrat-2 purchase-points) r "2 rules, 2 cards, score 6, wallet: 0"))
   
   (let*-values ([(e) (list ggg=r- rg=bbbb)]
                 [(w) (b:bag-add b-b b-b b-b)]
                 [(r) (exchange (list ggg=r- ggg=r- rg=bbbb) (purchase (list c-yyrwg* c-ggggg) 3 w))])
     (extra+ Extras/ (list e xstrat-3 purchase-points) r "3 rules, 2 cards, score 3, wallet 3b"))
-
-  (let*-values ([(e) (list r=bbbb r=gggg)]
-                [(r) (exchange (list r=bbbb) (purchase (list c-rbbbb) 5 (b:bag)))])
-    (extra+ Extras/ (list e xben-4 purchase-points) r "ben's test"))
-
+  
   )
 
 ;                                                                               
@@ -306,7 +320,7 @@
   #; [Listof [Listof Exchange]]
   (define ex0 (exchange '() (buy-with-wallet wallet0)))
   (define best-which-es (new collector% [e0 ex0] [score (compose which exchange-purchase)]))
-  ;; imperatively the best exchanges from root to leafs
+  ;; imperatively gather the best exchanges from root to leafs
   
   (let p-t/accu ([wallet wallet0] [bank bank0] [trades-so-far '()] [fuel (SearchDepth)])
     (define rules (e:useful equations wallet bank))
