@@ -5,7 +5,8 @@
 ;;     (1a) a random pebble from the bank
 ;;     or
 ;;     (1b) a series of exchanges
-;;  (2) whether to buy cards and which one 
+;;  (2) whether to buy cards and which one
+;; parameterized over a maximization function for just the card purchases 
 
 ;; ---------------------------------------------------------------------------------------------------
 
@@ -85,6 +86,8 @@
 (require (prefix-in p: Bazaar/Common/player))
 (require (prefix-in t: Bazaar/Common/turn-state))
 
+(require Bazaar/Lib/tie-breaking)
+
 (require SwDev/Lib/should-be-racket)
 (require pict)
 
@@ -163,20 +166,21 @@
   (and (not (b:bag-empty? bank0))
        (empty? (e:useful equations wallet0 bank0))))
 
-;                                                                               
-;                            ;                              ;                   
-;     ;                      ;                  ;;;         ;                   
-;     ;                      ;                 ;            ;                   
-;   ;;;;;   ;;;;  ;;;;    ;;;;   ;;;           ;            ;;;;   ;   ;  ;   ; 
-;     ;     ;;  ;     ;  ;; ;;  ;;  ;          ;;           ;; ;;  ;   ;  ;   ; 
-;     ;     ;         ;  ;   ;  ;   ;;         ;;           ;   ;  ;   ;   ; ;  
-;     ;     ;      ;;;;  ;   ;  ;;;;;;        ;  ; ;        ;   ;  ;   ;   ; ;  
-;     ;     ;     ;   ;  ;   ;  ;             ;  ;;;        ;   ;  ;   ;   ; ;  
-;     ;     ;     ;   ;  ;; ;;  ;             ;;  ;         ;; ;;  ;   ;   ;;   
-;     ;;;   ;      ;;;;   ;;;;   ;;;;          ;;; ;        ;;;;    ;;;;    ;   
-;                                                                           ;   
-;                                                                          ;    
-;                                                                         ;;    
+
+;                                                                 
+;       ;                                                         
+;       ;           ;                                             
+;       ;           ;                                             
+;    ;;;;  ;;;;   ;;;;;  ;;;;           ;;;;   ;;;   ;;;;         
+;   ;; ;;      ;    ;        ;          ;;  ; ;;  ;  ;; ;;        
+;   ;   ;      ;    ;        ;          ;     ;   ;; ;   ;        
+;   ;   ;   ;;;;    ;     ;;;;          ;     ;;;;;; ;   ;        
+;   ;   ;  ;   ;    ;    ;   ;          ;     ;      ;   ;        
+;   ;; ;;  ;   ;    ;    ;   ;          ;     ;      ;; ;;   ;;   
+;    ;;;;   ;;;;    ;;;   ;;;;          ;      ;;;;  ;;;;    ;;   
+;                                                    ;            
+;                                                    ;            
+;                                                    ;            
 
 (struct exchange [trades purchase] #:transparent)
 
@@ -187,6 +191,28 @@
 (define (exchange-cards ex)
   (purchase-cards (exchange-purchase ex)))
 
+(struct purchase [cards points walletω] #:transparent
+  #:methods gen:equal+hash
+  [(define equal-proc
+     (λ (x y recursive-equal?)
+       (and
+        (equal? (purchase-cards x) (purchase-cards y))
+        (b:bag-equal? (purchase-walletω x) (purchase-walletω y)))))
+   (define (hash-proc x re-hash)
+     (+ (* 1000 (re-hash (purchase-cards x)))
+        (* 10 (re-hash (purchase-cards x)))))
+   (define (hash2-proc x re-hash2)
+     (+ (* 891 (re-hash2 (purchase-cards x)))
+        (* 999 (re-hash2 (purchase-cards x)))))])
+
+#; {type Purchases = (purchase [Listof Card] Natural Bag)}
+#; (node (list c ...) n w)
+;; represents the purchase of cards `c` .. in order with `n` points for all purchases, final wallet w
+;; NOTE two different orderings of `cards` are equivalent _if_ they yield the same number of points &
+;; result in the same wallet
+
+(define (purchase-size p)
+  (length (purchase-cards p)))
 
 ;                                                                 
 ;                                                                 
@@ -364,7 +390,7 @@
 (define (smallest-trade lo-ex-2)
   (if (all-equal? (map exchange-trades lo-ex-2))
       (first lo-ex-2)
-      (first (sort lo-ex-2 e:equations<? #:key exchange-trades))))
+      (first (take-all-equals lo-ex-2 e:equations<? exchange-trades))))
 
 ;                                     
 ;                                     
@@ -380,6 +406,7 @@
 ;                                     
 ;                                     
 ;                                     
+
 
 (module+ test
   (check-true (f-should-the-player-request-a-random-pebble '[] b-4xb-3xg b-rg) "trades possible")
@@ -412,7 +439,6 @@
   
   (run-scenario* 'ForStudents ForStudents/)
   (run-scenario* 'Tests Tests/)
-  
   (run-scenario* 'Extras Extras/))
 
 (module+ stress ;; test
@@ -432,53 +458,8 @@
   (define j-ee (equations->jsexpr ee))
   (define j-tt (turn->jsexpr tt))
   (define j-po (policy->jsexpr po))
-
-  (with-output-to-file (build-path "Stress/" (~a "test" (random 1000)))
-    #:exists 'replace 
-    (λ ()
-      (write-json j-ee #:indent 4) (newline)
-      (write-json j-tt #:indent 4) (newline)
-      (write-json j-po) (newline)))
-
+  
   (time (f-trade-then-purchase ee cc ww bb po)))
-
-;                       
-;   ;                   
-;   ;                   
-;   ;                   
-;   ;;;;   ;   ;  ;   ; 
-;   ;; ;;  ;   ;  ;   ; 
-;   ;   ;  ;   ;   ; ;  
-;   ;   ;  ;   ;   ; ;  
-;   ;   ;  ;   ;   ; ;  
-;   ;; ;;  ;   ;   ;;   
-;   ;;;;    ;;;;    ;   
-;                   ;   
-;                  ;    
-;                 ;;    
-
-(struct purchase [cards points walletω] #:transparent
-  #:methods gen:equal+hash
-  [(define equal-proc
-     (λ (x y recursive-equal?)
-       (and
-        (equal? (purchase-cards x) (purchase-cards y))
-        (b:bag-equal? (purchase-walletω x) (purchase-walletω y)))))
-   (define (hash-proc x re-hash)
-     (+ (* 1000 (re-hash (purchase-cards x)))
-        (* 10 (re-hash (purchase-cards x)))))
-   (define (hash2-proc x re-hash2)
-     (+ (* 891 (re-hash2 (purchase-cards x)))
-        (* 999 (re-hash2 (purchase-cards x)))))])
-
-#; {type Purchases = (purchase [Listof Card] Natural Bag)}
-#; (node (list c ...) n w)
-;; represents the purchase of cards `c` .. in order with `n` points for all purchases, final wallet w
-;; NOTE two different orderings of `cards` are equivalent _if_ they yield the same number of points &
-;; result in the same wallet
-
-(define (purchase-size p)
-  (length (purchase-cards p)))
 
 ;                                                          
 ;      ;                               ;                   
@@ -542,17 +523,19 @@
   (define (wallet-size lop)
     (all-argmax (λ (x) (b:bag-size (purchase-walletω (selector x)))) lop))
 
-  (define (best-wallet lop)
-    (if (all-equal? (map (compose purchase-walletω selector) lop))
-        (best-cards lop)
-        (first (sort lop b:bag<? #:key (compose purchase-walletω selector)))))
+  (define (smallest-wallet lop)
+    (define s (compose purchase-walletω selector))
+    (if (all-equal? (map s lop))
+        lop
+        (take-all-equals lop b:bag<? s)))
 
   (define (best-cards lop)
-    (if (all-equal? (map (compose purchase-cards selector) lop))
-        (if fk (fk lop) (first lop))
-        (first (sort lop c:card*<? #:key (compose purchase-cards selector)))))
-        
-  (tie-breaker (list also-point-max wallet-size) lop #:continue best-wallet))
+    (define s (compose purchase-cards selector))
+    (if (all-equal? (map s lop))
+        lop
+        (take-all-equals lop c:card*<? s)))
+  
+  (tie-breaker (list also-point-max wallet-size smallest-wallet best-cards) lop #:continue fk))
 
 ;                                     
 ;                                     
@@ -583,83 +566,6 @@
 
   (check-equal? (f-buy-cards (list c-ggggg c-ggggg) (b:bag-add b-ggggg  b-ggggg) purchase-points)
                 (purchase (list c-ggggg c-ggggg) 6 (b:bag))))
-
-;                                                                               
-;                               ;                           ;                   
-;     ;       ;                 ;                           ;                   
-;     ;                         ;                           ;                   
-;   ;;;;;   ;;;    ;;;          ;;;;    ;;;;   ;;;   ;;;;   ;  ;    ;;;    ;;;; 
-;     ;       ;   ;;  ;         ;; ;;   ;;  ; ;;  ;      ;  ;  ;   ;;  ;   ;;  ;
-;     ;       ;   ;   ;;        ;   ;   ;     ;   ;;     ;  ; ;    ;   ;;  ;    
-;     ;       ;   ;;;;;;        ;   ;   ;     ;;;;;;  ;;;;  ;;;    ;;;;;;  ;    
-;     ;       ;   ;             ;   ;   ;     ;      ;   ;  ; ;    ;       ;    
-;     ;       ;   ;             ;; ;;   ;     ;      ;   ;  ;  ;   ;       ;    
-;     ;;;   ;;;;;  ;;;;         ;;;;    ;      ;;;;   ;;;;  ;   ;   ;;;;   ;    
-;                                                                               
-;                                                                               
-;                                                                               
-
-#; {[nEListof (X -> Real)] [NEListof X] -> X}
-#; (tie-breaker (f1 ... fN) lox)
-;; apply the fj-s to lox until 
-#; (fi ... (f1 lox) ...)
-;; yields singleton list;
-;; a singleton list or a failure is passed on to the fail continuation `fk` if it exists
-;; otherwise error 
-(define (tie-breaker f*0 lox0 #:continue (fk #false))
-  (let while ([lox lox0] [f* f*0])
-    (match lox
-      [(list one) (if fk (fk lox) one)]
-      [_ (cond
-           [(empty? f*) (if fk (fk lox) (show-tie-breaking-problem f*0 lox0 lox))]
-           [else (while ((first f*) lox) (rest f*))])])))
-
-(define (show-tie-breaking-problem f*0 lox0 lox)
-  (define p-f*0  (map object-name f*0))
-  (define p-lox0 (with-output-to-string (λ () (pretty-print lox0))))
-  (define p-lox  (with-output-to-string (λ () (pretty-print lox))))
-  (define N      (length lox))
-  [error 'tie-breaker "~a left over:\n ~a\n given ~a and ~a\n" N p-lox p-f*0 p-lox0])
-
-;                                                                 
-;                                                                 
-;                 ;;;    ;;;                    ;                 
-;                   ;      ;                    ;                 
-;    ;;;    ;;;     ;      ;     ;;;    ;;;   ;;;;;   ;;;    ;;;; 
-;   ;;  ;  ;; ;;    ;      ;    ;;  ;  ;;  ;    ;    ;; ;;   ;;  ;
-;   ;      ;   ;    ;      ;    ;   ;; ;        ;    ;   ;   ;    
-;   ;      ;   ;    ;      ;    ;;;;;; ;        ;    ;   ;   ;    
-;   ;      ;   ;    ;      ;    ;      ;        ;    ;   ;   ;    
-;   ;;     ;; ;;    ;      ;    ;      ;;       ;    ;; ;;   ;    
-;    ;;;;   ;;;      ;;     ;;   ;;;;   ;;;;    ;;;   ;;;    ;    
-;                                                                 
-;                                                                 
-;                                                                 
-
-#; {class (X)
-     [init {e0 X}]
-     [init-field {score (X -> Real)}]
-     [done (->m [Listof X])]
-     [add-if-better (->m X Void)]}
-;; collect the best elements according to `score` 
-(define collector%
-  (class object% (init e0) (init-field score)
-    (field [*best-score (score e0)])
-    (field [*possibles [set e0]])
-    (super-new)
-    
-    (define/public (done)
-      (set->list *possibles))
-
-    (define/public (add-if-better e1)
-      (define v1 (score e1))
-      (cond
-        [(> v1 *best-score)
-         (set!-values (*best-score *possibles) (values v1 `[,e1]))]
-        [(= v1 *best-score)
-         (set! *possibles (set-add *possibles e1))]
-        [else (void)]))))
-
 
 ;                              
 ;      ;                       
