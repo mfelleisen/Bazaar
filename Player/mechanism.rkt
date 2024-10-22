@@ -612,7 +612,7 @@
                  (with-deep-time-limit 1
                    (send (jsexpr->actor (actor->jsexpr setup-1) #:loops 'yes) setup '[]))) "j inf"))
 
-  (let* ([buy-invisible-card-factory (retrieve-factory "buy-invisible-card" cheater-table-for-8)]
+  (let* ([buy-invisible-card-factory (retrieve-factory "buy-unavailable-card" cheater-table-for-8)]
          [players (list (create-player "A" purchase-points #:bad buy-invisible-card-factory))]
          [j (actor*->jsexpr players)]
          [p (jsexpr->actor* j #:cheating 'yes!) ]) 
