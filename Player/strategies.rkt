@@ -312,6 +312,87 @@
   
   )
 
+;                                                          
+;      ;                               ;                   
+;                          ;           ;                   
+;                          ;           ;                   
+;    ;;;   ;   ;   ;;;   ;;;;;         ;;;;   ;   ;  ;   ; 
+;      ;   ;   ;  ;   ;    ;           ;; ;;  ;   ;  ;   ; 
+;      ;   ;   ;  ;        ;           ;   ;  ;   ;   ; ;  
+;      ;   ;   ;   ;;;     ;           ;   ;  ;   ;   ; ;  
+;      ;   ;   ;      ;    ;           ;   ;  ;   ;   ; ;  
+;      ;   ;   ;  ;   ;    ;           ;; ;;  ;   ;   ;;   
+;      ;    ;;;;   ;;;     ;;;         ;;;;    ;;;;    ;   
+;      ;                                               ;   
+;      ;                                              ;    
+;    ;;                                              ;;    
+
+(define (f-buy-cards visibles wallet value)
+  (define best
+    (new collector%
+         [e0    (purchase '[] 0 wallet)]
+         [score value]
+         [break tie-breaker-for-purchases]))
+  (possible-purchases visibles wallet best)
+  (send best done))
+
+#; {[Listtof Card] Bag [Purchases-> Real] -> [Listof Purchases]}
+;; EFFECT gather the best card purchases in `best`
+;; imperatively accumulate all paths of cards from root to leafs, evaluate, turn into purchases
+;; this may return the "no cards can be purchased" result 
+(define (possible-purchases visibles0 wallet0 best)
+  ;; ACCU in reverse order of possible purchaes from `visibles0` & `wallet0` to `visibles` & `wallet`
+  (let p-p/accu ([visibles visibles0] [wallet wallet0] [from-root-to-here '()] [points 0])
+    #; [Listof Card]
+    (define possible-buys (c:can-buy visibles wallet))
+    (cond
+      [(empty? possible-buys)
+       (define e1 (purchase (reverse from-root-to-here) points wallet))
+       (send best add-if-better e1)]
+      [else
+       (for ([t possible-buys])
+         (define-values [δ visibles-- wallet-- _] (c:buy-1-card t 0 visibles wallet (b:bag)))
+         (p-p/accu visibles-- wallet-- (cons t from-root-to-here) (+ δ points)))])))
+
+;; ---------------------------------------------------------------------------------------------------
+#; {[NEListof Purchases] -> Purchases}
+;; pick the pruchase that has the most poinnts, tthe largest wallet, the best wallet, or best cards
+;; if all equals?, the list is passed on to the fail continuation `fk` if it exists
+;; otherwise just pick the first one 
+(define (tie-breaker-for-purchases lop #:selector (selector identity) #:continue (fk #false))
+  (define (also-point-max lop) (all-argmax (compose purchase-points selector) lop))
+  (define (wallet-size lop) (all-argmax (λ (x) (b:bag-size (purchase-walletω (selector x)))) lop))
+  (define (smallest-wallet lop) (pick-smallest lop b:bag<? (compose purchase-walletω selector)))
+  (define (best-cards lop) (pick-smallest lop c:card*<? (compose purchase-cards selector)))
+  (tie-breaker (list also-point-max wallet-size smallest-wallet best-cards) lop #:continue fk))
+
+;                                     
+;                                     
+;     ;                    ;          
+;     ;                    ;          
+;   ;;;;;   ;;;    ;;;   ;;;;;   ;;;  
+;     ;    ;;  ;  ;   ;    ;    ;   ; 
+;     ;    ;   ;; ;        ;    ;     
+;     ;    ;;;;;;  ;;;     ;     ;;;  
+;     ;    ;          ;    ;        ; 
+;     ;    ;      ;   ;    ;    ;   ; 
+;     ;;;   ;;;;   ;;;     ;;;   ;;;  
+;                                     
+;                                     
+;                                     
+
+(module+ test
+  (check-equal? (f-buy-cards (list) (b:bag) purchase-size)
+                (purchase '() 0 (b:bag)))
+  (check-equal? (f-buy-cards (list c-ggggg c-ggggg) b-ggggg purchase-size)
+                (purchase (list c-ggggg) 5 (b:bag)))
+
+  (check-equal? (f-buy-cards (list c-ggggg c-ggggg) b-ggggg purchase-points)
+                (purchase (list c-ggggg) 5 (b:bag)))
+
+  (check-equal? (f-buy-cards (list c-ggggg c-ggggg) (b:bag-add b-ggggg  b-ggggg) purchase-points)
+                (purchase (list c-ggggg c-ggggg) 6 (b:bag))))
+
 ;                                                                               
 ;                            ;                              ;                   
 ;     ;                      ;                  ;;;         ;                   
@@ -327,70 +408,51 @@
 ;                                                                          ;    
 ;                                                                         ;;    
 
-(define (f-trade-then-purchase equations visibles wallet0 bank0 which)
-  (match (possible-trades equations wallet0 bank0 visibles which)
-    [(list ex) ex]
-    [possibles (tie-breaker-trade-then-purchase possibles)]))
-
-;; ---------------------------------------------------------------------------------------------------
-#; {Equation* Bag Bag {Purchases -> Real} -> [NESetof Exchange]}
-
 ;; determine all possible exchanges between the `wallet` and the `bank` that are feasible
-;; up to `SearchDepth` of a generative tree and maximize at each node in this search tree
-;; what the player buys according to `which`, for now:
+;; up to `SearchDepth` and maximize at each node in this search tree
+;; what the player can buy according to `value`, for now:
 ;; -- maximize points that player can get with a particular sequencing of card purchases
 ;; -- maximize the number of cards that player can get with a particular sequencing of card purchases
+(define (f-trade-then-purchase equations visibles wallet0 bank0 value)
+  (define (buy-with-wallet w) (f-buy-cards visibles w value))
+  (define best
+    (new collector%
+         [e0    (exchange '() (buy-with-wallet wallet0))]
+         [score (compose value exchange-purchase)]
+         [break tie-breaker-trade-then-purchase]))
+  (possible-trades equations wallet0 bank0 visibles buy-with-wallet best)
+  (send best done))
 
-(define (possible-trades equations wallet0 bank0 visibles which)
-  (define buy-with-wallet (λ (w) (f-buy-cards visibles w which)))
-  #; [Listof [Listof Exchange]]
-  (define ex0 (exchange '() (buy-with-wallet wallet0)))
-  (define best-which-es (new collector% [e0 ex0] [score (compose which exchange-purchase)]))
+;; ---------------------------------------------------------------------------------------------------
+#; {Equation* Bag Bag {Bag -> [Listof Card] Collector} -> Void}
+;; EFFECT gather the best exchanges (trades plus card purchases) in `best`
+(define (possible-trades equations wallet0 bank0 visibles buy-with-wallet best)
   ;; imperatively gather the best exchanges from root to leafs
-  
   (let p-t/accu ([wallet wallet0] [bank bank0] [trades-so-far '()] [fuel (SearchDepth)])
     (define rules (e:useful equations wallet bank))
     (cond
       [(or (empty? rules) (zero? fuel)) (void)]
       [else
-       (for ([x rules])
-         (define-values (wallet++ bank++) (b:bag-transfer wallet bank (e:1eq-left x) (e:1eq-right x)))
-         (define trades   (cons x trades-so-far))
+       (for ([r rules]) 
+         (define-values (wallet++ bank++) (b:bag-transfer wallet bank (e:1eq-left r) (e:1eq-right r)))
+         (define trades   (cons r trades-so-far))
          (define cards    (buy-with-wallet wallet++))
-         (send best-which-es add-if-better (exchange (reverse trades) cards))
+         (send best add-if-better (exchange (reverse trades) cards))
          ;; the buying does _not_ apply to the wallet or bank because once the player buys cards
          ;; it can no longer trade pebbles 
-         (p-t/accu wallet++ bank++ trades (sub1 fuel)))]))
-
-  (send best-which-es done))
+         (p-t/accu wallet++ bank++ trades (sub1 fuel)))])))
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {[NEListof Exchange] -> Exchange}
-;; given all possible exchange paths, break ties among the embedded trades-buys as follows:
-;; -- from those pick the ones with the smallest number of trades
-;; -- from those pick the ones that leave the player with the optimal card purchases
-;; -- from those pick the one with the smallest-equations 
-
+;; given all possible exchange paths, break ties among the embedded trades-buys in three steps
 (define (tie-breaker-trade-then-purchase lo-ex-0)
-  (define f* (list smallest-number-of-trades))
-  (tie-breaker
-   f* lo-ex-0
-   #:continue
-   (λ (lo-ex-1)
-     (tie-breaker-for-purchases
-      lo-ex-1
-      #:selector exchange-purchase
-      #:continue smallest-trade))))
-                      
-#; {[Listof Exchange] -> [Listof Exchange]}
-(define (smallest-number-of-trades the-bests)
-  (all-argmin (λ (ex) (length (exchange-trades ex))) the-bests))
-
-#; {[Listof Exchange] -> Exchange}
-(define (smallest-trade lo-ex-2)
-  (if (all-equal? (map exchange-trades lo-ex-2))
-      (first lo-ex-2)
-      (first (take-all-equals lo-ex-2 e:equations<? exchange-trades))))
+  (define (smallest-number-of-trades lop) (all-argmin (λ (ex) (length (exchange-trades ex))) lop))
+  (define (smallest-trade lop) (pick-smallest lop e:equations<? exchange-trades))
+  (let* ([step lo-ex-0]
+         [step #; 1 (tie-breaker (list smallest-number-of-trades) step #:continue 'yes)]
+         [step #; 2 (tie-breaker-for-purchases step #:selector exchange-purchase #:continue 'yes)]
+         [step #; 3 (tie-breaker (list smallest-trade) step #:continue #false)])
+    step))
 
 ;                                     
 ;                                     
@@ -424,6 +486,9 @@
       (define wallet (p:player-wallet (t:turn-active turn)))
       #;
       (show expected equations cards wallet bank policy msg)
+
+      (f-trade-then-purchase equations cards wallet bank policy)
+
       (check-equal? (f-trade-then-purchase equations cards wallet bank policy) expected msg))
     (eprintf "~a tests completed\n" count))
 
@@ -435,8 +500,12 @@
     (define p-bank      (frame (b:render bank)))
     (eprintf "---- ~a with policy ~a\n" msg policy)
     (pretty-print (frame (inset (hb-append 10 p-equations p-cards p-wallet p-bank) 2)))
-    (pretty-print expected))
-  
+    (pretty-print expected)))
+
+(module+ test
+  (run-scenario* 'Tests (take Tests/ 1)))
+
+(module+ test
   (run-scenario* 'ForStudents ForStudents/)
   (run-scenario* 'Tests Tests/)
   (run-scenario* 'Extras Extras/))
@@ -460,112 +529,6 @@
   (define j-po (policy->jsexpr po))
   
   (time (f-trade-then-purchase ee cc ww bb po)))
-
-;                                                          
-;      ;                               ;                   
-;                          ;           ;                   
-;                          ;           ;                   
-;    ;;;   ;   ;   ;;;   ;;;;;         ;;;;   ;   ;  ;   ; 
-;      ;   ;   ;  ;   ;    ;           ;; ;;  ;   ;  ;   ; 
-;      ;   ;   ;  ;        ;           ;   ;  ;   ;   ; ;  
-;      ;   ;   ;   ;;;     ;           ;   ;  ;   ;   ; ;  
-;      ;   ;   ;      ;    ;           ;   ;  ;   ;   ; ;  
-;      ;   ;   ;  ;   ;    ;           ;; ;;  ;   ;   ;;   
-;      ;    ;;;;   ;;;     ;;;         ;;;;    ;;;;    ;   
-;      ;                                               ;   
-;      ;                                              ;    
-;    ;;                                              ;;    
-
-(define (f-buy-cards visibles wallet which)
-  (match (possible-purchases visibles wallet which)
-    [(list p) p]
-    [possibles (tie-breaker-for-purchases possibles)]))
-
-#; {[Setof Card] Bag [Purchases-> Real] -> [Listof Purchases]}
-;; imperatively accumulate all paths of cards from root to leafs, evaluate, turn into purchases
-;; this may return the "no cards can be purchased" result 
-(define (possible-purchases visibles0 wallet0 which)
-  (define max-ish (new collector% [e0 (purchase '[] 0 wallet0)] [score which]))
-  
-  ;; ACCU in reverse order of possible purchaes from `visibles0` & `wallet0` to `visibles` & `wallet`
-  (let p-p/accu ([visibles visibles0] [wallet wallet0] [from-root-to-here '()] [points 0])
-    #; [Listof Card]
-    (define possible-buys (c:can-buy visibles wallet))
-    (cond
-      [(empty? possible-buys)
-       (define e1 (purchase (reverse from-root-to-here) points wallet))
-       (send max-ish add-if-better e1)]
-      [else
-       (for ([t possible-buys])
-         (define-values [visibles-- wallet-- more] (purchase-1-card t visibles wallet))
-         (p-p/accu visibles-- wallet-- (cons t from-root-to-here) (+ more points)))]))
-
-  (send max-ish done))
-
-;; ---------------------------------------------------------------------------------------------------
-#; {Card [Setof Card] Bag -> [Setof Card] Bag Natural}
-;;  ASSUME `c` is in `visibles`
-(define (purchase-1-card c visibles wallet)
-  (define visibles--  (remove c visibles))
-  (define wallet--    (b:bag-minus wallet (c:card-pebbles c)))
-  (define points      (c:calculate-points c (b:bag-size wallet--)))
-  (values visibles-- wallet-- points))
-
-;; ---------------------------------------------------------------------------------------------------
-#; {[NEListof Purchases] -> Purchases}
-;; pick the pruchase that has the most poinnts, tthe largest wallet, the best wallet, or best cards
-;; if all equals?, the list is passed on to the fail continuation `fk` if it exists
-;; otherwise just pick the first one 
-(define (tie-breaker-for-purchases lop #:selector (selector identity) #:continue (fk #false))
-  (define (also-point-max lop)
-    (all-argmax (compose purchase-points selector) lop))
-
-  (define (wallet-size lop)
-    (all-argmax (λ (x) (b:bag-size (purchase-walletω (selector x)))) lop))
-
-  (define (smallest-wallet lop)
-    (define s (compose purchase-walletω selector))
-    (if (all-equal? (map s lop))
-        lop
-        (take-all-equals lop b:bag<? s)))
-
-  (define (best-cards lop)
-    (define s (compose purchase-cards selector))
-    (if (all-equal? (map s lop))
-        lop
-        (take-all-equals lop c:card*<? s)))
-  
-  (tie-breaker (list also-point-max wallet-size smallest-wallet best-cards) lop #:continue fk))
-
-;                                     
-;                                     
-;     ;                    ;          
-;     ;                    ;          
-;   ;;;;;   ;;;    ;;;   ;;;;;   ;;;  
-;     ;    ;;  ;  ;   ;    ;    ;   ; 
-;     ;    ;   ;; ;        ;    ;     
-;     ;    ;;;;;;  ;;;     ;     ;;;  
-;     ;    ;          ;    ;        ; 
-;     ;    ;      ;   ;    ;    ;   ; 
-;     ;;;   ;;;;   ;;;     ;;;   ;;;  
-;                                     
-;                                     
-;                                     
-
-(module+ test
-  (check-equal? (f-buy-cards (list) (b:bag) purchase-size)
-                (purchase '() 0 (b:bag)))
-  (check-equal? (f-buy-cards (list c-ggggg c-ggggg) b-ggggg purchase-size)
-                (purchase (list c-ggggg) 5 (b:bag)))
-  
-  (check-equal? (possible-purchases (list c-ggggg c-ggggg) b-ggggg purchase-points)
-                (list (purchase (list c-ggggg) 5 (b:bag)) #; (purchase (list c-ggggg) 5 (b:bag))))
-
-  (check-equal? (f-buy-cards (list c-ggggg c-ggggg) b-ggggg purchase-points)
-                (purchase (list c-ggggg) 5 (b:bag)))
-
-  (check-equal? (f-buy-cards (list c-ggggg c-ggggg) (b:bag-add b-ggggg  b-ggggg) purchase-points)
-                (purchase (list c-ggggg c-ggggg) 6 (b:bag))))
 
 ;                              
 ;      ;                       
