@@ -19,13 +19,13 @@ Some player implementations realize
 ```
 +----------------+
 |  Player        |
-+----------------+               +----------+ 
-| Strategy       | ------------> | Strategy |
-+----------------+               +----------+ 
-| setup          |               | points   | 
-| pebbleOrTrades |               | #cards   | 
-| cards?         |               +----------+
-| win            |               
++----------------+               +--------------------------------------------+ 
+| Strategy       | ------------> | Strategy                                   |
++----------------+               +--------------------------------------------+ 
+| setup          |               | should-the-player-request-a-random-pebble  |
+| pebbleOrTrades |               | trade-then-purchase                        |
+| cards?         |               | buy-cards                                  |
+| win            |               +--------------------------------------------+
 +----------------+               
      ^
      |
@@ -35,9 +35,66 @@ Some player implementations realize
   +--+------------------------+-----------------------------+
   |                           |                             |
 +----------+               +----------+                 +----------+
-| ExnPlyr  |               | InfPlyr  |			| Cheats   |
-+----------+               +----------+			+----------+
+| ExnPlyr  |               | InfPlyr  |                 | Cheats   |
++----------+               +----------+                 +----------+
 ```
+
+```
+                                  Player
+                                    |
+                                    |    new (maximize)
+                                    | ------------------------> Strategy
+                                    |                            |
+         pebbbleOrTrades(turnState) |                            |
+        --------------------------> |                            |
+                                    |   should-the-...()         |
+                                    | -------------------------> |
+                                    |                            |
+                                    |   boolean                  |
+           yes, if #true            | <========================  |
+        <=========================  |                            |
+                                    |                            |
+                                    |                            |
+                                    |                            |
+         cards?(turnState)          |                            |
+        --------------------------> |                            |
+                                    |                            |
+                                    |                            |
+                                    |   buy-cards()              |
+                                    | -------------------------> |
+                                    |                            |
+                                    |                            |
+                                    |   sequence of cardss       |
+                                    | <========================= |
+                                    |                            |
+                                    |                            |
+           sequence of cards        |                            |                                  
+        <=========================  |                            |
+
+
+                if #false:
+
+                                    |                            |
+                                    |   trade-then-purchase()    |
+                                    | -------------------------> |
+                                    |                            |
+                                    |   exchanges-plus-cards     |
+                                    | <========================  |
+           exchange requests        |                            |                                  
+        <=========================  |                            |
+                                    |                            |
+                                    |                            |
+         cards?(turnState)          |                            |
+        --------------------------> |                            |
+                                    |                            |
+           sequence of cards        |                            |                                  
+        <=========================  |                            |
+                                    |                            |
+
+
+
+```
+
 
 ### Functionality
 
