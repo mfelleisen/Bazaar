@@ -1,5 +1,7 @@
 #lang racket
 
+;; a function that checks orderings on equally sequences of X given an ordering on X
+
 (provide 
  #; {[X X -> Bool] [Listof X] [Listof Y] -> Bool}
  ;; are the two equally long sequences `equal?` up to some position

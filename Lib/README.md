@@ -16,5 +16,7 @@ for an explanation of how code files are organized in Racket.
 | [fixed-perm.rkt](fixed-perm.rkt) | make a permutation of a list in fixed order | 
 | [json.rkt](json.rkt) | for generating serializing and deserializing plain values from and to JSexpr | 
 | [parse-json.rkt](parse-json.rkt) | functionality for deserialzing JSexpr into internal data representations | 
+| [sequence.rkt](sequence.rkt) | a function that checks orderings on equally sequences of X given an ordering on X | 
+| [tie-breaking.rkt](tie-breaking.rkt) | collect candidates and realize tie-breaking functionality | 
 | [xsend.rkt](xsend.rkt) | a library that protects calls from exceptions and overly slow clients | 
 
