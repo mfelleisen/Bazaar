@@ -10,6 +10,8 @@
  card-pebbles
  card-face?
 
+ card*?
+
  random-card 
 
  #; {[NEListof Card] -> Boolean}
@@ -131,6 +133,8 @@
   (define (hash2-proc x re-hash2)
     (+ (* 891 (re-hash2 (card-pebbles x)))
        (* 999 (re-hash2 (card-face? x)))))])
+
+(define card*? (listof card?))
 
 ;; AWKWARD: OTHERWISE JSON DOESN'T WORK PROPERLY
 (define PEBBLES 'pebbles)

@@ -11,7 +11,7 @@
    ;; (2) a player has 20 points at the end of its turn;
    ;; (3) all cards have been bought up; or
    ;; (4) the bank is empty and no player can buy
-   (-> (listof p:player?) (listof c:card?) b:bag? boolean?)]
+   (-> (listof p:player?) c:card*? b:bag? boolean?)]
 
   (legal-pebble-or-trade-request
    ;; determines whether a pebble request or a requested series of trades is
@@ -25,7 +25,7 @@
    ;; (1) legal accroding to the visible cards
    ;; (2) feasible for the active player's wallet
    ;; and if so, computes the resulting score, visibles, wallet, and state of the bank
-   (-> (listof c:card?) t:turn? (or/c #false (list/c natural? (listof c:card?) b:bag? b:bag?)))]
+   (-> c:card*? t:turn? (or/c #false (list/c natural? c:card*? b:bag? b:bag?)))]
 
   [calculate-points
    ;; determine the number of points that the purchase of a card yields 
@@ -33,7 +33,11 @@
   
   [can-buy
    ;; selects all those cards that can be be bought with this bag (as a first card)
-   (-> (listof c:card?) b:bag? (listof c:card?))]))
+   (-> c:card*? b:bag? c:card*?)]
+  
+  [buy-1-card
+   ;; compute the deltas to the game state when the specified card is bought from the list of visibles
+   (-> c:card? natural? c:card*? b:bag? b:bag? (values natural? c:card*? b:bag? b:bag?))]))
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ examples
@@ -211,13 +215,13 @@
   (define bank0    (t:turn-bank ts))
   (define visibles (t:turn-cards ts))
   (define wallet0  (p:player-wallet (t:turn-active ts)))
-  (let/ec failure
+  (let/ec failure ;; iterate buying over score : N; cards : {Setof Card}; wallet : Bag, bank : Bag
     (for/fold ([δ 0] [c visibles] [w wallet0] [b bank0] #:result (list δ c w b)) ([1card cards0])
       (unless (b:subbag? (apply b:bag c) (apply b:bag visibles)) (failure #false))
       (buy-1-card 1card δ c w b failure))))
-
-#; {Card N [Setof Card] Bag Bag {} -> (values N {Setof Card} Bag Bag)}
-(define (buy-1-card c score cards wallet bank failure)
+ 
+#; {Card N [Listof Card] Bag Bag {Boolean -> Empty} -> (values N {Setof Card} Bag Bag)}
+(define (buy-1-card c score cards wallet bank [failure identity])
   (unless (can-buy-1 c wallet) (failure #false))
   (define-values [wallet++ bank++] (b:bag-transfer wallet bank (c:card-pebbles c) '[]))
   (define delta (calculate-points c (b:bag-size wallet++)))
