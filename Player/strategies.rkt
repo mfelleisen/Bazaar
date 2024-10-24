@@ -124,7 +124,7 @@
 
 (define strategy%
   (class object%
-    (init-field equations which)
+    (init-field equations which) 
     (super-new)
     
     (define/public (should-the-player-request-a-random-pebble turn)
@@ -342,9 +342,9 @@
 ;; this may return the "no cards can be purchased" result 
 (define (possible-purchases visibles0 wallet0 best)
   ;; ACCU in reverse order of possible purchaes from `visibles0` & `wallet0` to `visibles` & `wallet`
-  (let p-p/accu ([visibles visibles0] [wallet wallet0] [from-root-to-here '()] [points 0])
-    #; [Listof Card]
-    (define possible-buys (c:can-buy visibles wallet))
+
+  (define (possible-purchases visibles wallet from-root-to-here points)
+    (define possible-buys #; [Listof Card] (c:can-buy visibles wallet))
     (cond
       [(empty? possible-buys)
        (define e1 (purchase (reverse from-root-to-here) points wallet))
@@ -352,7 +352,9 @@
       [else
        (for ([t possible-buys])
          (define-values [δ visibles-- wallet-- _] (c:buy-1-card t 0 visibles wallet (b:bag)))
-         (p-p/accu visibles-- wallet-- (cons t from-root-to-here) (+ δ points)))])))
+         (possible-purchases visibles-- wallet-- (cons t from-root-to-here) (+ δ points)))]))
+
+  (possible-purchases visibles0 wallet0 '[] 0))
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {[NEListof Purchases] -> Purchases}
@@ -420,15 +422,15 @@
          [e0    (exchange '() (buy-with-wallet wallet0))]
          [score (compose value exchange-purchase)]
          [break tie-breaker-trade-then-purchase]))
-  (possible-trades equations wallet0 bank0 visibles buy-with-wallet best)
+  (possible-trades-cards equations wallet0 bank0 visibles buy-with-wallet best)
   (send best done))
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {Equation* Bag Bag {Bag -> [Listof Card] Collector} -> Void}
 ;; EFFECT gather the best exchanges (trades plus card purchases) in `best`
-(define (possible-trades equations wallet0 bank0 visibles buy-with-wallet best)
-  ;; imperatively gather the best exchanges from root to leafs
-  (let p-t/accu ([wallet wallet0] [bank bank0] [trades-so-far '()] [fuel (SearchDepth)])
+(define (possible-trades-cards equations wallet0 bank0 visibles buy-with-wallet best)
+  (define (possible-trades-cards/accu fuel wallet bank trades-so-far)
+    ;; imperatively gather the best exchanges from root to leafs
     (define rules (e:useful equations wallet bank))
     (cond
       [(or (empty? rules) (zero? fuel)) (void)]
@@ -440,7 +442,9 @@
          (send best add-if-better (exchange (reverse trades) cards))
          ;; the buying does _not_ apply to the wallet or bank because once the player buys cards
          ;; it can no longer trade pebbles 
-         (p-t/accu wallet++ bank++ trades (sub1 fuel)))])))
+         (possible-trades-cards/accu (sub1 fuel) wallet++ bank++ trades))]))
+
+  (possible-trades-cards/accu (SearchDepth) wallet0 bank0 '())) 
 
 ;; ---------------------------------------------------------------------------------------------------
 #; {[NEListof Exchange] -> Exchange}
