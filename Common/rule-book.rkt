@@ -43,7 +43,7 @@
 (module+ examples
   #;
   (scenario+ TradeTests/ (list equations trades turn) (or/c #false (list bag bag)))
-  (provide TradeTests/ ForStudents/))
+  (provide TradeTests/ ForStudents/ BuyTests/)) 
 
 ;                                                                                      
 ;       ;                                  ;                                           
@@ -229,14 +229,12 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ examples
-  (provide BuyTests/)
-
   #; {type BuyScenaro = [List [List Cards Turn] (U False [List N Cards Bag Bag]) String]}
   (setup-scenarios buy-s+ BuyTests/)
 
   (let* ([cards `[,c-bbbbb]]
-         [turn (t:turn b-rg cards p-bbbbb-0 '[])]
-         [exp    `[5 [] [] ,(b:bag-add b-bbbbb b-rg)]])
+         [turn  (t:turn b-rg cards p-bbbbb-0 '[])]
+         [exp   `[5 [] [] ,(b:bag-add b-bbbbb b-rg)]])
     (buy-s+ BuyTests/ `[,cards ,turn]  exp "1"))
 
   (let* ([cards `[,c-bbbbb ,c-ggggg]]
@@ -252,15 +250,15 @@
   (let* ([cards `[,c-bbbbb ,c-ggggg]] ;; buy a card that exists twice 
          [bank   (b:bag-add b-bbbbb b-rg)]
          [turn (t:turn b-rg `[,c-bbbbb ,c-bbbbb] p-bbbbb-0 '[])])
-    (buy-s+ BuyTests/ `[,cards ,turn]  #f "2"))
+    (buy-s+ BuyTests/ `[,cards ,turn]  #false "2"))
 
   (let* ([cards `[,c-bbbbb ,c-bbbbb]] ;; buy the sane card twice
          [bank   (b:bag-add b-bbbbb b-rg)]
          [turn (t:turn b-rg `[,c-bbbbb ,c-bbbbb] p-bbbbb-0 '[])])
-    (buy-s+ BuyTests/ `[,cards ,turn]  #f "2"))
+    (buy-s+ BuyTests/ `[,cards ,turn]  #false "2"))
 
   (let* ([turn (t:turn b-bbbbb `[] p-rg-0 '[])])
-    (buy-s+ BuyTests/ `[,(list c-bbbbb) ,turn] #f "∉visibles"))
+    (buy-s+ BuyTests/ `[,(list c-bbbbb) ,turn] #false "∉visibles"))
 
   (let* ([cards `[,c-bbbbb]]
          [turn (t:turn b-rg cards p-rg-0 '[])])
@@ -268,8 +266,8 @@
   
   (let* ([cards (list c-wyrbb c-ggggg)]
          [turn  (t:turn b-rrbrr cards p-ggggg (list 0 0))]
-         [exp  `[5 [,c-wyrbb] [] ,(b:bag-add b-rrbrr b-ggggg)]])
-    (buy-s+ BuyTests/ `[(,(second cards)) ,turn] exp "regression")))
+         [exp  `[5 [,(first cards)] [] ,(b:bag-add b-rrbrr b-ggggg)]])
+    (buy-s+ BuyTests/ `[,(rest cards) ,turn] exp "regression")))
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ test
