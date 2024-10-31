@@ -176,7 +176,7 @@
        (define yright (1eq-right y))
        (or
         (and (b:bag-equal? xleft yleft) (b:bag-equal? xright yright))
-        (and (b:bag-equal? xleft yright) (b:bag-equal? xleft yright)))))
+        (and (b:bag-equal? xleft yright) (b:bag-equal? xright yleft)))))
    (define (hash-proc x re-hash)
      (+ (* 1000 (re-hash (1eq-left x)))
         (* 10 (re-hash (1eq-right x)))))
@@ -281,7 +281,7 @@
 ;; ---------------------------------------------------------------------------------------------------
 (define (equations-equal? eq* fq*)
   (and (subset? eq* fq*) (subset? fq* eq*)))
-  
+
 ;; ---------------------------------------------------------------------------------------------------
 (define (useful left-to-right my-wallet bank)
   (define right-to-left (map 1eq-flip left-to-right))
