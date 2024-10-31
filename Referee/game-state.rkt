@@ -324,7 +324,7 @@
        gs)]))
 
 ;; ---------------------------------------------------------------------------------------------------
-#; {[Listof Card] Turn -> }
+#; {[Listof Card] Turn -> GameState}
 (define (legal-purchase-request cards gs)
   (define ts (extract-turn gs))
   (match (r:legal-purchase-request cards ts)
@@ -473,11 +473,14 @@
         [(list score e-cards wallet bank)
          (match (legal-purchase-request cards gs)
            [(? false?) (check-false #false expected )~a msg "/illegal"]
-           [(game a-bank a-visibles _cards (cons (player+ a-active 'connection) others))
+           [(and gs++ (game a-bank a-visibles _cards (cons (player+ a-active 'connection) others)))
             (check-equal? (p:player-score a-active) score (~a msg "/score"))
-            (define cards (append e-cards hidden-cards))
-            (check b:bag-equal? (apply b:bag a-visibles) (apply b:bag cards) (~a msg "/cards"))
+            (define vis+ (append e-cards hidden-cards))
+            (check b:bag-equal? (apply b:bag a-visibles) (apply b:bag vis+) (~a msg "/*cards"))
             (check b:bag-equal? (p:player-wallet a-active) wallet (~a msg "/wallet"))
+
+            (check-true (b:subbag? cards (p:player-cards a-active)) (~a msg "/p-cards"))
+
             (check b:bag-equal? a-bank bank (~a msg "/bank"))])])))
 
   (run-buy-scenario 'GameBuyTests GameBuyTests/))
