@@ -20,6 +20,7 @@
  winning-points?
 
  #; {Player -> N}
+ ;; update this player with a bonus if it collected the appropriate RWB cards 
  player-award-red-white-and-blue-bonus
 
  #; {Player Natural -> Player}
@@ -267,8 +268,9 @@
   (match-define [player wallet score _cards] ps)
   (define p-name   (text name "roman" 12))
   (define p-wallet (b:render wallet))
+  (define p-cards  (c:render* _cards))
   (define p-score  (render-scores [list score]))
-  (frame (inset (vl-append 5 p-name (hc-append 5 p-score p-wallet)) 3)))
+  (frame (inset (vl-append 5 p-name (hc-append 5 p-score p-wallet p-cards)) 3)))
 
 #; {[Listof Natural] -> Pict}
 (define (render-scores scores)
