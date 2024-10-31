@@ -18,6 +18,7 @@
  card*<?
  
  #; {[Listof COLOR ][Listof Card] -> Boolean}
+ ;; does this list of cards, display the specified pebbles 
  contains-all
  
  #; {[Listof Card] -> Pict}
