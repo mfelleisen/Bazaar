@@ -52,6 +52,9 @@
  ;; are the two sets of equations equal? -- each side is considered a set, too
  equations-equal?
 
+ ;; are the two bags of (trades) oriented equations equal? 
+ trades-equal? 
+
  #; {Equations Bag Bag -> Trades}
  #; (useful left-to-right my-wallet bank)
  ;; return those equations `e` in `left-to-right` for which `my-wallet` has
@@ -281,6 +284,12 @@
 ;; ---------------------------------------------------------------------------------------------------
 (define (equations-equal? eq* fq*)
   (and (subset? eq* fq*) (subset? fq* eq*)))
+
+(define (trades-equal? eq* fq*)
+  (b:subbag? eq* fq*))
+
+(module+ test
+  (trades-equal? (list r=gggg r=bbbb) (list r=bbbb r=gggg)))
 
 ;; ---------------------------------------------------------------------------------------------------
 (define (useful left-to-right my-wallet bank)
