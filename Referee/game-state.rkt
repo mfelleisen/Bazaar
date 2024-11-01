@@ -58,7 +58,8 @@
 (module+ json
   (provide
    game->jsexpr
-   jsexpr->game))
+   jsexpr->game
+   from-json-game-integrity ))
 
 ;                                                                                      
 ;       ;                                  ;                                           
@@ -214,6 +215,23 @@
  [cards    #:to-jsexpr card*->jsexpr #:from-jsexpr (compose card-check jsexpr->card*) #:is-a "*Cards"]
  [players  #:to-jsexpr player+*->jsexpr #:from-jsexpr jsexpr->player+*
            #:is-a "*Players"])
+
+#; {GameState -> Boolean}
+;; a game state created from JSON may violate validity checks 
+(define (from-json-game-integrity gs)
+  (match-define [game bank visible cards players] gs)
+  (define player-pebbles (map (compose p:player-wallet player+-player) players))
+  (cond
+    [(or (and (< (length visible) VISIBLE#) (cons? cards))
+         (not (cards#? (+ (length visible) (length cards)))))
+     (eprintf "~a: objects fails to satisfy card-validity conditions\n"  'jsexpr->game)
+     (eprintf "~a visible cards, ~a cards\n" (length visible) (length cards))
+     #false]
+    [(not (pebbles#? (+ (b:bag-size player-pebbles) (b:bag-size bank))))
+     (eprintf "~a: objects fails to satisfy pebble-validity conditions"  'jsexpr->game)
+     (eprintf "~a visible cards, ~a cards\n" (b:bag-size player-pebbles) (b:bag-size bank))
+     #false]
+    [else #true]))
 
 #; {type GameState = (game Bag [Listof Card] [Listof Card] [Listof Player+])}
 #; {type Player+   = (player+ Player {Object with name method take-turn method setup win})}
