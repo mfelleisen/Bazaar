@@ -20,6 +20,7 @@
  #; {[Listof COLOR ][Listof Card] -> Boolean}
  ;; does this list of cards, display the specified pebbles 
  contains-all
+ contains-on-separate-card
  
  #; {[Listof Card] -> Pict}
  render*
@@ -223,6 +224,31 @@
   (define all-pebbles (append-map card-pebbles loc))
   (for/and ([p pebbles])
     (member p all-pebbles)))
+
+#; {[Listof Pebble] [Listof Card] -> Boolean}
+(define (contains-on-separate-card pebbles cards)
+  (define cards0 (map list cards))
+  (for/and ([p pebbles])
+    (define x (assf (λ (x) (if (member p (card-pebbles x)) x #false)) cards0))
+    (and x (set! cards0 (remv x cards0)))))
+
+#; {[Listof Pebble] [Listof Card] -> Boolean}
+;; same as preceding function but to show Ben accumulators aren't needed 
+(define (contains-on-separate-card-w/o-accumulator pebbles0 cards)
+  #; {Pebble [Listof Card] -> Boolean}
+  (define (without-this-pebble p cards)
+    (define x (assf (λ (x) (if (member p (card-pebbles x)) x #false)) cards))
+    (and x (remv x cards)))
+
+  #; {[Listof Pebble] -> (U False [Listof Card])}
+  (define (all-pebbles pebbles)
+    (cond
+      [(empty? pebbles) (map list cards)]
+      [else
+       (define x  (all-pebbles (rest pebbles)))
+       (and x (without-this-pebble (first pebbles) x))]))
+
+  (all-pebbles pebbles0))
 
 ;; ---------------------------------------------------------------------------------------------------
 (define (random-card)

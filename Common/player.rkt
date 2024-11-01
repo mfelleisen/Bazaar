@@ -22,6 +22,7 @@
  #; {Player -> N}
  ;; update this player with a bonus if it collected the appropriate RWB cards 
  player-award-red-white-and-blue-bonus
+ player-award-none
 
  #; {Player Natural -> Player}
  update-score
@@ -100,6 +101,7 @@
 (module+ test
   (require (submod ".." examples))
   (require (submod ".." json))
+  (require (submod Bazaar/Common/cards examples))
   (require rackunit))
 
 (module+ json
@@ -249,11 +251,36 @@
   (>= score PLAYER-WINS))
 
 ;; ---------------------------------------------------------------------------------------------------
-#; {Player -> N}
+#; {Player -> Player}
+(define (player-award-none p)
+  p)
+
 (define (player-award-red-white-and-blue-bonus p)
   (define cards (player-cards p))
-  (if (c:contains-all (list p:RED p:WHITE p:BLUE) cards) (update-score p BONUS) p))
+  (if (c:contains-all (list p:RED p:WHITE p:BLUE) cards)
+      (update-score p BONUS)
+      p))
 
+(define (player-award-rwb-on-distinct-cards p)
+  (if (c:contains-on-separate-card (list p:RED p:WHITE p:BLUE) (player-cards p))
+      (update-score p BONUS)
+      p))
+
+(module+ test
+  (define a-bonus-player (player (b:bag) 18 (list c-rrbrr  c-rgbrg  c-wyrbb)))
+  (define +-bonus-player (player (b:bag) (+ 18 BONUS) (list c-rrbrr  c-rgbrg  c-wyrbb)))
+  (define no-bonus-player (player (b:bag) 18 (list))))
+
+(module+ test 
+  (check-equal? (player-award-red-white-and-blue-bonus a-bonus-player) +-bonus-player)
+  (check-equal? (player-award-none a-bonus-player) a-bonus-player)
+
+  (check-equal? (player-award-rwb-on-distinct-cards a-bonus-player) +-bonus-player)
+  (check-equal? (player-award-rwb-on-distinct-cards no-bonus-player) no-bonus-player)
+
+  (check-equal? (player-award-red-white-and-blue-bonus no-bonus-player) no-bonus-player))
+
+;; ---------------------------------------------------------------------------------------------------
 (define (random-player b)
   (player b (random 9) '()))
 
