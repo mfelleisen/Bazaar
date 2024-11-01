@@ -286,10 +286,11 @@
   (and (subset? eq* fq*) (subset? fq* eq*)))
 
 (define (trades-equal? eq* fq*)
-  (b:subbag? eq* fq*))
+  (and (b:subbag? eq* fq*) (b:subbag? fq* eq*)))
 
 (module+ test
-  (trades-equal? (list r=gggg r=bbbb) (list r=bbbb r=gggg)))
+  (check-false (trades-equal? (list r=gggg) (list r=bbbb r=gggg)))
+  (check-true (trades-equal? (list r=gggg r=bbbb) (list r=bbbb r=gggg))))
 
 ;; ---------------------------------------------------------------------------------------------------
 (define (useful left-to-right my-wallet bank)
