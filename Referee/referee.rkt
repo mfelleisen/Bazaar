@@ -64,6 +64,7 @@
 (require (prefix-in mo: Bazaar/Referee/manage-observers))
 (require (prefix-in e: Bazaar/Common/equations))
 (require (prefix-in gs: Bazaar/Referee/game-state))
+(require (prefix-in p: Bazaar/Common/player))
 
 (require Bazaar/Lib/xsend)
 
@@ -79,7 +80,6 @@
 (module+ test
   (require (submod ".."))
   (require (submod ".." examples))
-  (require (prefix-in p: Bazaar/Common/player))
   ; (require (submod Bazaar/Player/mechanism json))
   (require SwDev/Lib/should-be-racket)
   (require rackunit))
@@ -109,7 +109,7 @@
                    ;; optional : [Listof Observer]
                    ;; optional : #:award-bonus [Player -> Player]
                    -> [List [Listof Player] [Listof Player]]}
-(define (referee/state actor* equations gs0 (observer* `[]) #:award-bonus (aw identity))
+(define (referee/state actor* equations gs0 (observer* `[]) #:award-bonus (aw p:player-award-none))
   [time-out-limit 9.6]
   (define mo (new mo:manage-observers%))
   (send mo add* observer*)
