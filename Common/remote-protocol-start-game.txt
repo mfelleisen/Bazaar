@@ -6,9 +6,9 @@ referee                       proxy_player (p_*) //    proxy_ref (p_*)   player 
   |                               |              //      |                | 
   |  setup(s:equations)           |              //      |                | 
   | ----------------------------> |              //      |                |   
-  |                               |  (s,t):JSON  //      |                | 
+  |                               |  (s):JSON    //      |                | 
   |                               | ~~~~~~~~~~~~ // ~~~> |                | 
-  |                               |              //      |   setup(s,t)   | 
+  |                               |              //      |   setup(s)     | 
   |                               |              //      | -------------> | 
   |                               |              //      |   void         | 
   |                               |  void:JSON   //      | <============  | 
