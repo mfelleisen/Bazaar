@@ -154,12 +154,29 @@
 
   (check-equal? expected received "ben's failure"))
 
+;                                                          
+;                                                          
+;                                      ;;;                 
+;                                        ;                 
+;    ;;;   ;   ;  ;;;;  ;;;;;;  ;;;;     ;     ;;;    ;;;  
+;   ;;  ;   ; ;       ; ;  ;  ; ;; ;;    ;    ;;  ;  ;   ; 
+;   ;   ;;  ;;;       ; ;  ;  ; ;   ;    ;    ;   ;; ;     
+;   ;;;;;;   ;     ;;;; ;  ;  ; ;   ;    ;    ;;;;;;  ;;;  
+;   ;       ;;;   ;   ; ;  ;  ; ;   ;    ;    ;          ; 
+;   ;       ; ;   ;   ; ;  ;  ; ;; ;;    ;    ;      ;   ; 
+;    ;;;;  ;   ;   ;;;; ;  ;  ; ;;;;      ;;   ;;;;   ;;;  
+;                               ;                          
+;                               ;                          
+;                               ;                          
+
 (module+ examples
 
-  (provide t1 t2 t3)
+  (provide t1 t2 t3 ts-noah)
   (define t1 (turn b-r '[] p-r-9 '[]))
   (define t2 (turn (b:bag) '[] p-r-9 '[]))
   (define t3 (turn (b:bag) '[] p-r-9 '[]))
+
+  (define ts-noah      (turn (b:bag-add b-rrrr b-r) (list) p-rbwgy  '[]))
 
   (define ts0          (turn b-ggggg (list)                         p-r6 '[]))
   (define ts1          (turn b-ggggg [list c-ggggg c-rrbrr c-rgbrg] p-r6 '[]))
