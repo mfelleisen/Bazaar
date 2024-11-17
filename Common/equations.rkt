@@ -78,9 +78,11 @@
 ;; ---------------------------------------------------------------------------------------------------
 (module+ examples
   (provide
+   r=w
    w=bbbb
    r=bbbb
    r=gggg
+   g=rrrr
    ggg=b
    rg=bbbb rg=bbbb-
    ggg=r   ggg=r-
@@ -199,11 +201,14 @@
   (define w=bbbb    (1eq (b:bag p:WHITE) b-bbbb))
   (define r=bbbb    (1eq b-r b-bbbb))
   (define r=gggg    (1eq b-r b-gggg))
+  (define g=rrrr    (1eq b-g b-rrrr))
+
+  (define r=w       (1eq b-r (b:bag p:WHITE)))
 
   (define ggg=r    (1eq b-ggg b-r))
   (define ggg=r-   (1eq-flip ggg=r))
   (define 3xg=g    (1eq b-ggg b-g)) ;; bad equation
-  (define ggb=rw   (1eq b-ggb b-gw))
+  (define ggb=rw   (1eq b-ggb b-rw))
   (define ggb=rw-  (1eq-flip ggb=rw))
 
   (define ggg=b    (1eq b-ggg b-b))
