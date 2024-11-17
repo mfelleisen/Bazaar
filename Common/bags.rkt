@@ -48,7 +48,7 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ examples
-  (provide b-rg b-bbbb b-4xb-3xg b-ggg b-r b-g b-ggb b-gw b-rr b-gg b-yyw b-gggg b-b
+  (provide b-rg b-bbbb b-rrrr b-4xb-3xg b-ggg b-r b-g b-ggb b-gw b-rw b-rr b-gg b-yyw b-gggg b-b b-w
            ;; for strategies
            b-6g-3r-4b b-2r-2y-1w b-3r-2y-1w b-4r-2y-1w
            ;; for cards 
@@ -113,8 +113,9 @@
 #;   [Bag Pebble]
 
 (module+ examples
-  
-  (define b-bbbb    [bag p:BLUE p:BLUE p:BLUE p:BLUE])
+
+  (define b-rrrr [bag p:RED p:RED p:RED p:RED])
+  (define b-bbbb [bag p:BLUE p:BLUE p:BLUE p:BLUE])
   (define b-gggg [bag p:GREEN p:GREEN p:GREEN p:GREEN])
 
   ;; usable for cards 
@@ -134,11 +135,13 @@
   (define b-ggg [bag p:GREEN p:GREEN p:GREEN])
   (define b-gg  [bag p:GREEN p:GREEN])
   (define b-r   [bag p:RED])
+  (define b-w   [bag p:WHITE])
   (define b-rr  [bag p:RED p:RED])
   (define b-g   [bag p:GREEN])
   (define b-b   [bag p:BLUE])
   (define b-ggb [bag p:GREEN p:GREEN p:BLUE])
   (define b-gw  [bag p:RED p:WHITE])
+  (define b-rw  [bag p:RED p:WHITE])
   (define b-4xb-3xg [bag p:BLUE p:BLUE p:BLUE p:BLUE p:GREEN p:GREEN p:GREEN])
   (define b-rg      [bag p:RED p:GREEN])
 
