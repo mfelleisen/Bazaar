@@ -91,6 +91,7 @@
   (require (submod ".." examples))
   (require (submod ".." json))
   (require (submod Bazaar/Common/equations examples))
+  (require (submod Bazaar/Common/pebbles examples))
   (require (submod Bazaar/Common/turn-state examples))
   (require Bazaar/Lib/check-message)
   (require SwDev/Lib/should-be-racket)
@@ -421,12 +422,12 @@
    1
    [(request-pebble-or-trades t*)
     (define t (first t*)) ;; because class/fail uses . args
-    (make-trade-w/o-support (t:turn-bank t) equations)]))
+    (make-trade-w/o-support (t:turn-bank t) equations e:1eq-right e:1eq-left)]))
 
-(define (make-trade-w/o-support pebbles equations)
+(define (make-trade-w/o-support pebbles equations (lft e:1eq-left) (rgt e:1eq-right))
   (or
-   (for/first ([e equations] #:unless (b:subbag? (e:1eq-left e) pebbles))  (list e))
-   (for/first ([e equations] #:unless (b:subbag? (e:1eq-right e) pebbles)) (list (e:1eq-flip e)))))
+   (for/first ([e equations] #:unless (b:subbag? (lft e) pebbles)) (list e))
+   (for/first ([e equations] #:unless (b:subbag? (rgt e) pebbles)) (list (e:1eq-flip e)))))
 
 (module+ test
   (let* ([f (retrieve-factory "wallet-cannot-trade" cheater-table-for-8)]
@@ -437,7 +438,14 @@
   (let* ([f (retrieve-factory "bank-cannot-trade" cheater-table-for-8)]
          [a (create-player "ouch" #:bad f)])
     (send a setup `[,r=bbbb])
-    (check-equal? (send a request-pebble-or-trades ts0) (list r=bbbb))))
+    (check-equal? (send a request-pebble-or-trades ts0) (list r=bbbb)))
+  
+  (let* ([f (retrieve-factory "bank-cannot-trade" cheater-table-for-8)]
+         [a (create-player "a" #:bad f)]
+         [eq* `[,r=w]])
+    (send a setup eq*)
+    (check-false (b:subbag? (e:1eq-right (first eq*)) (t:turn-bank ts-noah)))
+    (check-equal? (e:1eq-left (first (send a request-pebble-or-trades ts-noah))) `[,RED])))
 
 ;; ---------------------------------------------------------------------------------------------------
 (define use-non-existent-equation%
