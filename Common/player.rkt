@@ -22,6 +22,7 @@
  #; {Player -> N}
  ;; update this player with a bonus if it collected the appropriate RWB cards 
  player-award-red-white-and-blue-bonus
+ player-award-seychelles-bonus
  player-award-none
 
  #; {Player Natural -> Player}
@@ -51,7 +52,7 @@
   (provide
    p-rg1 p-rg2
    p-bbbb3 p-bbbbb3
-   p-4xb-3xg4 p-ggg5 p-r6 p-g7 p-ggb8 p-gw9 p-ggggg p-rgbrg p-wyrbb p-rrbrr-20))
+   p-4xb-3xg4 p-ggg5 p-r6 p-g7 p-ggb8 p-gw9 p-gw0 p-ggggg p-rgbrg p-wyrbb p-rrbrr-20))
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ json
@@ -93,7 +94,8 @@
 
 
 (module+ examples
-  (require (submod Bazaar/Common/bags examples)))
+  (require (submod Bazaar/Common/bags examples))
+  (require (submod Bazaar/Common/cards examples)))
 
 (module+ pict
   (require (submod ".." examples)))
@@ -127,10 +129,13 @@
     (error 'jsexpr->card "wrong number of pebbles for a player's wallet"))
   b)
 
+(define (<20 n)
+  (and n (< n 20) n))
+
 (struct/description
  player
  [wallet #:to-jsexpr bag->jsexpr     #:from-jsexpr (compose size-check jsexpr->bag) #:is-a "*Pebbles"]
- [score  #:to-jsexpr natural->jsexpr #:from-jsexpr jsexpr->natural #:is-a "Natural"]
+ [score  #:to-jsexpr natural->jsexpr #:from-jsexpr (compose <20 jsexpr->natural) #:is-a "Natural"]
  [cards #:hidden '()]
  #:transparent
  #:methods gen:equal+hash
@@ -171,6 +176,27 @@
 (define (update-player-score p delta)
   (struct-copy player p [score (+ (player-score p) delta)]))
 
+;                                                          
+;                                                          
+;                                      ;;;                 
+;                                        ;                 
+;    ;;;   ;   ;  ;;;;  ;;;;;;  ;;;;     ;     ;;;    ;;;  
+;   ;;  ;   ; ;       ; ;  ;  ; ;; ;;    ;    ;;  ;  ;   ; 
+;   ;   ;;  ;;;       ; ;  ;  ; ;   ;    ;    ;   ;; ;     
+;   ;;;;;;   ;     ;;;; ;  ;  ; ;   ;    ;    ;;;;;;  ;;;  
+;   ;       ;;;   ;   ; ;  ;  ; ;   ;    ;    ;          ; 
+;   ;       ; ;   ;   ; ;  ;  ; ;; ;;    ;    ;      ;   ; 
+;    ;;;;  ;   ;   ;;;; ;  ;  ; ;;;;      ;;   ;;;;   ;;;  
+;                               ;                          
+;                               ;                          
+;                               ;                          
+
+(module+ examples ;; for bonus 
+  (provide p-rrbrr+rg p-b-rg-rrbrr+rg)
+
+  (define p-b-rg-rrbrr+rg (player (b:bag-add b-rrbrr b-wgwgw b-rg) 0 '[]))
+  (define p-rrbrr+rg (player (b:bag-add b-wgwgw b-rg) 1 (list c-rrbrr))))
+
 (module+ examples
   (define p-rg1      (player b-rg 1 '[]))
   (define p-rg2      (player b-rg 2 '[]))
@@ -178,10 +204,11 @@
   (define p-bbbbb3   (player b-bbbbb 3 '[]))
   (define p-4xb-3xg4 (player b-4xb-3xg 4 '[]))
   (define p-ggg5     (player b-ggg 5 '[]))
-  (define p-r6       (player b-r 6 '[]))
+  (define p-r6       (player b-r 6 `[,c-wgwgw ,c-wgwgw]))
   (define p-g7       (player b-g 7 '[]))
   (define p-ggb8     (player b-ggb 8 '[]))
-  (define p-gw9      (player b-gw 9 '[]))
+  (define p-gw9      (player b-rw 9 '[]))
+  (define p-gw0      (player b-gw 0 '[]))
   
   (define p-ggggg    (player b-ggggg 0 '[]))
   (define p-rgbrg    (player b-rgbrg 0 '[]))
@@ -190,7 +217,9 @@
   (define p-rrbrr-20 (player b-rrbrr PLAYER-WINS '[])))
 
 (module+ examples ;; from turn 
-  (provide p-rg-0 p-ggg-9 p-r-9 p-rg-9 p-rr-9 p-bbbbb-0 p-5b-5g-0)
+  (provide p-rg-0 p-ggg-9 p-r-9 p-rg-9 p-rr-9 p-bbbbb-0 p-5b-5g-0 p-rbwgy)
+
+  (define p-rbwgy (player (b:bag p:RED p:BLUE p:GREEN p:YELLOW p:WHITE) 11 '[]))
   
   (define p-5b-5g-0  (player (b:bag-add b-bbbbb b-ggggg) 0 '[]))
   (define p-bbbbb-0  (player b-bbbbb 0 '[]))
@@ -261,17 +290,28 @@
       (update-score p BONUS)
       p))
 
+(define (player-award-seychelles-bonus p)
+  (if (c:contains-all p:PEBBLES (player-cards p))
+      (update-score p (* 5 BONUS))
+      p))
+
 (define (player-award-rwb-on-distinct-cards p)
   (if (c:contains-on-separate-card (list p:RED p:WHITE p:BLUE) (player-cards p))
       (update-score p BONUS)
       p))
 
 (module+ test
+  (define s-bonus-cards (list c-rrbrr c-rgbrg c-ggggg c-wyrbb c-wyrbb))
+  (define s-bonus-player (player (b:bag) 11 s-bonus-cards))
+  (define *-bonus-player (player (b:bag) (+ 11 (* 5 BONUS)) s-bonus-cards))
   (define a-bonus-player (player (b:bag) 18 (list c-rrbrr  c-rgbrg  c-wyrbb)))
   (define +-bonus-player (player (b:bag) (+ 18 BONUS) (list c-rrbrr  c-rgbrg  c-wyrbb)))
   (define no-bonus-player (player (b:bag) 18 (list))))
 
-(module+ test 
+(module+ test
+  (check-equal? (player-award-seychelles-bonus s-bonus-player) *-bonus-player)
+  (check-equal? (player-award-seychelles-bonus no-bonus-player) no-bonus-player)
+
   (check-equal? (player-award-red-white-and-blue-bonus a-bonus-player) +-bonus-player)
   (check-equal? (player-award-none a-bonus-player) a-bonus-player)
 
