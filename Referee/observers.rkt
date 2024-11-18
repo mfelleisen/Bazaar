@@ -44,6 +44,7 @@
 
 (require (prefix-in c: Bazaar/Common/cards))
 (require (prefix-in e: Bazaar/Common/equations))
+(require (prefix-in p: Bazaar/Common/player))
 (require (prefix-in gs: Bazaar/Referee/game-state))
 (require (submod Bazaar/Referee/game-state json))
 (require 2htdp/universe)
@@ -253,6 +254,7 @@
   (define q (new failing-observer% [name 'q]))
   (define r (new failing-observer% [name 'r])))
 
+#;
 (module+ pict
   (apply referee/state (append (first (second 8Simple/)) (list (list q o p q r))))
 
@@ -261,7 +263,8 @@
   (send o show))
 
 (module+ pict
-  (run-scenario-with-observer 9Complex/ 7 o)
   #;
+  (run-scenario-with-observer 8Simple/ 3 o p:player-award-seychelles-bonus)
+  (run-scenario-with-observer rwb 1 o p:player-award-red-white-and-blue-bonus)
   (send o show))
 

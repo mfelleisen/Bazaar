@@ -208,7 +208,7 @@
   (define p-g7       (player b-g 7 '[]))
   (define p-ggb8     (player b-ggb 8 '[]))
   (define p-gw9      (player b-rw 9 '[]))
-  (define p-gw0      (player b-gw 0 '[]))
+  (define p-gw0      (player (b:bag-add b-gw b-wgwgw) 0 '[]))
   
   (define p-ggggg    (player b-ggggg 0 '[]))
   (define p-rgbrg    (player b-rgbrg 0 '[]))

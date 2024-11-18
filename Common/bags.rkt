@@ -140,7 +140,7 @@
   (define b-g   [bag p:GREEN])
   (define b-b   [bag p:BLUE])
   (define b-ggb [bag p:GREEN p:GREEN p:BLUE])
-  (define b-gw  [bag p:RED p:WHITE])
+  (define b-gw  [bag p:GREEN p:WHITE])
   (define b-rw  [bag p:RED p:WHITE])
   (define b-4xb-3xg [bag p:BLUE p:BLUE p:BLUE p:BLUE p:GREEN p:GREEN p:GREEN])
   (define b-rg      [bag p:RED p:GREEN])

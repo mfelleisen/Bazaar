@@ -110,7 +110,7 @@
                    ;; optional : #:award-bonus [Player -> Player]
                    -> [List [Listof Player] [Listof Player]]}
 (define (referee/state actor* equations gs0 (observer* `[]) #:award-bonus (aw p:player-award-none))
-  [time-out-limit 9.6]
+  ; [time-out-limit 9.6]
   (define mo (new mo:manage-observers%))
   (send mo add* observer*)
   (send mo state 'initial equations 'setup gs0)
@@ -318,6 +318,7 @@
   (define (ff x) (sort (map (λ (a) (send a name)) x) string<?))
   (define [default . x]    `[[] ,(ff x)])
   (define [adam . x]       `[["Adam"] ,(ff x)])
+  (define [carl . x]       `[["Carl"] ,(ff x)])
   (define [bettina . x]    `[["Bettina"] ,(ff x)])
   (define [adam-eve . x]   `[["Adam" "Eve"] ,(ff x)])
   (define [carl-adam . x]  `[["Adam" "Carl"] ,(ff x)])
@@ -482,6 +483,31 @@
   (9simple+ 9Complex/ (list j-t-k-d-f-g eq2 gs-6-players++++) (felix j t k) "large")
   (9simple+ 9Complex/ (list h-t-k-d-f-g eq2 gs-6-players++++) (default h t k) "win lose"))
 
+;                                     
+;   ;                                 
+;   ;                                 
+;   ;                                 
+;   ;;;;    ;;;   ; ;;   ;   ;   ;;;; 
+;   ;   ;  ;   ;  ;;  ;  ;   ;  ;     
+;   ;   ;  ;   ;  ;   ;  ;   ;  ;;;   
+;   ;   ;  ;   ;  ;   ;  ;   ;     ;; 
+;   ;   ;  ;   ;  ;   ;  ;   ;      ; 
+;   ;;;;    ;;;   ;   ;   ;;;;  ;;;;  
+;                                     
+;                                     
+;                                     
+
+(module+ examples
+  (provide rwb)
+
+  (setup-scenarios bonus+ rwb sey/)
+
+  (bonus+ rwb (list 2players `[,g=rrrr ,w=bbbb] gs-2-rwb--) [adam] "2 purchases")
+  (bonus+ rwb (list 2players '[] gs-2-rwb++) [adam] "2 purchases")
+  (bonus+ rwb (list 3players '[] gs-3-zeros) [carl] "simple7.2")
+  (bonus+ rwb (list o-p-v-x-a-q `[,ggb=rw] gs-6-players++) (default o p v x q) "simple8.3")
+  (bonus+ rwb (list 3players '[] gs-3-rwb) [adam] "bonus wins"))
+
 ;                                                                                      
 ;          ;                                                                           
 ;          ;                                                                 ;         
@@ -506,10 +532,10 @@
       (define/public (end winners drop-outs)
         (eprintf "the end:\n ~a\n ~a\n" winners drop-outs))))
 
-  (define (run-scenario-with-observer scenarios i observer)
+  (define (run-scenario-with-observer scenarios i observer [aw p:player-award-none])
     (match-define [list args expected msg] (list-ref scenarios (sub1 i)))
     (match-define [list actors equations gs] args)
-    (referee/state actors equations gs (list observer))
+    (referee/state actors equations gs (list observer) #:award-bonus aw)
     (eprintf "should yield ~a\n [~a]\n" expected msg))
 
   #;
@@ -531,20 +557,28 @@
 ;                                     
 
 (module+ test
-  #; {Symbol SimpleScenarios -> Void}
-  (define (run-scenario* t scenario*)
+  (define with-obs (list (new void-observer%)))
+
+  #; {Symbol GameScenarios -> Void}
+  (define (run-scenario* t scenario* [aw p:player-award-seychelles-bonus] [ob '[]])
     (define count 0)
-    (eprintf "--------------- ~a\n" t)
+    (eprintf "--------------- ~a  ~a\n" t (object-name aw))
     (for ([s scenario*] [i (in-naturals 1)])
       (set! count i) 
       (match-define (list args exp0 msg) s)
       (match-define (list players equations gs) args)
       (eprintf "-- test ~a  ~a: ~a\n" msg t i)
-      (define ob  (list (new void-observer%)))
-      (define aw  p:player-award-red-white-and-blue-bonus)
-      (check-equal? (dev/null (referee/state players equations gs #:award-bonus aw #;ob)) exp0 msg))
+      (check-equal? (dev/null (referee/state players equations gs #:award-bonus aw ob)) exp0 msg))
     (eprintf "done: ~a tests\n" count)))
 
+#;
+(module+ test
+  (run-scenario* 'bonus rwb p:player-award-red-white-and-blue-bonus with-obs)
+  (run-scenario* 'bonus rwb p:player-award-seychelles-bonus with-obs)
+  (run-scenario* 'bonus rwb p:player-award-none with-obs))
+
+
+; #; 
 (module+ test
   (run-scenario* 'simple Simple/)
   (run-scenario* 'complex Complex/))

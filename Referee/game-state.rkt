@@ -255,6 +255,21 @@
   (match-define [cons active others] (game-players gs))
   (struct-copy game gs [players (cons (f active y) others)]))
 
+;                                                          
+;                                                          
+;                                      ;;;                 
+;                                        ;                 
+;    ;;;   ;   ;  ;;;;  ;;;;;;  ;;;;     ;     ;;;    ;;;  
+;   ;;  ;   ; ;       ; ;  ;  ; ;; ;;    ;    ;;  ;  ;   ; 
+;   ;   ;;  ;;;       ; ;  ;  ; ;   ;    ;    ;   ;; ;     
+;   ;;;;;;   ;     ;;;; ;  ;  ; ;   ;    ;    ;;;;;;  ;;;  
+;   ;       ;;;   ;   ; ;  ;  ; ;   ;    ;    ;          ; 
+;   ;       ; ;   ;   ; ;  ;  ; ;; ;;    ;    ;      ;   ; 
+;    ;;;;  ;   ;   ;;;; ;  ;  ; ;;;;      ;;   ;;;;   ;;;  
+;                               ;                          
+;                               ;                          
+;                               ;                          
+
 (module+ examples
   (define gs0 (game b-ggggg (list) (list) (list (player+ p-r6 'unknown))))
   (define gs1 (game b-ggggg [list c-ggggg c-rrbrr c-rgbrg] (list) (list (player+ p-r6 'x))))
@@ -269,7 +284,7 @@
     (let ([cards3 [list c-ggggg* c-wgwgw c-wgwgw* c-ggggg c-ywywy c-ywywy*]]
           [bank   (b:bag-add b-r b-r)])
       (game bank (take cards3 4) (drop cards3 4) `(,(player+ p-bbbb3 'x) ,(player+ p-r6 'y)))))
-
+  
   (define gs-10++
     (let ([cards3 [list c-ggggg* c-wgwgw c-wgwgw* c-ggggg c-ywywy c-ywywy*]]
           [bank   (b:bag-add b-bbbb b-bbbbb b-r b-r b-r)])
@@ -277,7 +292,7 @@
 
   (define gs-10--
     (let ([cards3 [list c-ggggg* c-wgwgw c-wgwgw* c-ggggg c-ywywy c-ywywy*]]
-          [bank   (b:bag-add b-g b-gw)])
+          [bank   (b:bag-add b-g b-rw)])
       (game bank (take cards3 4) (drop cards3 4) `(,(player+ p-bbbb3 'x) ,(player+ p-bbbb3 'y)))))
 
   (define 6-players (map player+ (list p-ggb8 p-ggg5 p-r6 p-g7 p-gw9 p-4xb-3xg4) '[x y z a b c]))
@@ -292,6 +307,24 @@
   (define 3-0-players (map player+ (list p-ggggg p-rgbrg p-wyrbb) '[k l m]))
   (define gs-3-zeros (game b-rrbrr (list c-wyrbb c-ggggg) '[] 3-0-players))
   (define gs-3-zeros++ (game b-rrbrr (take cards2 4) (drop cards2 4) 3-0-players)))
+
+(module+ examples ;; bonus for 10 
+  (provide gs-3-rwb gs-2-rwb++ gs-2-rwb--)
+
+  (define gs-2-rwb--
+    (let ([vis (list c-rrbrr c-wgwgw c-wgwgw c-wgwgw)]
+          [inv (list c-bbbbb c-wgwgw c-wgwgw c-wgwgw c-wgwgw)])
+      (game (b:bag-add b-bbbb b-rrrr) vis inv `(,(player+ p-gw0 'w) ,(player+ p-bbbbb3 'x)))))
+
+  (define gs-2-rwb++
+    (let ([vis (list c-rrbrr c-wgwgw c-wgwgw c-wgwgw)]
+          [inv (list c-wgwgw c-wgwgw)])
+      (game (b:bag) vis inv `(,(player+ p-b-rg-rrbrr+rg 'w) ,(player+ p-bbbb3 'x)))))
+      
+  (define gs-3-rwb
+    (let ([vis (list c-wgwgw c-wgwgw c-wgwgw c-wgwgw)]
+          [inv (list c-wgwgw)])
+      (game (b:bag) vis inv `(,(player+ p-rrbrr+rg 'w) ,(player+ p-bbbb3 'x) ,(player+ p-r6 'y))))))
 
 (module+ examples ;; test scenarios
 
@@ -545,7 +578,14 @@
 ;; ---------------------------------------------------------------------------------------------------
 #; {GameState [#:award-bonus (Player -> Player)] -> [List [Listof Actor] [Listof Actor]] }
 (define (determine-winners-and-losers gs (award-bonus (λ (p) p)))
+
+  (eprintf "before ~a -->" (map player+-score (game-players gs)))
+
   (define players (map (player+-award-bonus award-bonus) (game-players gs)))
+
+  (eprintf " ~a\n" (map player+-score players))
+
+
   (define winners (if (empty? players) '[] (all-argmax player+-score players)))
   (define losers  (if (empty? players) '[] (set-subtract players winners)))
   (list (map player+-connection winners) (map player+-connection losers)))
