@@ -32,5 +32,6 @@
 (req->prov (only-in Bazaar/Referee/game-state game-struct->definition))
 (req->prov Bazaar/Player/strategies)
 (req->prov (submod Bazaar/Player/strategies json))
+(req->prov (submod Bazaar/Common/player json))
 (req->prov Bazaar/Player/mechanism)
 
