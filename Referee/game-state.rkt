@@ -309,8 +309,35 @@
   (define gs-3-zeros++ (game b-rrbrr (take cards2 4) (drop cards2 4) 3-0-players)))
 
 (module+ examples ;; bonus for 10 
-  (provide gs-3-rwb gs-2-rwb++ gs-2-rwb--)
+  (provide gs-3-rwb gs-2-rwb++ gs-2-rwb-- gs-2-sey gs-2-sey++ gs-6-sey gs-3-sey gs-3-sey++)
 
+  (define gs-3-sey++
+    (let ([vis (list c-wgwgw c-wgwgw c-wgwgw c-wgwgw)]
+          [inv (list c-rbbbb c-rbbbb c-rbbbb c-wgwgw c-wgwgw c-wgwgw)]
+          [ban (b:bag-add b-rrbrr b-rbbbb b-rbbbb b-rbbbb b-rbbbb )])
+      (game ban vis inv
+            `(,(player+ p-rrbrr+rg 'w) ,(player+ p-r6-sey++ 'y) ,(player+ p-r6-sey** 'x)))))
+
+  (define gs-3-sey
+    (let ([vis (list c-wgwgw c-wgwgw c-wgwgw c-wgwgw)]
+          [inv (list c-rbbbb c-rbbbb c-rbbbb c-wgwgw c-wgwgw c-wgwgw)]
+          [bank (b:bag-add b-rrbrr b-rbbbb b-rbbbb b-rbbbb b-rbbbb )])
+      (game bank vis inv `(,(player+ p-rrbrr+rg 'w) ,(player+ p-r6 'y) ,(player+ p-r6-sey 'x)))))
+
+  (define gs-6-sey
+    (let ([six-p (map player+ (list p-ggb8 p-ggg5  p-r6-sey p-g7 p-gw9 p-4xb-3xg4) '[x y z a b c])])
+      (game bank0 (take cards2 4) (drop cards2 4) six-p)))
+
+  (define gs-2-sey++
+    (let ([vis (list c-rrbrr c-wgwgw c-wgwgw)]
+          [inv (list c-wgwgw c-wgwgw c-bbbbb c-wgwgw c-wgwgw c-bbbbb c-bbbbb)])
+      (game (b:bag-add b-bbbb b-rrrr) vis inv `(,(player+ p-gw0+ 'w) ,(player+ p-bbbbb19++ 'x)))))
+
+  (define gs-2-sey
+    (let ([vis (list c-rrbrr c-wgwgw c-wgwgw c-bbbbb)]
+          [inv (list c-bbbbb c-wgwgw c-wgwgw c-wgwgw c-wgwgw)])
+      (game (b:bag-add b-bbbb b-rrrr) vis inv `(,(player+ p-gw0+ 'w) ,(player+ p-bbbbb3+ 'x)))))
+  
   (define gs-2-rwb--
     (let ([vis (list c-rrbrr c-wgwgw c-wgwgw c-wgwgw)]
           [inv (list c-bbbbb c-wgwgw c-wgwgw c-wgwgw c-wgwgw)])

@@ -263,8 +263,10 @@
   (send o show))
 
 (module+ pict
+  
+  (run-scenario-with-observer sey 1 o p:player-award-seychelles-bonus)
+
   #;
-  (run-scenario-with-observer 8Simple/ 3 o p:player-award-seychelles-bonus)
-  (run-scenario-with-observer rwb 1 o p:player-award-red-white-and-blue-bonus)
+  (run-scenario-with-observer rwb 5 o p:player-award-red-white-and-blue-bonus)
   (send o show))
 

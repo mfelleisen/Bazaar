@@ -85,6 +85,7 @@
    g=rrrr
    ggg=b
    rg=bbbb rg=bbbb-
+   wg=bbbb 
    ggg=r   ggg=r-
    ggb=rw  ggb=rw-)
   
@@ -193,6 +194,7 @@
 #; {type Side     = b:Bag || (<= 1 (bag-size b) 4)}
 
 (module+ examples
+  (define wg=bbbb (1eq b-gw b-bbbb))
   (define rg=bbbb (1eq b-rg b-bbbb))
   (define rg=bbbb- (1eq-flip rg=bbbb))
   (define g-r=bbbb (1eq (reverse b-rg) b-bbbb))

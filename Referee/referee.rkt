@@ -323,6 +323,7 @@
   (define [adam-eve . x]   `[["Adam" "Eve"] ,(ff x)])
   (define [carl-adam . x]  `[["Adam" "Carl"] ,(ff x)])
   (define [eve . x]        `[["Eve"] ,(ff x)])
+  (define [carl-eve . x]   `[["Carl" "Eve"] ,(ff x)])
   (define [felix . x]      `[["Felix"] ,(ff x)]))
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -498,14 +499,20 @@
 ;                                     
 
 (module+ examples
-  (provide rwb)
+  (provide rwb sey)
 
-  (setup-scenarios bonus+ rwb sey/)
+  (setup-scenarios bonus+ rwb sey)
 
-  (bonus+ rwb (list 2players `[,g=rrrr ,w=bbbb] gs-2-rwb--) [adam] "2 purchases")
+  (bonus+ sey (list 3players `[,wg=bbbb ,r=bbbb] gs-3-sey++) [carl-eve] "2 sey winners")
+  (bonus+ sey (list 3players `[,wg=bbbb] gs-3-sey) [carl] "trades, come behind from second")
+  (bonus+ sey (list o-p-v-x-a-q `[,ggb=rw] gs-6-sey) (default o p v x q) "simple8.3/sey winner drops")
+  (bonus+ sey (list 2players `[,g=rrrr ,w=bbbb] gs-2-sey++) [adam] "finisher/sey winner sey")
+  (bonus+ sey (list 2players `[,g=rrrr ,w=bbbb] gs-2-sey) [adam] "2 exchanges & purchases, sey")
+
+  (bonus+ rwb (list 2players `[,g=rrrr ,w=bbbb] gs-2-rwb--) [adam] "2 exchanges & purchases, rwb")
   (bonus+ rwb (list 2players '[] gs-2-rwb++) [adam] "2 purchases")
   (bonus+ rwb (list 3players '[] gs-3-zeros) [carl] "simple7.2")
-  (bonus+ rwb (list o-p-v-x-a-q `[,ggb=rw] gs-6-players++) (default o p v x q) "simple8.3")
+  (bonus+ rwb (list o-p-v-x-a-q `[,ggb=rw] gs-6-players++) (default o p v x q) "simple8.3/rwb")
   (bonus+ rwb (list 3players '[] gs-3-rwb) [adam] "bonus wins"))
 
 ;                                                                                      
@@ -571,14 +578,23 @@
       (check-equal? (dev/null (referee/state players equations gs #:award-bonus aw ob)) exp0 msg))
     (eprintf "done: ~a tests\n" count)))
 
-#;
-(module+ test
+
+(module+ test ;; seychelles 
+  (run-scenario* 'bonus sey p:player-award-seychelles-bonus with-obs)
+  ;; check for differences 
+  #;
+  (run-scenario* 'bonus sey p:player-award-red-white-and-blue-bonus with-obs)
+  #;
+  (run-scenario* 'bonus sey p:player-award-none with-obs))
+
+(module+ test ;; rwb 
   (run-scenario* 'bonus rwb p:player-award-red-white-and-blue-bonus with-obs)
+  ;; check for differences 
+  #; 
   (run-scenario* 'bonus rwb p:player-award-seychelles-bonus with-obs)
+  #;
   (run-scenario* 'bonus rwb p:player-award-none with-obs))
 
-
-; #; 
 (module+ test
   (run-scenario* 'simple Simple/)
   (run-scenario* 'complex Complex/))

@@ -51,8 +51,9 @@
 (module+ examples
   (provide
    p-rg1 p-rg2
-   p-bbbb3 p-bbbbb3
-   p-4xb-3xg4 p-ggg5 p-r6 p-g7 p-ggb8 p-gw9 p-gw0 p-ggggg p-rgbrg p-wyrbb p-rrbrr-20))
+   p-bbbb3 p-bbbbb3 p-bbbbb3+  p-bbbbb19++
+   p-4xb-3xg4 p-ggg5 p-r6  p-r6-sey p-r6-sey++ p-r6-sey**
+   p-g7 p-ggb8 p-gw9 p-gw0 p-gw0+ p-ggggg p-rgbrg p-wyrbb p-rrbrr-20))
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ json
@@ -202,13 +203,19 @@
   (define p-rg2      (player b-rg 2 '[]))
   (define p-bbbb3    (player b-bbbb 3 '[]))
   (define p-bbbbb3   (player b-bbbbb 3 '[]))
+  (define p-bbbbb3+  (player b-bbbbb 3 `[,c-yyrwg]))
+  (define p-bbbbb19++ (player b-bbbbb 19 `[,c-yyrwg ,c-yyrwg ,c-yyrwg ,c-yyrwg ,c-yyrwg ,c-yyrwg]))
   (define p-4xb-3xg4 (player b-4xb-3xg 4 '[]))
   (define p-ggg5     (player b-ggg 5 '[]))
   (define p-r6       (player b-r 6 `[,c-wgwgw ,c-wgwgw]))
+  (define p-r6-sey++ (player (b:bag-add b-r b-gw) 6 `[,c-wgwgw ,c-ywywy]))
+  (define p-r6-sey** (player (b:bag-add b-r b-r) 6 `[,c-wgwgw ,c-wgwgw ,c-ywywy]))
+  (define p-r6-sey   (player b-r 6 `[,c-wgwgw ,c-wgwgw ,c-ywywy]))
   (define p-g7       (player b-g 7 '[]))
   (define p-ggb8     (player b-ggb 8 '[]))
   (define p-gw9      (player b-rw 9 '[]))
   (define p-gw0      (player (b:bag-add b-gw b-wgwgw) 0 '[]))
+  (define p-gw0+     (player (b:bag-add b-gw b-wgwgw) 1 `[,c-ywywy]))
   
   (define p-ggggg    (player b-ggggg 0 '[]))
   (define p-rgbrg    (player b-rgbrg 0 '[]))
