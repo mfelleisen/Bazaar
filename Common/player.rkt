@@ -65,7 +65,10 @@
    jsexpr->player
 
    score*->jsexpr
-   jsexpr->score*))
+   jsexpr->score*
+
+   bonus->jsexpr
+   jsexpr->bonus))
 
 ;                                                                                      
 ;       ;                                  ;                                           
@@ -275,11 +278,16 @@
          [s (b:bag-add s plus)])
     (player s score c)))
 
-;; ---------------------------------------------------------------------------------------------------
 #; {Player Natural -> Player}
 (define (update-score p delta)
   (match-define [player wallet score c] p)
   (player wallet (+ score delta) c))
+
+(module+ test 
+  (check-equal? (update-score p-rg1 1) p-rg2)
+
+  (check-equal? (update-pebbles p-bbbb3 `[,p:BLUE] '[]) p-bbbbb3)
+  (check-equal? (update-pebbles p-bbbbb3 '[] `[,p:BLUE]) p-bbbb3))
 
 ;; ---------------------------------------------------------------------------------------------------
 (define (winning-points? p)
@@ -382,6 +390,22 @@
   (def/jsexpr-> score*
     #:array [(list (app jsexpr->natural (? natural? n)) ...) n]))
 
+(module+ json
+  (define RWB "RWB" #; (~a (object-name player-award-red-white-and-blue-bonus)))
+  (define SEY "SEY" #; (~a (object-name player-award-seychelles-bonus)))
+  
+  (define (bonus->jsexpr p)
+    (cond
+      [(equal? p player-award-red-white-and-blue-bonus) RWB]
+      [(equal? p player-award-seychelles-bonus) SEY]
+      [else (eprintf "~a award policy expected, given ~a" 'policy->jsexpr p)]))
+
+  (define (jsexpr->bonus p)
+    (cond
+      [(equal? p RWB) player-award-red-white-and-blue-bonus]
+      [(equal? p SEY) player-award-seychelles-bonus]
+      [else #false])))
+
 ;                                     
 ;                                     
 ;     ;                    ;          
@@ -398,19 +422,19 @@
 ;                                     
 
 (module+ pict
-  (render p-r6 #:name "clown"))
+  (render p-r6 #:name "clown pict test"))
 
-(module+ test
+(module+ test ;; for JSON functions 
   (check-equal? (jsexpr->player* (player*->jsexpr (list p-r6))) (list p-r6))
   (check-equal? (jsexpr->player (player->jsexpr p-r6)) p-r6)
-
-  (check-equal? (update-score p-rg1 1) p-rg2)
-
-  (check-equal? (update-pebbles p-bbbb3 `[,p:BLUE] '[]) p-bbbbb3)
-  (check-equal? (update-pebbles p-bbbbb3 '[] `[,p:BLUE]) p-bbbb3)
-
+  
   (define lon '[1 2 3])
   (check-equal? (jsexpr->score* (score*->jsexpr lon)) lon)
 
   (define lon1 '[1 "a" 3])
-  (check-false (jsexpr->score* (score*->jsexpr lon1))))
+  (check-false (jsexpr->score* (score*->jsexpr lon1)))
+
+  (check-equal? (jsexpr->bonus (bonus->jsexpr player-award-red-white-and-blue-bonus))
+                player-award-red-white-and-blue-bonus)
+  (check-equal? (jsexpr->bonus (bonus->jsexpr player-award-seychelles-bonus))
+                player-award-seychelles-bonus))
