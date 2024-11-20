@@ -67,6 +67,8 @@
    score*->jsexpr
    jsexpr->score*
 
+   RWB SEY
+
    bonus->jsexpr
    jsexpr->bonus))
 
@@ -134,7 +136,11 @@
   b)
 
 (define (<20 n)
-  (and n (< n 20) n))
+  (unless n
+    (error 'jsexpr->score "ill-formed score (not a natural number)" n))
+  (unless (< n 20)
+    (error 'jsexpr->score "invalid score (not below 20); given ~a" n))
+  n)
 
 (struct/description
  player
