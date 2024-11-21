@@ -229,7 +229,7 @@
      #false]
     [(not (pebbles#? (+ (b:bag-size player-pebbles) (b:bag-size bank))))
      (eprintf "~a: objects fails to satisfy pebble-validity conditions"  'jsexpr->game)
-     (eprintf "~a visible cards, ~a cards\n" (b:bag-size player-pebbles) (b:bag-size bank))
+     (eprintf "~a player pebbless, ~a bank pebbles\n" (b:bag-size player-pebbles) (b:bag-size bank))
      #false]
     [else #true]))
 

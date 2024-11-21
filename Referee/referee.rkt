@@ -110,7 +110,9 @@
                    ;; optional : #:award-bonus [Player -> Player]
                    -> [List [Listof Player] [Listof Player]]}
 (define (referee/state actor* equations gs0 (observer* `[]) #:award-bonus (aw p:player-award-none))
-  ; [time-out-limit 9.6]
+  #;
+  [time-out-limit 9.6]
+  (eprintf "~a\n" [time-out-limit])
   (define mo (new mo:manage-observers%))
   (send mo add* observer*)
   (send mo state 'initial equations 'setup gs0)
@@ -575,7 +577,7 @@
       (match-define (list args exp0 msg) s)
       (match-define (list players equations gs) args)
       (eprintf "-- test ~a  ~a: ~a\n" msg t i)
-      (check-equal? (dev/null (referee/state players equations gs #:award-bonus aw ob)) exp0 msg))
+      (check-equal? (values #; dev/null (referee/state players equations gs #:award-bonus aw ob)) exp0 msg))
     (eprintf "done: ~a tests\n" count)))
 
 
