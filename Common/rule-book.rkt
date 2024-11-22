@@ -127,7 +127,7 @@
 ;; check legality of a trades relative to the equations and state of the wallet/bank
 (define (legal-trades-request equations trades ts)
   (let/ec failure
-    (unless (subset? trades equations) (failure #false))
+    (unless (subset? trades (append equations (map e:1eq-flip equations))) (failure #false))
     (define bank0   (t:turn-bank ts))
     (define wallet0 (p:player-wallet (t:turn-active ts)))
     (for/fold ([wallet wallet0] [bank bank0] #:result (list wallet bank)) ([t trades])
@@ -136,6 +136,8 @@
       (unless (b:subbag? left wallet) (failure #false))
       (unless (b:subbag? right bank) (failure #false))
       (b:bag-transfer wallet bank left right))))
+
+(require SwDev/Debugging/spy)
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ examples
@@ -170,8 +172,6 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ test
-  (check-equal? (list rg=bbbb) (list rg=bbbb-) "regression")
-
   ;; tests for the major entry point
   (check-equal? (legal-pebble-or-trade-request '() #f t1) `[,(b:bag RED RED) []])
   (check-false (legal-pebble-or-trade-request '() #f t2))
@@ -190,9 +190,22 @@
         [(? boolean? expected)
          (check-false (legal-trades equations trades turn) msg)]
         [(list wallet bank)
-         (check b:bag-equal? (first (legal-trades equations trades turn)) wallet (~a msg "/wallet"))
-         (check b:bag-equal? (second (legal-trades equations trades turn)) bank (~a msg "/bank"))])))
+         (define x (legal-trades equations trades turn))
+         (check-true (cons? x) (~a msg "/is it legal"))
+         (check b:bag-equal? (first x) wallet (~a msg "/wallet"))
+         (check b:bag-equal? (second x) bank (~a msg "/bank"))])))
 
+  (define (show i equations trades turn expected)
+    (eprintf "scenario ~a\n" i)
+    (pretty-print (e:render* equations) (current-error-port))
+    (eprintf "   vs   \n")
+    (pretty-print (e:render* trades) (current-error-port))
+    (eprintf "   vs   \n")
+    (pretty-print (t:render turn) (current-error-port))
+    (eprintf "expected ~a\n" expected))
+    
+
+  (run-trades* 'TradeTests/ (list (third TradeTests/)))
   (run-trades* 'TradeTests/ TradeTests/)
   (run-trades* 'Students/ ForStudents/))
 
