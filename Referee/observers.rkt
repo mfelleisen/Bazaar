@@ -47,6 +47,7 @@
 (require (prefix-in p: Bazaar/Common/player))
 (require (prefix-in gs: Bazaar/Referee/game-state))
 (require (submod Bazaar/Referee/game-state json))
+(require (submod Bazaar/Common/equations json))
 (require 2htdp/universe)
 (require (only-in 2htdp/image save-image))
 (require (except-in pict rotate circle))
@@ -83,8 +84,12 @@
     (field
      [*commands
       `(["x"     ,(λ (i) -999) "exit"]
-        ["s"     ,(λ (i) (save-state third i save-image) i) "save PNG"]
-        [" "     ,(λ (i) (save-state (compose game->jsexpr first) i save-json)  i) "save GAME STATE"]
+        ["s"     ,(λ (i) (save-state third i save-image) i)
+                 "save PNG"]
+        [" "     ,(λ (i) (save-state
+                          (λ (gs) `[,(game->jsexpr (first gs)) ,(equations->jsexpr olde)])
+                          i save-json)  i)
+                 "save GAME STATE"]
         ["left"  ,(λ (i) (sub1/nat i)) "←"]
         ["right" ,(λ (i) (add1/nat i)) "→"])])
    
@@ -97,6 +102,8 @@
     (field [*cache #false])
     (field [*size  -1])
     (field [*eqs  '()])
+    (field [olde  '()])
+           
 
     ;; -----------------------------------------------------------------------------------------------
     #; {Any GameState -> Void}
@@ -108,6 +115,7 @@
     #; {-> Natural}
     (define/public (end winners drop-outs)
       (when (cons? *live-list)
+        (set! olde *eqs)
         (set! *eqs (e:render* *eqs))
         (define cached-states (reverse *live-list))
         (populate-cache-with-picts cached-states)
@@ -156,11 +164,14 @@
     ;; EFFECT set up *t-index
     (define/private (frame-all-to-keep-steady)
       (define cache  (vector->list *cache))
-      (define width  (pict-width (second (argmax (compose pict-width second) cache))))
-      (define height (pict-height (second (argmax (compose pict-height second) cache))))
+      (define width  (min (pict-width (second (argmax (compose pict-width second) cache))) 1900))
+      (define height (min (pict-height (second (argmax (compose pict-height second) cache))) 1900))
       (define area   (rectangle (+ width 8) (+  height 8) #:border-color "salmon" #:border-width 2))
       (for ([x (in-vector *cache)] [i (in-naturals)])
         (match-define [list gs pict] x)
+        (when (>= (pict-height pict) 2000)
+          (pretty-print pict (current-error-port))
+          (set! pict (scale pict .2)))
         (define framed (lt-superimpose area (ht-append (blank 4 1) (vl-append (blank 1 4) pict))))
         (vector-set! *cache i (list gs framed))))
       
@@ -263,7 +274,10 @@
   (send o show))
 
 (module+ pict
-  
+
+  (run-scenario-with-observer 9Simple/ 3 o)
+
+  #;
   (run-scenario-with-observer sey 1 o p:player-award-seychelles-bonus)
 
   #;
