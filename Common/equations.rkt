@@ -78,6 +78,8 @@
 ;; ---------------------------------------------------------------------------------------------------
 (module+ examples
   (provide
+   www=yy
+   ww=yyy
    r=w
    w=bbbb
    r=bbbb
@@ -180,9 +182,7 @@
        (define yleft (1eq-left y))
        (define xright (1eq-right x))
        (define yright (1eq-right y))
-       (or
-        (and (b:bag-equal? xleft yleft) (b:bag-equal? xright yright))
-        (and (b:bag-equal? xleft yright) (b:bag-equal? xright yleft)))))
+       (and (b:bag-equal? xleft yleft) (b:bag-equal? xright yright))))
    (define (hash-proc x re-hash)
      (+ (* 1000 (re-hash (1eq-left x)))
         (* 10 (re-hash (1eq-right x)))))
@@ -194,6 +194,9 @@
 #; {type Side     = b:Bag || (<= 1 (bag-size b) 4)}
 
 (module+ examples
+  (define www=yy (1eq (b:bag p:WHITE p:WHITE p:WHITE) (b:bag p:YELLOW p:YELLOW)))
+  (define ww=yyy (1eq (b:bag p:WHITE p:WHITE) (b:bag p:YELLOW p:YELLOW p:YELLOW)))
+  
   (define wg=bbbb (1eq b-gw b-bbbb))
   (define rg=bbbb (1eq b-rg b-bbbb))
   (define rg=bbbb- (1eq-flip rg=bbbb))
@@ -435,10 +438,7 @@
   (check-true (equations-equal? lo-1-equation lo-1-equation))
 
   (define lo-1-equation& [list [1eq '[a b a] '[c]]])
-  (check-true (equations-equal? lo-1-equation& lo-1-equation))
-
-  (define lo-1-equation-swapped [list [1eq '[c] '[a b a]]])
-  (check-true (equations-equal? lo-1-equation& lo-1-equation-swapped)))
+  (check-true (equations-equal? lo-1-equation& lo-1-equation)))
   
 
 (module+ test ;; json testing 
