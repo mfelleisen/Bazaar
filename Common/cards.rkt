@@ -39,7 +39,7 @@
      
   (provide c-rrbrr  c-rgbrg  c-wyrbb  c-ggggg  c-rbbbb c-rbbbb*   c-rgggg c-rgggg* c-bbbbb
            c-ywywy c-ywywy* c-rrbrr* c-rgbrg* c-wyrbb* c-ggggg* c-yyrwg c-yyrwg* c-bbbbb*
-           c-wgwgw c-wgwgw*
+           c-wgwgw c-wgwgw* c-yyyyy*
            c-bad))
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -167,6 +167,7 @@
   (define c-wyrbb* (card b-wyrbb #true))
 
   (define c-ywywy  (card b-ywywy #false))
+  (define c-yyyyy*  (card b-yyyyy #true))
   (define c-ywywy* (card b-ywywy #true))
   (define c-wgwgw  (card b-wgwgw #false))
   (define c-wgwgw* (card b-wgwgw #true))
