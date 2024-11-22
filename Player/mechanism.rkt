@@ -433,7 +433,7 @@
   (let* ([f (retrieve-factory "wallet-cannot-trade" cheater-table-for-8)]
          [a (create-player "ouch" #:bad f)])
     (send a setup `[,r=bbbb])
-    (check-equal? (send a request-pebble-or-trades ts0) (list r=bbbb)))
+    (check-equal? (send a request-pebble-or-trades ts0) (list (e:1eq-flip r=bbbb))))
 
   (let* ([f (retrieve-factory "bank-cannot-trade" cheater-table-for-8)]
          [a (create-player "ouch" #:bad f)])
