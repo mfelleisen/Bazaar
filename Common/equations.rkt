@@ -285,6 +285,26 @@
   (check-false (1eq<? ggg=r rg=bbbb))
   (check-false (1eq<? ggg=r ggg=r-))
 
+  (check-true
+   (equations<? (list (1eq-flip ggg=b) ggb=rw w=bbbb (1eq-flip ggg=b))
+                (list ggb=rw (1eq-flip ggg=b) (1eq-flip ggg=b) w=bbbb)) "grace failing")
+  (check-false
+   (equations<? (list ggb=rw (1eq-flip ggg=b) (1eq-flip ggg=b) w=bbbb)
+                (list (1eq-flip ggg=b) ggb=rw w=bbbb (1eq-flip ggg=b))) "grace failing")
+
+  (check-true
+   (equations<? (list (1eq-flip ggg=b) ggb=rw (1eq-flip ggg=b) w=bbbb)
+                (list ggb=rw (1eq-flip ggg=b) (1eq-flip ggg=b) w=bbbb)) "grace failing")
+
+  (check-false
+   (equations<? (list ggb=rw (1eq-flip ggg=b) (1eq-flip ggg=b) w=bbbb)
+                (list (1eq-flip ggg=b) ggb=rw (1eq-flip ggg=b) w=bbbb)) "grace failing")
+
+  (check-true
+   (equations<? (list (1eq-flip ggg=b) ggb=rw (1eq-flip ggg=b) w=bbbb)
+                (list ggb=rw (1eq-flip ggg=b) (1eq-flip ggg=b) w=bbbb)) "grace failing")
+  
+  
   (check-true  (equations<? (list ggg=r- r=bbbb)  (list r=bbbb w=bbbb)))
   (check-true  (equations<? (list r=bbbb r=bbbb)  (list r=gggg r=gggg)))
   (check-false (equations<? [list rg=bbbb ggg=r]  (list rg=bbbb ggg=r-)))
