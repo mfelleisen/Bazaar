@@ -470,6 +470,26 @@
          [step #; 3 (tie-breaker (list smallest-trade) step #:continue #false)])
     step))
 
+(module+ test
+  (define c
+    (new collector%
+         [e0 (exchange '() (f-buy-cards '[] (b:bag) purchase-points))]
+         [score (compose purchase-points exchange-purchase)]
+         [break tie-breaker-trade-then-purchase]))
+
+  (require (only-in (submod Bazaar/Common/equations examples) www=yy ww=yyy))
+
+  (define ex1 (exchange `[,www=yy ,ww=yyy] (purchase `[,c-yyyyy*] 8 (b:bag))))
+  (define ex2 (exchange `[,ww=yyy ,www=yy] (purchase `[,c-yyyyy*] 8 (b:bag))))
+
+  '----------------------
+  (send c add-if-better ex1)
+  (send c add-if-better ex2)
+  (check-equal? ex1 ex2)
+  '----------------------)
+
+
+
 ;                                     
 ;                                     
 ;     ;                    ;          
