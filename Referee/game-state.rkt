@@ -220,15 +220,15 @@
 ;; a game state created from JSON may violate validity checks 
 (define (from-json-game-integrity gs)
   (match-define [game bank visible cards players] gs)
-  (define player-pebbles (map (compose p:player-wallet player+-player) players))
+  (define player-pebbles (map (compose b:bag-size  p:player-wallet player+-player) players))
   (cond
     [(or (and (< (length visible) VISIBLE#) (cons? cards))
          (not (cards#? (+ (length visible) (length cards)))))
      (eprintf "~a: objects fails to satisfy card-validity conditions\n"  'jsexpr->game)
      (eprintf "~a visible cards, ~a cards\n" (length visible) (length cards))
      #false]
-    [(not (pebbles#? (+ (b:bag-size player-pebbles) (b:bag-size bank))))
-     (eprintf "~a: objects fails to satisfy pebble-validity conditions"  'jsexpr->game)
+    [(not (pebbles#? (+ (apply + player-pebbles) (b:bag-size bank))))
+     (eprintf "~a: objects fails to satisfy pebble-validity conditions\n"  'jsexpr->game)
      (eprintf "~a player pebbless, ~a bank pebbles\n" (b:bag-size player-pebbles) (b:bag-size bank))
      #false]
     [else #true]))
