@@ -52,7 +52,7 @@
            ;; for strategies
            b-6g-3r-4b b-2r-2y-1w b-3r-2y-1w b-4r-2y-1w
            ;; for cards 
-           b-bbbbb b-ggggg b-rgbrg b-wyrbb b-rrbrr b-rbbbb b-rgggg b-yyrwb b-ywywy b-wgwgw
+           b-bbbbb b-ggggg b-yyyyy b-rgbrg b-wyrbb b-rrbrr b-rbbbb b-rgggg b-yyrwb b-ywywy b-wgwgw
            b-full))
 
 
@@ -121,6 +121,7 @@
   ;; usable for cards 
   (define b-rrbrr [bag p:RED p:RED p:BLUE p:RED p:RED])
   (define b-ggggg (bag p:GREEN p:GREEN p:GREEN p:GREEN p:GREEN))
+  (define b-yyyyy (bag p:YELLOW p:YELLOW p:YELLOW p:YELLOW p:YELLOW))
   (define b-wgwgw (bag p:WHITE p:GREEN p:WHITE p:GREEN p:WHITE))
   (define b-ywywy (bag p:YELLOW p:WHITE p:YELLOW p:WHITE p:YELLOW))
 
