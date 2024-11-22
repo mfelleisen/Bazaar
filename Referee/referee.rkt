@@ -577,7 +577,8 @@
       (match-define (list args exp0 msg) s)
       (match-define (list players equations gs) args)
       (eprintf "-- test ~a  ~a: ~a\n" msg t i)
-      (check-equal? (values #; dev/null (referee/state players equations gs #:award-bonus aw ob)) exp0 msg))
+      (parameterize ([time-out-limit 1.6])
+        (check-equal? (dev/null (referee/state players equations gs #:award-bonus aw ob)) exp0 msg)))
     (eprintf "done: ~a tests\n" count)))
 
 
