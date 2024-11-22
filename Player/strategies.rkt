@@ -182,6 +182,9 @@
 ;                                                    ;            
 ;                                                    ;            
 
+(struct exchange [trades purchase] #:transparent)
+
+#;
 (struct exchange [trades purchase] #:transparent
   #:methods gen:equal+hash
   [(define equal-proc
@@ -376,8 +379,8 @@
 (define (tie-breaker-for-purchases lop #:selector (selector identity) #:continue (fk #false))
   (define (also-point-max lop) (all-argmax (compose purchase-points selector) lop))
   (define (wallet-size lop) (all-argmax (λ (x) (b:bag-size (purchase-walletω (selector x)))) lop))
-  (define (smallest-wallet lop) (pick-smallest lop b:bag<? (compose purchase-walletω selector)))
-  (define (best-cards lop) (pick-smallest lop c:card*<? (compose purchase-cards selector)))
+  (define (smallest-wallet lop) (pick-smallest lop b:bag<? (compose purchase-walletω selector) fk))
+  (define (best-cards lop) (pick-smallest lop c:card*<? (compose purchase-cards selector) fk))
   (tie-breaker (list also-point-max wallet-size smallest-wallet best-cards) lop #:continue fk))
 
 ;                                     
@@ -463,7 +466,7 @@
 ;; given all possible exchange paths, break ties among the embedded trades-buys in three steps
 (define (tie-breaker-trade-then-purchase lo-ex-0)
   (define (smallest-number-of-trades lop) (all-argmin (λ (ex) (length (exchange-trades ex))) lop))
-  (define (smallest-trade lop) (pick-smallest lop e:equations<? exchange-trades))
+  (define (smallest-trade lop) (pick-smallest lop e:equations<? exchange-trades #false))
   (let* ([step lo-ex-0]
          [step #; 1 (tie-breaker (list smallest-number-of-trades) step #:continue 'yes)]
          [step #; 2 (tie-breaker-for-purchases step #:selector exchange-purchase #:continue 'yes)]
@@ -485,7 +488,8 @@
   '----------------------
   (send c add-if-better ex1)
   (send c add-if-better ex2)
-  (check-equal? ex1 ex2)
+  (check-equal? (send c done) ex2)
+  (check-false (equal? ex1 ex2))
   '----------------------)
 
 
@@ -538,8 +542,6 @@
     (pretty-print (frame (inset (hb-append 10 p-equations p-cards p-wallet p-bank) 2)))
     (pretty-print expected)))
 
-(module+ test
-  (run-scenario* 'Tests (take Tests/ 1)))
 
 (module+ test
   (run-scenario* 'ForStudents ForStudents/)

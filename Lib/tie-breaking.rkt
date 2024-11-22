@@ -19,7 +19,8 @@
    ;; ensure that the remainder is "above" 
    (->i ([l (and/c cons? (listof #;{X} any/c))]
          [< (-> #;{Y} any/c #;{Y} any/c boolean?)]
-         [s (-> #;{X} any/c #;{Y} any/c)])
+         [s (-> #;{X} any/c #;{Y} any/c)]
+         [? any/c])
         (r (and/c cons? (listof any/c))))]
   
   [tie-breaker
@@ -76,14 +77,14 @@
 ;   ;                                                                                         
 ;   ;                                                                                         
 
-(define (pick-smallest lox < selector)
+(define (pick-smallest lox < selector fk)
   (define sorted     (sort lox < #:key selector))
   (define one        (selector (first sorted)))
   (define all-equals (takef sorted (λ (x) (equal? (selector x) one))))
   (define remainder  (drop sorted (length all-equals)))
-  (if (or (empty? remainder) (< one (selector (first remainder))))
-      all-equals
-      (show-tie-breaking-problem '() lox [list 'all: all-equals 'rem: remainder])))
+  (cond
+    [(or fk (empty? remainder) (< one (selector (first remainder)))) all-equals]
+    [else (show-tie-breaking-problem '() lox [list 'all: all-equals 'rem: remainder])]))
 
 ;                                                                 
 ;                                                                 
