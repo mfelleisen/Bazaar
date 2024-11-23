@@ -22,9 +22,11 @@
 (provide
  (contract-out
   [referee/state
-   (->i ([players (listof player/c)] [eqs (listof e:1eq?)] [gs gs:game?])
-        ([observers (listof any/c)]
-         #:award-bonus (aw  any/c))
+   (->i ([players (listof player/c)]
+         [eqs     (listof e:1eq?)]
+         [gs      gs:game?])
+        ((bonus     any/c)
+         [observers (listof any/c)])
         #:pre/name (players) "players must have distince names"
         (distinct? (map (λ (p) (send p name)) players))
         #:pre/name (gs players) "matching number of players"
@@ -109,7 +111,7 @@
                    ;; optional : [Listof Observer]
                    ;; optional : #:award-bonus [Player -> Player]
                    -> [List [Listof Player] [Listof Player]]}
-(define (referee/state actor* equations gs0 (observer* `[]) #:award-bonus (aw p:player-award-none))
+(define (referee/state actor* equations gs0 (aw p:player-award-none) (observer* `[]))
   #;
   [time-out-limit 9.6]
   (eprintf "~a\n" [time-out-limit])
@@ -578,7 +580,7 @@
       (match-define (list players equations gs) args)
       (eprintf "-- test ~a  ~a: ~a\n" msg t i)
       (parameterize ([time-out-limit 1.6])
-        (check-equal? (dev/null (referee/state players equations gs #:award-bonus aw ob)) exp0 msg)))
+        (check-equal? (dev/null (referee/state players equations gs aw ob)) exp0 msg)))
     (eprintf "done: ~a tests\n" count)))
 
 

@@ -19,7 +19,7 @@
  #; {Player -> Boolean}
  winning-points?
 
- #; {Player -> N}
+ #; {Player -> Player}
  ;; update this player with a bonus if it collected the appropriate RWB cards 
  player-award-red-white-and-blue-bonus
  player-award-seychelles-bonus

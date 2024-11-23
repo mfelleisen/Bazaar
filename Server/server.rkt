@@ -31,7 +31,7 @@
    ;;   (a production server would have a "wait in line" queue for late comers; and it would restart.)
    ;; 
    ;; runs a referee on the players that signed up properly port# plus the house players (if any) 
-   (->i ([refc     (list/c e:equations? gs:game?)]
+   (->i ([refc     (list/c e:equations? gs:game? any/c #;bonus-function)]
          [confg    server-config/c])
         ([ordering (-> list? list?)]
          [plyrs    list?]
@@ -68,6 +68,7 @@
   (require (submod ".."))
   (require (only-in (submod Bazaar/Common/equations examples) ggb=rw))
   (require (submod Bazaar/Referee/game-state examples))
+  (require (prefix-in p: Bazaar/Common/player)) ;; type Player 
   (require
     (prefix-in
      c: (only-in
@@ -292,11 +293,14 @@
   #; {type RefereeData = [List Equations GameState]}
 
   #; {Natural [Listof RefereeScenario] -> [Listof ServerClientScenario]}
-  (define (scenario* milestone# ref-scenario* #:quiet (quiet #true) #:extras (client* '[]))
+  (define (scenario* milestone# ref-scenario*
+                     #:bonus  (aw p:player-award-none)
+                     #:quiet  (quiet #true)
+                     #:extras (client* '[]))
     (for/list ([r ref-scenario*])
       (match-define [list args expected msg] r)
       (match-define [list actor* equations gs] args)
-      (define refc  (list equations gs))
+      (define refc  (append (list equations gs) (list aw)))
       (define label (~a milestone# " " msg))
       (server-client-scenario refc actor* expected label #:quiet quiet #:extras client*)))
   
@@ -349,49 +353,52 @@
 
   (struct special-scenario [client-from-port type])
 
+  (define refc (list `[,ggb=rw] gs-3-zeros p:player-award-none))
+
   (define special1 "a client that connects but does not complete the registration")
   (define name1 "AAdivergeBeforeSending")
-  (define [client-diverge-before-sending-name port#]
+  (define [diverge-before-sending-name port#]
     (c:make-client-for-name-sender name1 (λ (_ ip) (let L () (L))) port#))
   (define scenario-special-1
-    (server-client-scenario
-     (list `[,ggb=rw] gs-3-zeros) (take playing-with-baddies 3) `[["goodie0"] []] special1
-     #:extras (list [special-scenario client-diverge-before-sending-name name1])))
+    (server-client-scenario refc (take playing-with-baddies 3) `[["goodie0"] []] special1
+                            #:extras (list [special-scenario diverge-before-sending-name name1])))
  
   ;; thne next one should be observationally equivalent to a player that goes infinite in setup
   (define special2 "a client that connects but does not complete the registration")
   (define name2  "AAsendnameloop")
-  (define [client-diverge-after-sending-name port#]
+  (define [diverge-after-sending-name port#]
     (c:make-client-for-name-sender name2 (λ (n ip) (send-message n ip) (let L () (L))) port#))
   (define scenario-special-2
-    (server-client-scenario
-     (list `[,ggb=rw] gs-3-zeros) (take playing-with-baddies 2) `[["goodie0"] [,name2]] special2
-     #:extras (list [special-scenario client-diverge-after-sending-name name2])))
+    (server-client-scenario refc (take playing-with-baddies 2) `[["goodie0"] [,name2]] special2
+                            #:extras (list [special-scenario diverge-after-sending-name name2])))
   
   (define (special->jsexpr fc)
     (special-scenario-type fc))
 
   (define (jsexpr->special j)
     (match j
-      [(== name2) client-diverge-after-sending-name]
-      [(== name1) client-diverge-before-sending-name]
+      [(== name2) diverge-after-sending-name]
+      [(== name1) diverge-before-sending-name]
       [_ (eprintf "jsexpr->special : ~a is not a special scenario\n" j)
          (eprintf "jsexpr->special names: ~a\n" (list name1 name2))
          #false])))
 
 (module+ examples
-  (provide specials bonus1 bonus2 simple-7 simple-8 simple-9 complex-7 complex-8 complex-9)
+  (provide specials award-rwb award-sey bonus1 bonus2)
+  (provide simple-7 simple-8 simple-9 complex-7 complex-8 complex-9)
 
   (require (submod Bazaar/Referee/referee examples))
 
   (define specials (list scenario-special-1 scenario-special-2))
-  (define bonus1 (scenario* 10 Names/))
-  (define bonus2 (scenario* 10 Baddies/))
-  (define simple-7 (scenario* 7 Simple/))
+  (define bonus1    (scenario* 10 Names/))
+  (define bonus2    (scenario* 10 Baddies/))
+  (define award-rwb (scenario* 10 rwb #:bonus p:player-award-red-white-and-blue-bonus))
+  (define award-sey (scenario* 10 sey #:bonus p:player-award-seychelles-bonus))
+  (define simple-7  (scenario* 7 Simple/))
   (define complex-7 (scenario* 7 Complex/))
-  (define simple-8 (scenario* 8 8Simple/))
+  (define simple-8  (scenario* 8 8Simple/))
   (define complex-8 (scenario* 8 8Complex/))
-  (define simple-9 (scenario* 9 9Simple/))
+  (define simple-9  (scenario* 9 9Simple/))
   (define complex-9 (scenario* 9 9Complex/)))
   
 ;                                                                        
@@ -447,8 +454,14 @@
          (c:clients cconfig #:baddies baddies))))))
 
 (module+ test
-  '---Bonus---
+  '---Specials---
   (for-each run-server-client-scenario specials)
+
+  '---Awards--
+  (for-each run-server-client-scenario award-rwb)
+  (for-each run-server-client-scenario award-sey)
+
+  '---Bonus---
   (for-each run-server-client-scenario bonus1)
   (for-each run-server-client-scenario bonus2)
 
