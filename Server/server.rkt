@@ -384,7 +384,7 @@
          #false])))
 
 (module+ examples
-  (provide specials award-rwb award-sey bonus1 bonus2)
+  (provide specials bonus-rwb bonus-sey bonus1 bonus2)
   (provide simple-7 simple-8 simple-9 complex-7 complex-8 complex-9)
 
   (require (submod Bazaar/Referee/referee examples))
@@ -392,8 +392,8 @@
   (define specials (list scenario-special-1 scenario-special-2))
   (define bonus1    (scenario* 10 Names/))
   (define bonus2    (scenario* 10 Baddies/))
-  (define award-rwb (scenario* 10 rwb #:bonus p:player-award-red-white-and-blue-bonus))
-  (define award-sey (scenario* 10 sey #:bonus p:player-award-seychelles-bonus))
+  (define bonus-rwb (scenario* 10 rwb #:bonus p:player-award-red-white-and-blue-bonus))
+  (define bonus-sey (scenario* 10 sey #:bonus p:player-award-seychelles-bonus))
   (define simple-7  (scenario* 7 Simple/))
   (define complex-7 (scenario* 7 Complex/))
   (define simple-8  (scenario* 8 8Simple/))
@@ -458,8 +458,8 @@
   (for-each run-server-client-scenario specials)
 
   '---Awards--
-  (for-each run-server-client-scenario award-rwb)
-  (for-each run-server-client-scenario award-sey)
+  (for-each run-server-client-scenario bonus-rwb)
+  (for-each run-server-client-scenario bonus-sey)
 
   '---Bonus---
   (for-each run-server-client-scenario bonus1)
