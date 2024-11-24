@@ -184,21 +184,6 @@
 
 (struct exchange [trades purchase] #:transparent)
 
-#;
-(struct exchange [trades purchase] #:transparent
-  #:methods gen:equal+hash
-  [(define equal-proc
-     (λ (x y recursive-equal?)
-       (and
-        (e:trades-equal? (exchange-trades x) (exchange-trades y))
-        (equal? (exchange-purchase x) (exchange-purchase y)))))
-   (define (hash-proc x re-hash)
-     (+ (* 1000 (re-hash (exchange-cards x)))
-        (* 10 (re-hash (exchange-cards x)))))
-   (define (hash2-proc x re-hash2)
-     (+ (* 891 (re-hash2 (exchange-cards x)))
-        (* 999 (re-hash2 (exchange-cards x)))))])
-
 #; {type Exchange = (exchange Equation* Purchases)}
 #; (exchange e* p)
 ;; applying the series of Equations e*, left to right, to the wallet yields as best purchases p
