@@ -79,7 +79,7 @@
                      (pretty-print (exn-message xn) (current-error-port))
                      (raise xn))])
     (define x (<-from msg))
-    (or x (raise "ILL-FORMED or INVALID JSON"))))
+    x))
 
 (module+ test
   (define-define/remote define/remote 'in 'out))
