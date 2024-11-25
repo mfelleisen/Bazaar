@@ -78,7 +78,8 @@
                      (eprintf "~a: wrong return value from client: ~e\n" tag msg)
                      (pretty-print (exn-message xn) (current-error-port))
                      (raise xn))])
-    (<-from msg)))
+    (define x (<-from msg))
+    (or x (raise "ILL-FORMED or INVALID JSON"))))
 
 (module+ test
   (define-define/remote define/remote 'in 'out))
