@@ -61,6 +61,7 @@
 (require (only-in (submod Bazaar/Referee/referee examples) void-observer%))
 
 (require Bazaar/Lib/configuration)
+(require Bazaar/Lib/xsend)
 
 (require SwDev/Testing/communication)
 
@@ -158,16 +159,17 @@
 
 #; {[Listof Player] RefereeInfo -> [List [Listof Player] [Listof Player]]}
 (define (configure-and-run-referee actor* for-referee optionally-return-result)
-  (define result
-    (with-handlers ([exn:fail?
-                     (λ (n)
-                       (eprintf "server reports referee failure\n")
-                       (eprintf "~a\n" (exn-message n))
-                       DEFAULT-RESULT)])
-      ;; IF AN OBSERVER IS DESIRED -------------------- VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
-      (apply referee/state actor* (append for-referee #; (list (list (new void-observer%)))))))
-  (send-message result)
-  (optionally-return-result result))
+  (parameterize ([time-out-limit 4.0])
+    (define result
+      (with-handlers ([exn:fail?
+                       (λ (n)
+                         (eprintf "server reports referee failure\n")
+                         (eprintf "~a\n" (exn-message n))
+                         DEFAULT-RESULT)])
+        ;; IF AN OBSERVER IS DESIRED -------------------- VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+        (apply referee/state actor* (append for-referee #; (list (list (new void-observer%)))))))
+    (send-message result)
+    (optionally-return-result result)))
 
 #; {[Listof Player] ServerConfig -> [Listof Player]}
 ;; collect list of playaers in reverse order of sign-up [youngest first]
@@ -454,28 +456,33 @@
          (c:clients cconfig #:baddies baddies))))))
 
 (module+ test
-  '---Specials---
-  (for-each run-server-client-scenario specials)
-
-  '---Awards--
-  (for-each run-server-client-scenario bonus-rwb)
-  (for-each run-server-client-scenario bonus-sey)
-
-  '---Bonus---
-  (for-each run-server-client-scenario bonus1)
-  (for-each run-server-client-scenario bonus2)
-
-  '---7---
-  (for-each run-server-client-scenario simple-7)
-  (for-each run-server-client-scenario complex-7)
-
-  '---8---
-  (for-each run-server-client-scenario simple-8)
-  (for-each run-server-client-scenario complex-8)
-
   '---9---
   (for-each run-server-client-scenario simple-9)
   (for-each run-server-client-scenario complex-9))
+
+(module+ test
+  '---Awards--
+  (for-each run-server-client-scenario bonus-sey)
+  (for-each run-server-client-scenario bonus-rwb))
+
+(module+ test
+  '---Bonus---
+  (for-each run-server-client-scenario bonus1)
+  (for-each run-server-client-scenario bonus2))
+
+(module+ test
+  '---7---
+  (for-each run-server-client-scenario simple-7)
+  (for-each run-server-client-scenario complex-7))
+
+(module+ test
+  '---8---
+  (for-each run-server-client-scenario simple-8)
+  (for-each run-server-client-scenario complex-8))
+
+(module+ test
+  '---Specials---
+  (for-each run-server-client-scenario specials))
 
 
 ;                                                                                      
