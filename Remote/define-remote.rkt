@@ -40,19 +40,21 @@
 
 (define-syntax-rule (define-define/remote define/remote in out)
   (define-syntax (define/remote stx)
+    (define ff #'#f)
+    ;; false okay, then allow (read-message in) to return #false
     (syntax-parse stx
-      [(_ (m [->to:id]) <-from:id)       
+      [(_ (m [->to:id]) <-from:id  (~optional (~seq #:#f-okay ff-okay?) #:defaults ([ff-okay? ff])))
        #:with ->to-j  (->jsexpr #'->to)
        #:with p<-from (parse- #'<-from) 
        #'(define/public (m x)
-           (call-via-json in out 'm `[,(~s 'm) [,(for/list ([y x]) (->to-j y))]] p<-from))]
+           (call-via-json in out 'm `[,(~s 'm) [,(for/list ([y x]) (->to-j y))]] p<-from ff-okay?))]
       
-      [(_ (m ->to (... ...)) <-from)
+      [(_ (m ->to (... ...)) <-from (~optional (~seq #:#f-okay ff-okay?) #:defaults ([ff-okay? ff])))
        #:with (->to-j (... ...))  (map ->jsexpr (syntax->list #'(->to (... ...))))
        #:with p<-from (parse- #'<-from)
        #:with (x (... ...)) (generate-temporaries #'(->to (... ...)))
        #`(define/public (m x (... ...))
-           (call-via-json in out 'm `[,(~s 'm) [,(->to-j x) (... ...)]] p<-from))])))
+           (call-via-json in out 'm `[,(~s 'm) [,(->to-j x) (... ...)]] p<-from ff-okay?))])))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; compile-time helpers
@@ -70,16 +72,19 @@
 ;; ---------------------------------------------------------------------------------------------------
 ;; run-time helpers
 
-(define (call-via-json in out tag json <-from)
+(define (call-via-json in out tag json <-from false-okay?)
   (send-message json out)
   (define msg (read-message in))
-  (with-handlers ([exn:misc:match?
-                   (λ (xn)
-                     (eprintf "~a: wrong return value from client: ~e\n" tag msg)
-                     (pretty-print (exn-message xn) (current-error-port))
-                     (raise xn))])
-    (define x (<-from msg))
-    x))
+  (cond
+    [false-okay? (<-from msg)]
+    [(<-from msg) => identity]
+    [else
+     (define msg
+       (with-output-to-string
+         (λ ()
+           (printf "server received ILL-FORMED/INVALID JSON or the call timed out:\n")
+           (pretty-print msg))))
+     (raise msg)]))
 
 (module+ test
   (define-define/remote define/remote 'in 'out))
