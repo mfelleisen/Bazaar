@@ -27,7 +27,6 @@
 (require (submod Bazaar/Common/actions json))
 (require (submod Bazaar/Common/equations json))
 (require (submod Bazaar/Common/turn-state json))
-(require (submod Bazaar/Referee/game-state json))
 (require Bazaar/Remote/define-remote)
 (require (except-in Bazaar/Lib/json string->jsexpr))
 
@@ -68,7 +67,7 @@
     (define/public (name) n) ;; it is safe to call this locally 
     ;; -----------------------------------------------------------------------------------------------
     (define/remote (setup equations)               void)
-    (define/remote (request-pebble-or-trades turn) action)
+    (define/remote (request-pebble-or-trades turn) action #:#f-okay #true)
     (define/remote (request-cards turn)            action)
     (define/remote (win boolean)                   void)))
 
