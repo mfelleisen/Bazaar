@@ -40,7 +40,10 @@
  legal-purchase-request
 
  #; {GameState -> Pict}
- render)
+ render
+
+ ;; parameter for getting cards in and out
+ gs-with-player-cards)
 
 (provide
  game-struct->definition)
@@ -138,6 +141,7 @@
    render*
    player+*->jsexpr
    name*
+   gs-with-player-cards
    jsexpr->player+*)
   
   (require (submod Bazaar/Common/player json))
@@ -175,12 +179,17 @@
     (define name (if (is-a? o object%) (send o name) "unknown"))
     (p:render p #:name name))
 
+  (define gs-with-player-cards [make-parameter #false])
+
   (define (player+*->jsexpr p*)
-    (map (compose player->jsexpr player+-player) p*))
+    (define ->jsexpr (if [gs-with-player-cards] player*/card*->jsexpr player*->jsexpr))
+    (->jsexpr (map player+-player p*)))
 
   (define name* (make-parameter 'unknown)) ;; for testing
-  (def/jsexpr-> player+*
-    #:array [(list (app jsexpr->player (? p:player? p)) ...) (map (λ (p) (player+ p [name*])) p)]))
+  (define (jsexpr->player+* j)
+    (define jsexpr-> (if [gs-with-player-cards] jsexpr->player*/card* jsexpr->player*))
+    (define players (jsexpr-> j))
+    (and players (map (λ (p) (player+ p [name*])) players))))
 (require 'player+)
 
 ;                                                          
@@ -213,8 +222,7 @@
  [bank     #:to-jsexpr bag->jsexpr   #:from-jsexpr jsexpr->bag   #:is-a "*Pebbles"]
  [visibles #:to-jsexpr card*->jsexpr #:from-jsexpr (compose size-check jsexpr->card*) #:is-a "*Cards"]
  [cards    #:to-jsexpr card*->jsexpr #:from-jsexpr (compose card-check jsexpr->card*) #:is-a "*Cards"]
- [players  #:to-jsexpr player+*->jsexpr #:from-jsexpr jsexpr->player+*
-           #:is-a "*Players"])
+ [players  #:to-jsexpr player+*->jsexpr #:from-jsexpr jsexpr->player+* #:is-a "*Players"])
 
 #; {GameState -> Boolean}
 ;; a game state created from JSON may violate validity checks 
@@ -605,14 +613,7 @@
 ;; ---------------------------------------------------------------------------------------------------
 #; {GameState [#:award-bonus (Player -> Player)] -> [List [Listof Actor] [Listof Actor]] }
 (define (determine-winners-and-losers gs (award-bonus (λ (p) p)))
-
-  (eprintf "before ~a -->" (map player+-score (game-players gs)))
-
   (define players (map (player+-award-bonus award-bonus) (game-players gs)))
-
-  (eprintf " ~a\n" (map player+-score players))
-
-
   (define winners (if (empty? players) '[] (all-argmax player+-score players)))
   (define losers  (if (empty? players) '[] (set-subtract players winners)))
   (list (map player+-connection winners) (map player+-connection losers)))
