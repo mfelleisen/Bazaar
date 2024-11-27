@@ -58,6 +58,12 @@
 ;; ---------------------------------------------------------------------------------------------------
 (module+ json
   (provide
+   jsexpr->player*/card*
+   player*/card*->jsexpr
+
+   player/card*->jsexpr
+   jsexpr->player/card*
+
    player*->jsexpr
    jsexpr->player*
    
@@ -88,9 +94,10 @@
 
 (require Bazaar/scribblings/spec)
 
-(require (prefix-in p: (submod Bazaar/Common/pebbles examples)))
+(require (prefix-in p: (submod Bazaar/Common/pebbles examples))) ;; for pebbles 
 
 (require (submod Bazaar/Common/bags json))
+(require (submod Bazaar/Common/cards json))
 (require (prefix-in b: Bazaar/Common/bags))
 (require (prefix-in c: Bazaar/Common/cards))
 
@@ -380,10 +387,27 @@
 ;    ;;                        
 
 (module+ json
-  (define (player*->jsexpr s)
+  (define (player/card*->jsexpr p)
+    (define without (player->jsexpr p))
+    (define j-cards (card*->jsexpr (player-cards p)))
+    (dict-set without 'cards j-cards))
+  
+  (def/jsexpr-> player/card*
+    #:object {['cards card* (and cards (list card? ...))]
+              ['score natural (? natural? score)]
+              ['wallet bag (? b:bag? wallet)]}
+    (player wallet score cards))
+
+  (define (player*/card*->jsexpr s)
+    (player*->jsexpr s player/card*->jsexpr))
+
+  (define (player*->jsexpr s (player->jsexpr player->jsexpr))
     (map player->jsexpr s))
 
-  (define (jsexpr->player* j)
+  (define (jsexpr->player*/card* j)
+    (jsexpr->player* j jsexpr->player/card*))
+
+  (define (jsexpr->player* j (jsexpr->player jsexpr->player))
     (def/jsexpr-> player* #:array [(list (app jsexpr->player (? player? p)) ...) p])
     (define players (jsexpr->player* j))
     (unless (<= (length players) MAX-PLAYERS)
@@ -404,13 +428,14 @@
     (cond
       [(equal? p player-award-red-white-and-blue-bonus) RWB]
       [(equal? p player-award-seychelles-bonus) SEY]
-      [else (eprintf "~a award policy expected, given ~a" 'policy->jsexpr p)]))
+      [(equal? p player-award-none) #false]
+      [else (eprintf "~a award policy expected, given ~a" 'policy->jsexpr p) #false]))
 
   (define (jsexpr->bonus p)
     (cond
       [(equal? p RWB) player-award-red-white-and-blue-bonus]
       [(equal? p SEY) player-award-seychelles-bonus]
-      [else #false])))
+      [else (eprintf "~a award policy expected, given ~a" 'jsexpr->policy p) #false])))
 
 ;                                     
 ;                                     
@@ -439,6 +464,11 @@
 
   (define lon1 '[1 "a" 3])
   (check-false (jsexpr->score* (score*->jsexpr lon1)))
+
+  (check-equal? (jsexpr->player/card* (player/card*->jsexpr p-bbbbb19++)) p-bbbbb19++ "with cards")
+  (check-equal? (jsexpr->player*/card* (player*/card*->jsexpr (list p-bbbbb19++ p-bbbbb19++)))
+                (list p-bbbbb19++ p-bbbbb19++)
+                "with many cards")
 
   (check-equal? (jsexpr->bonus (bonus->jsexpr player-award-red-white-and-blue-bonus))
                 player-award-red-white-and-blue-bonus)
