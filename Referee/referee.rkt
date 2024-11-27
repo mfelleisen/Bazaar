@@ -112,9 +112,6 @@
                    ;; optional : #:award-bonus [Player -> Player]
                    -> [List [Listof Player] [Listof Player]]}
 (define (referee/state actor* equations gs0 (aw p:player-award-none) (observer* `[]))
-  #;
-  [time-out-limit 9.6]
-  (eprintf "~a\n" [time-out-limit])
   (define mo (new mo:manage-observers%))
   (send mo add* observer*)
   (send mo state 'initial equations 'setup gs0)
@@ -546,7 +543,7 @@
   (define (run-scenario-with-observer scenarios i observer [aw p:player-award-none])
     (match-define [list args expected msg] (list-ref scenarios (sub1 i)))
     (match-define [list actors equations gs] args)
-    (referee/state actors equations gs (list observer) #:award-bonus aw)
+    (referee/state actors equations gs aw (list observer))
     (eprintf "should yield ~a\n [~a]\n" expected msg))
 
   #;
