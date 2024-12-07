@@ -337,8 +337,8 @@
       (game bank0 (take cards2 4) (drop cards2 4) six-p)))
 
   (define gs-2-sey++
-    (let ([vis (list c-rrbrr c-wgwgw c-wgwgw)]
-          [inv (list c-wgwgw c-wgwgw c-bbbbb c-wgwgw c-wgwgw c-bbbbb c-bbbbb)])
+    (let ([vis (list c-rrbrr c-wgwgw c-wgwgw c-wgwgw)]
+          [inv (list c-wgwgw c-bbbbb c-wgwgw c-wgwgw c-bbbbb c-bbbbb)])
       (game (b:bag-add b-bbbb b-rrrr) vis inv `(,(player+ p-gw0+ 'w) ,(player+ p-bbbbb19++ 'x)))))
 
   (define gs-2-sey
