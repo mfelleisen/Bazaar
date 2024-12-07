@@ -99,7 +99,7 @@
  turn
  [bank   #:to-jsexpr bag->jsexpr    #:from-jsexpr jsexpr->bag #:is-a "*Pebbles"]
  [cards  #:to-jsexpr card*->jsexpr  #:from-jsexpr (compose size-check jsexpr->card*) #:is-a "*Cards"]
- [active #:to-jsexpr player->jsexpr #:from-jsexpr jsexpr->player #:is-a "Player"]
+ [active #:to-jsexpr player/card*->jsexpr #:from-jsexpr jsexpr->player/card* #:is-a "Player"]
  [scores #:to-jsexpr score*->jsexpr #:from-jsexpr jsexpr->score* #:is-a "*Naturals"]
  #:transparent
  #:methods gen:equal+hash
@@ -127,6 +127,7 @@
      '#hasheq((active
                 .
                 #hasheq((score . 4)
+                        (cards . [])
                         (wallet
                          .
                          ("blue" "blue" "blue" "blue" "green" "green" "green"))))
@@ -142,6 +143,7 @@
      '#hasheq((active
                 .
                 #hasheq((score . 4)
+                        (cards . [])
                         (wallet
                          .
                          ("green" "green" "green" "blue" "blue" "blue" "blue"))))
