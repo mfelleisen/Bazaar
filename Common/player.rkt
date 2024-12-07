@@ -237,7 +237,7 @@
   (define p-rgbrg    (player b-rgbrg 0 '[]))
   (define p-wyrbb    (player b-wyrbb 0 '[]))
   
-  (define p-rrbrr-20 (player b-rrbrr PLAYER-WINS '[])))
+  (define p-rrbrr-20 (player b-rrbrr (- PLAYER-WINS 1) '[])))
 
 (module+ examples ;; from turn 
   (provide p-rg-0 p-ggg-9 p-r-9 p-rg-9 p-rr-9 p-bbbbb-0 p-5b-5g-0 p-rbwgy)
