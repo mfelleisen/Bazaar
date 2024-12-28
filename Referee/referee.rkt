@@ -61,13 +61,9 @@
 ;                 ;                                                                    
 
 (require Bazaar/scribblings/spec)
-
 (require Bazaar/Common/player-interface)
-(require (prefix-in mo: Bazaar/Referee/manage-observers))
-(require (prefix-in e: Bazaar/Common/equations))
 (require (prefix-in gs: Bazaar/Referee/game-state))
-(require (prefix-in p: Bazaar/Common/player))
-
+(require (prefix-in mo: Bazaar/Referee/manage-observers))
 (require Bazaar/Lib/xsend)
 
 (require SwDev/Contracts/unique)

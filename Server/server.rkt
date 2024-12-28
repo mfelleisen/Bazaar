@@ -54,7 +54,6 @@
 ;                     ;                                    
 
 (require Bazaar/Server/player)
-(require (prefix-in e: Bazaar/Common/equations))
 (require Bazaar/Common/player-interface) ;; type Player 
 (require (prefix-in gs: Bazaar/Referee/game-state))
 (require Bazaar/Referee/referee)

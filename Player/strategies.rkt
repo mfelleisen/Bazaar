@@ -78,16 +78,8 @@
 ;                 ;                                                                    
 
 (require Bazaar/scribblings/spec)
-
-(require (prefix-in b: Bazaar/Common/bags))
-(require (prefix-in c: Bazaar/Common/cards))
-(require (prefix-in e: Bazaar/Common/equations))
-(require (prefix-in c: Bazaar/Common/rule-book))
-(require (prefix-in p: Bazaar/Common/player))
-(require (prefix-in t: Bazaar/Common/turn-state))
-
+(require Bazaar/Common/player-interface)
 (require Bazaar/Lib/tie-breaking)
-
 (require SwDev/Lib/should-be-racket)
 (require pict)
 
@@ -344,14 +336,14 @@
   ;; ACCU in reverse order of possible purchaes from `visibles0` & `wallet0` to `visibles` & `wallet`
 
   (define (possible-purchases visibles wallet from-root-to-here points)
-    (define possible-buys #; [Listof Card] (c:can-buy visibles wallet))
+    (define possible-buys #; [Listof Card] (r:can-buy visibles wallet))
     (cond
       [(empty? possible-buys)
        (define e1 (purchase (reverse from-root-to-here) points wallet))
        (send best add-if-better e1)]
       [else
        (for ([t possible-buys])
-         (define-values [δ visibles-- wallet-- _] (c:buy-1-card t 0 visibles wallet (b:bag)))
+         (define-values [δ visibles-- wallet-- _] (r:buy-1-card t 0 visibles wallet (b:bag)))
          (possible-purchases visibles-- wallet-- (cons t from-root-to-here) (+ δ points)))]))
 
   (possible-purchases visibles0 wallet0 '[] 0))

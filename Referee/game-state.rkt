@@ -80,38 +80,26 @@
 ;                 ;                                                                    
 
 (require Bazaar/scribblings/spec)
-
-(require (submod Bazaar/Common/cards examples))
-(require (submod Bazaar/Common/bags examples))
-(require (submod Bazaar/Common/player examples))
-
+(require Bazaar/Common/player-interface)
 (require (submod Bazaar/Common/bags json))
 (require (submod Bazaar/Common/cards json))
-
-(require (prefix-in a: Bazaar/Common/actions))
-(require (prefix-in c: Bazaar/Common/cards))
-(require (prefix-in t: Bazaar/Common/turn-state))
-
 (require Bazaar/Lib/configuration)
-(require (prefix-in b: Bazaar/Common/bags))
-(require (prefix-in p: Bazaar/Common/player))
-(require (prefix-in r: Bazaar/Common/rule-book))
-
-(require Bazaar/Lib/configuration)
-
 (require SwDev/Lib/should-be-racket)
-
 (require pict)
 
 (module+ pict
   (require (submod ".." examples)))
 
 (module+ examples
+  (require (submod Bazaar/Common/cards examples))
+  (require (submod Bazaar/Common/bags examples))
+  (require (submod Bazaar/Common/player examples))
   (require (submod Bazaar/Common/rule-book examples))
   (require (submod Bazaar/Common/turn-state examples)))
 
 (module+ test
   (require (submod ".." examples))
+  (require (submod Bazaar/Common/player examples))
   (require (submod Bazaar/Common/pebbles examples))
   (require rackunit))
   

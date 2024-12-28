@@ -41,13 +41,11 @@
 ;                 ;                                                                    
 
 (require Bazaar/scribblings/spec)
-
-(require (prefix-in c: Bazaar/Common/cards))
-(require (prefix-in e: Bazaar/Common/equations))
-(require (prefix-in p: Bazaar/Common/player))
-(require (prefix-in gs: Bazaar/Referee/game-state))
-(require (submod Bazaar/Referee/game-state json))
+(require Bazaar/Common/player-interface)
 (require (submod Bazaar/Common/equations json))
+(require (submod Bazaar/Referee/game-state json))
+(require (prefix-in gs: Bazaar/Referee/game-state))
+
 (require 2htdp/universe)
 (require (only-in 2htdp/image save-image))
 (require (except-in pict rotate circle))

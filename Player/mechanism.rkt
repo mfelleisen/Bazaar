@@ -66,24 +66,20 @@
 ;                 ;                                                                    
 
 (require Bazaar/scribblings/spec)
-
-(require (only-in (submod Bazaar/Common/cards examples) c-ggggg ALL-CARDS))
-(require Bazaar/Player/strategies)
-(require Bazaar/Common/actions)
-(require (prefix-in b: Bazaar/Common/bags))
-(require (prefix-in c: Bazaar/Common/cards))
-(require (prefix-in e: Bazaar/Common/equations))
-(require (prefix-in p: Bazaar/Common/player))
-(require (prefix-in t: Bazaar/Common/turn-state))
 (require Bazaar/Common/player-interface)
-(require Bazaar/Common/turn-state)
+(require Bazaar/Player/strategies)
 
-(require (submod Bazaar/Player/strategies json))
+;; for serializing player descriptions
+(require (only-in (submod Bazaar/Player/strategies json) policy->jsexpr))
 
+;; for creating cheaters 
+(require (only-in (submod Bazaar/Common/cards examples) c-ggggg ALL-CARDS))
 (require (for-syntax syntax/parse))
+
 
 (module+ json
   (require (submod ".."))
+  (require (submod Bazaar/Player/strategies json))
   (require Bazaar/Lib/parse-json))
 
 (module+ test
@@ -146,7 +142,7 @@
     (define/public (request-pebble-or-trades t)
       (cond
         [(send strategy should-the-player-request-a-random-pebble t)
-         want-pebble]
+         a:want-pebble]
         [else
          (define trades&buys (send strategy trade-then-purchase t))
          (set! *to-be-bought (exchange-cards trades&buys))
@@ -217,7 +213,7 @@
 
   (begin
     (send sample setup (list rg=bbbb ggg=r ggb=rw))
-    (render ts0)
+    (t:render ts0)
     (check-equal? (send sample request-pebble-or-trades ts0) '[] "a trade is possible, but useless")
     (check-equal? (send sample request-cards ts0) '[] "the player can't buy anything")))
 ;                                                                          
@@ -466,7 +462,7 @@
    1
    [(request-cards t*)
     (define t (first t*)) ;; because class/fail uses . args
-    (define visibles (turn-cards t))
+    (define visibles (t:turn-cards t))
     (for/first ([c ALL-CARDS] #:unless (member c visibles))
       (list c))]))
 
@@ -475,7 +471,7 @@
    1
    [(request-cards t*)
     (define t (first t*)) ;; because class/fail uses . args
-    (define visibles (turn-cards t))
+    (define visibles (t:turn-cards t))
     (define wallet   (p:player-wallet (t:turn-active t)))
     (for/first ([c visibles] #:unless (b:subbag? (c:card-pebbles c) wallet))
       (list c))]))
