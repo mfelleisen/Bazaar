@@ -85,11 +85,7 @@
 
 (module+ examples
   (require (submod ".."))
-  (require (submod Bazaar/Common/bags examples))
-  (require (submod Bazaar/Common/cards examples))
-  (require (submod Bazaar/Common/equations examples))
-  (require (submod Bazaar/Common/turn-state examples))
-
+  (require (submod Bazaar/Common/player-interface examples))
   (require SwDev/Testing/scenarios))
 
 (module+ test

@@ -21,6 +21,12 @@
  (all-from-out Bazaar/Common/rule-book)
  (all-from-out Bazaar/Common/turn-state))
 
+(module+ examples
+  (provide (all-from-out (submod Bazaar/Common/bags examples)))
+  (provide (all-from-out (submod Bazaar/Common/cards examples)))
+  (provide (all-from-out (submod Bazaar/Common/equations examples)))
+  (provide (all-from-out (submod Bazaar/Common/turn-state examples))))
+
 ;; ---------------------------------------------------------------------------------------------------
 (require Bazaar/scribblings/spec)
 
@@ -31,6 +37,12 @@
 (require (prefix-in r: Bazaar/Common/rule-book))
 (require (prefix-in p: Bazaar/Common/player))
 (require (prefix-in t: Bazaar/Common/turn-state))
+
+(module+ examples
+  (require (submod Bazaar/Common/bags examples))
+  (require (submod Bazaar/Common/cards examples))
+  (require (submod Bazaar/Common/equations examples))
+  (require (submod Bazaar/Common/turn-state examples)))
 
 (module+ test
   (require rackunit))
