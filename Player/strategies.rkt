@@ -272,9 +272,7 @@
 
 (module+ examples ;; for checking tie breaking 
   (provide Extras/)
-
-  (require (submod Bazaar/Common/pebbles examples))
-
+  
   (setup-scenarios extra+ Extras/)
 
   ;; a player can buy 2 cards for 3 points if it makes three trades
@@ -451,9 +449,7 @@
          [e0 (exchange '() (f-buy-cards '[] (b:bag) purchase-points))]
          [score (compose purchase-points exchange-purchase)]
          [break tie-breaker-trade-then-purchase]))
-
-  (require (only-in (submod Bazaar/Common/equations examples) www=yy ww=yyy))
-
+  
   (define ex1 (exchange `[,www=yy ,ww=yyy] (purchase `[,c-yyyyy*] 8 (b:bag))))
   (define ex2 (exchange `[,ww=yyy ,www=yy] (purchase `[,c-yyyyy*] 8 (b:bag))))
 
@@ -523,8 +519,7 @@
 (module+ stress ;; test
 
   (require (submod ".." json))
-  (require (submod Bazaar/Common/equations json))
-  (require (submod Bazaar/Common/turn-state json))
+  (require (submod Bazaar/Common/player-interface json))
   (require json)
 
   (define ee (e:random-equation*))

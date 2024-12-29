@@ -22,18 +22,14 @@
 ;                     ;                                    
 ;                     ;                                    
     
+(require (submod Bazaar/Common/player-interface json))
 (require Bazaar/Common/player-interface)
-
-(require (submod Bazaar/Common/actions json))
-(require (submod Bazaar/Common/equations json))
-(require (submod Bazaar/Common/turn-state json))
 (require Bazaar/Remote/define-remote)
 (require (except-in Bazaar/Lib/json string->jsexpr))
 
 (module+ test
   (require (submod ".."))
-  (require (submod Bazaar/Common/equations examples))
-  (require (submod Bazaar/Common/turn-state examples))
+  (require (submod Bazaar/Common/player-interface examples))
   (require (except-in (submod Bazaar/Referee/game-state examples) ForStudents/ Tests/))
   (require Bazaar/Referee/game-state)
   (require Bazaar/Remote/remote-testing)

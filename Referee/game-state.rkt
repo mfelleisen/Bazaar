@@ -81,8 +81,7 @@
 
 (require Bazaar/scribblings/spec)
 (require Bazaar/Common/player-interface)
-(require (submod Bazaar/Common/bags json))
-(require (submod Bazaar/Common/cards json))
+(require (submod Bazaar/Common/player-interface json))
 (require Bazaar/Lib/configuration)
 (require SwDev/Lib/should-be-racket)
 (require pict)
@@ -127,8 +126,8 @@
    gs-with-player-cards
    jsexpr->player+*)
   
-  (require (submod Bazaar/Common/player json))
-  (require (prefix-in p: Bazaar/Common/player))
+  (require (submod Bazaar/Common/player-interface json))
+  (require Bazaar/Common/player-interface)
   (require pict)
 
   (struct player+ [player connection] #:prefab)

@@ -66,9 +66,8 @@
 
 (module+ examples
   (require (submod ".."))
-  (require (only-in (submod Bazaar/Common/equations examples) ggb=rw))
-  (require (submod Bazaar/Referee/game-state examples))
-  (require (prefix-in p: Bazaar/Common/player)) ;; type Player 
+  (require (except-in (submod Bazaar/Common/player-interface examples) ForStudents/ Tests/))
+  (require (except-in (submod Bazaar/Referee/game-state examples) ForStudents/ Tests/))
   (require
     (prefix-in
      c: (only-in

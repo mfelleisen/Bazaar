@@ -41,8 +41,8 @@
 ;                 ;                                                                    
 
 (require Bazaar/scribblings/spec)
+(require (submod Bazaar/Common/player-interface json))
 (require Bazaar/Common/player-interface)
-(require (submod Bazaar/Common/equations json))
 (require (submod Bazaar/Referee/game-state json))
 (require (prefix-in gs: Bazaar/Referee/game-state))
 

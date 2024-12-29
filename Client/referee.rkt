@@ -63,42 +63,23 @@
 ;                     ;                                    
 
 (require Bazaar/Remote/define-dispatcher)
-
-(require (submod Bazaar/Common/actions json))
+(require (submod Bazaar/Common/player-interface json))
 (require Bazaar/Common/player-interface)
-
 (require Bazaar/Player/mechanism)
-
 (require SwDev/Testing/make-client)
 (require SwDev/Testing/communication)
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; imports for the macro definition
 
-(require (submod Bazaar/Common/cards json))
-(require (submod Bazaar/Common/equations json))
-(require (submod Bazaar/Common/turn-state json))
-
-(require Bazaar/Common/actions)
-(require Bazaar/Common/equations)
-(require (except-in Bazaar/Common/turn-state render))
-(require (except-in Bazaar/Common/cards render render*))
-
 (require Bazaar/Lib/json)
-
 (require (for-syntax syntax/parse))
 (require (for-syntax racket/format racket/string))
 
 ;; ---------------------------------------------------------------------------------------------------
 (module+ test
   (require (submod ".."))
-
-  (require (submod Bazaar/Common/equations examples))
-  (require (submod Bazaar/Common/turn-state examples))
-  (require (except-in (submod Bazaar/Referee/game-state examples) ForStudents/ Tests/))
-  
-  (require Bazaar/Player/strategies)
-  
+  (require (submod Bazaar/Common/player-interface examples))
   (require SwDev/Lib/should-be-racket)
   (require rackunit))
 
@@ -146,6 +127,9 @@
         (~optional (~seq #:win       ret-win:id)   #:defaults ([ret-win   #'void])))
      #:do [[define name-as-string (string-replace (~a (syntax-e #'name)) "make-" "")]]
      #`(begin
+         (define turn? t:turn?)
+         (define equations? e:equations?)
+         ; (define jsexpr->equation e:jsexpr->equation)
          (define-remote-proxy-context name #;for player%
 
            ;; eventually this macro needs to check that these IDs are method names
@@ -181,9 +165,9 @@
 (define (invalidate-action->jsexpr a)
   (match a
     [(? false?) #true]
-    [(cons (? 1eq? one) others)
+    [(cons (? e:1eq? one) others)
      (cons (spy (ill-formed-1eq one)) (equations->jsexpr others))]
-    [(cons (? card? one) others)
+    [(cons (? c:card? one) others)
      (cons (spy (ill-formed-card one)) (card*->jsexpr others))]
     [_ (spy [list [list [list "re"] [list "red"]]])]))
 
@@ -280,9 +264,9 @@
 
   (let ([r (pick-referee "invTTBadString")])
     ;; would request a pebble so it return #true instead 
-    (check-false (action? (run `["request-pebble-or-trades" [,jts1]] [mk-rm r])))
+    (check-false (a:action? (run `["request-pebble-or-trades" [,jts1]] [mk-rm r])))
     ;; would request a card but it breaks the card format 
-    (check-false (action? (run `["request-cards" [,jts1]] [mk-rm r]))))
+    (check-false (a:action? (run `["request-cards" [,jts1]] [mk-rm r]))))
 
   (let ([nonWin (pick-referee "nonWin")])
     (check-pred broken? (run `["win" [#true]] [mk-rm nonWin]))))

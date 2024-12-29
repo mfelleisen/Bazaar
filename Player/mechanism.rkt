@@ -73,7 +73,7 @@
 (require (only-in (submod Bazaar/Player/strategies json) policy->jsexpr))
 
 ;; for creating cheaters 
-(require (only-in (submod Bazaar/Common/cards examples) c-ggggg ALL-CARDS))
+(require (only-in (submod Bazaar/Common/player-interface examples) c-ggggg ALL-CARDS))
 (require (for-syntax syntax/parse))
 
 

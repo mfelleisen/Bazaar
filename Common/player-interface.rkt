@@ -31,6 +31,15 @@
   (provide (all-from-out (submod Bazaar/Common/rule-book examples)))
   (provide (all-from-out (submod Bazaar/Common/turn-state examples))))
 
+(module+ json
+  (provide (all-from-out (submod Bazaar/Common/actions json)))
+  (provide (all-from-out (submod Bazaar/Common/bags json)))
+  (provide (all-from-out (submod Bazaar/Common/cards json)))
+  (provide (all-from-out (submod Bazaar/Common/equations json)))
+  (provide (all-from-out (submod Bazaar/Common/player json)))
+  (provide (all-from-out (submod Bazaar/Common/pebbles json)))
+  (provide (all-from-out (submod Bazaar/Common/turn-state json))))
+
 ;; ---------------------------------------------------------------------------------------------------
 (require Bazaar/scribblings/spec)
 
@@ -51,6 +60,15 @@
   (require (submod Bazaar/Common/pebbles examples))
   (require (except-in (submod Bazaar/Common/rule-book examples) ForStudents/))
   (require (submod Bazaar/Common/turn-state examples)))
+
+(module+ json
+  (require (submod Bazaar/Common/actions json))
+  (require (submod Bazaar/Common/bags json))
+  (require (submod Bazaar/Common/cards json))
+  (require (submod Bazaar/Common/equations json))
+  (require (submod Bazaar/Common/player json))
+  (require (submod Bazaar/Common/pebbles json))
+  (require (submod Bazaar/Common/turn-state json)))
 
 (module+ test
   (require rackunit))

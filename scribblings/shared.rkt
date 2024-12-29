@@ -392,12 +392,8 @@
            (tt (~s (if (symbol? constant-uc) (symbol->string constant-uc) constant-uc))))
          ...
 	 ...)]))
-  
-; (require-constants [Trains/Common/map-serialize cities connections width height])
 
 (provide nat)
-
-
 
 (define nat
   @link["https://htdp.org/2021-5-4/Book/part_two.html#%28part._sec~3anats%29"]{Natural} )
