@@ -1,6 +1,12 @@
 ## Common 
 
-this component represents the common ontology of Bazaar players and the Bazaar gaming framework 
+This component represents the common ontology of Bazaar players and the Bazaar gaming framework. 
+
+The `player-interface` module serves as a facade interface for the entire module.
+It `provide`s a class signature for the referee to call on players, and it
+`provide`s access to all public building blocks needed to understand this
+building block, including the JSON messaging between the referee on the server
+and remote players on distant computers. 
 
 ### Table of Content
 
@@ -25,10 +31,11 @@ Here is a rough overview of the layers:
 
 ```
  KEY CONCEPTS
- 
-        + ---------------- +
-        | player-interface |
-        + ---------------- +
+
+        +-----------------------------------------------------------------------------+
+        |         player-interface (a facade for the entire Common/ component)        |
+        +-----------------------------------------------------------------------------+
+        |                  |
         | - setup          |         + ---------------- +        + ---------------- +
         | - pebble-or-trade| ------> | IAction          | -----> | exchanges        |
         | - cards?         | ------> |                  | -----> | card purchase    | 
@@ -78,9 +85,9 @@ referee                       proxy_player (p_*) //    proxy_ref (p_*)   player 
   |                               |              //      |                | 
   |  setup(s:equations)           |              //      |                | 
   | ----------------------------> |              //      |                |   
-  |                               |  (s,t):JSON  //      |                | 
+  |                               |  (s):JSON    //      |                | 
   |                               | ~~~~~~~~~~~~ // ~~~> |                | 
-  |                               |              //      |   setup(s,t)   | 
+  |                               |              //      |   setup(s)     | 
   |                               |              //      | -------------> | 
   |                               |              //      |   void         | 
   |                               |  void:JSON   //      | <============  | 
