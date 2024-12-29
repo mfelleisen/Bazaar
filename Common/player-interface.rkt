@@ -12,63 +12,37 @@
  MAX-PLAYER-NAME PLAYER-NAME
  player-name?)
 
-(provide
- (all-from-out Bazaar/Common/actions)
- (all-from-out Bazaar/Common/bags)
- (all-from-out Bazaar/Common/cards)
- (all-from-out Bazaar/Common/equations)
- (all-from-out Bazaar/Common/player)
- (all-from-out Bazaar/Common/pebbles)
- (all-from-out Bazaar/Common/rule-book)
- (all-from-out Bazaar/Common/turn-state))
-
-(module+ examples
-  (provide (all-from-out (submod Bazaar/Common/bags examples)))
-  (provide (all-from-out (submod Bazaar/Common/cards examples)))
-  (provide (all-from-out (submod Bazaar/Common/equations examples)))
-  (provide (all-from-out (submod Bazaar/Common/player examples)))
-  (provide (all-from-out (submod Bazaar/Common/pebbles examples)))
-  (provide (all-from-out (submod Bazaar/Common/rule-book examples)))
-  (provide (all-from-out (submod Bazaar/Common/turn-state examples))))
-
-(module+ json
-  (provide (all-from-out (submod Bazaar/Common/actions json)))
-  (provide (all-from-out (submod Bazaar/Common/bags json)))
-  (provide (all-from-out (submod Bazaar/Common/cards json)))
-  (provide (all-from-out (submod Bazaar/Common/equations json)))
-  (provide (all-from-out (submod Bazaar/Common/player json)))
-  (provide (all-from-out (submod Bazaar/Common/pebbles json)))
-  (provide (all-from-out (submod Bazaar/Common/turn-state json))))
+(require Bazaar/Lib/require-2-provide)
 
 ;; ---------------------------------------------------------------------------------------------------
 (require Bazaar/scribblings/spec)
 
-(require (prefix-in a: Bazaar/Common/actions))
-(require (prefix-in b: Bazaar/Common/bags))
-(require (prefix-in c: Bazaar/Common/cards))
-(require (prefix-in e: Bazaar/Common/equations))
-(require (prefix-in r: Bazaar/Common/rule-book))
-(require (prefix-in p: Bazaar/Common/player))
-(require (prefix-in q: Bazaar/Common/pebbles))
-(require (prefix-in t: Bazaar/Common/turn-state))
+(require->provide (prefix-in a: Bazaar/Common/actions))
+(require->provide (prefix-in b: Bazaar/Common/bags))
+(require->provide (prefix-in c: Bazaar/Common/cards))
+(require->provide (prefix-in e: Bazaar/Common/equations))
+(require->provide (prefix-in r: Bazaar/Common/rule-book))
+(require->provide (prefix-in p: Bazaar/Common/player))
+(require->provide (prefix-in q: Bazaar/Common/pebbles))
+(require->provide (prefix-in t: Bazaar/Common/turn-state))
 
 (module+ examples
-  (require (submod Bazaar/Common/bags examples))
-  (require (submod Bazaar/Common/cards examples))
-  (require (submod Bazaar/Common/equations examples))
-  (require (submod Bazaar/Common/player examples))
-  (require (submod Bazaar/Common/pebbles examples))
-  (require (except-in (submod Bazaar/Common/rule-book examples) ForStudents/))
-  (require (submod Bazaar/Common/turn-state examples)))
+  (require->provide (submod Bazaar/Common/bags examples))
+  (require->provide (submod Bazaar/Common/cards examples))
+  (require->provide (submod Bazaar/Common/equations examples))
+  (require->provide (submod Bazaar/Common/player examples))
+  (require->provide (submod Bazaar/Common/pebbles examples))
+  (require->provide (except-in (submod Bazaar/Common/rule-book examples) ForStudents/))
+  (require->provide (submod Bazaar/Common/turn-state examples)))
 
 (module+ json
-  (require (submod Bazaar/Common/actions json))
-  (require (submod Bazaar/Common/bags json))
-  (require (submod Bazaar/Common/cards json))
-  (require (submod Bazaar/Common/equations json))
-  (require (submod Bazaar/Common/player json))
-  (require (submod Bazaar/Common/pebbles json))
-  (require (submod Bazaar/Common/turn-state json)))
+  (require->provide (submod Bazaar/Common/actions json))
+  (require->provide (submod Bazaar/Common/bags json))
+  (require->provide (submod Bazaar/Common/cards json))
+  (require->provide (submod Bazaar/Common/equations json))
+  (require->provide (submod Bazaar/Common/player json))
+  (require->provide (submod Bazaar/Common/pebbles json))
+  (require->provide (submod Bazaar/Common/turn-state json)))
 
 (module+ test
   (require rackunit))
