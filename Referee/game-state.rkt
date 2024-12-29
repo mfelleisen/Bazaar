@@ -91,16 +91,11 @@
   (require (submod ".." examples)))
 
 (module+ examples
-  (require (submod Bazaar/Common/cards examples))
-  (require (submod Bazaar/Common/bags examples))
-  (require (submod Bazaar/Common/player examples))
-  (require (submod Bazaar/Common/rule-book examples))
-  (require (submod Bazaar/Common/turn-state examples)))
+  (require (except-in (submod Bazaar/Common/player-interface examples) ForStudents/ Tests/)))
 
 (module+ test
   (require (submod ".." examples))
-  (require (submod Bazaar/Common/player examples))
-  (require (submod Bazaar/Common/pebbles examples))
+  (require (except-in (submod Bazaar/Common/player-interface examples) ForStudents/ Tests/))
   (require rackunit))
   
 ;                                                   
@@ -134,7 +129,6 @@
   
   (require (submod Bazaar/Common/player json))
   (require (prefix-in p: Bazaar/Common/player))
-  (require Bazaar/Lib/parse-json)
   (require pict)
 
   (struct player+ [player connection] #:prefab)

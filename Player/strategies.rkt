@@ -91,8 +91,7 @@
 (module+ test
   (require (submod ".." examples))
   (require (submod ".." json))
-  (require (submod Bazaar/Common/bags examples))
-  (require (submod Bazaar/Common/cards examples))
+  (require (except-in (submod Bazaar/Common/player-interface examples) ForStudents/ Tests/))
   (require rackunit))
 
 ;                                                                 

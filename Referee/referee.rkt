@@ -69,7 +69,7 @@
 (require SwDev/Contracts/unique)
 
 (module+ examples
-  (require (except-in (submod Bazaar/Common/equations examples) ForStudents/ Tests/))
+  (require (except-in (submod Bazaar/Common/player-interface examples) ForStudents/ Tests/))
   (require (submod Bazaar/Referee/game-state examples))
   (require Bazaar/Player/mechanism)
   (require Bazaar/Player/strategies)
@@ -78,7 +78,6 @@
 (module+ test
   (require (submod ".."))
   (require (submod ".." examples))
-  ; (require (submod Bazaar/Player/mechanism json))
   (require SwDev/Lib/should-be-racket)
   (require rackunit))
 

@@ -18,6 +18,7 @@
  (all-from-out Bazaar/Common/cards)
  (all-from-out Bazaar/Common/equations)
  (all-from-out Bazaar/Common/player)
+ (all-from-out Bazaar/Common/pebbles)
  (all-from-out Bazaar/Common/rule-book)
  (all-from-out Bazaar/Common/turn-state))
 
@@ -25,6 +26,9 @@
   (provide (all-from-out (submod Bazaar/Common/bags examples)))
   (provide (all-from-out (submod Bazaar/Common/cards examples)))
   (provide (all-from-out (submod Bazaar/Common/equations examples)))
+  (provide (all-from-out (submod Bazaar/Common/player examples)))
+  (provide (all-from-out (submod Bazaar/Common/pebbles examples)))
+  (provide (all-from-out (submod Bazaar/Common/rule-book examples)))
   (provide (all-from-out (submod Bazaar/Common/turn-state examples))))
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -36,12 +40,16 @@
 (require (prefix-in e: Bazaar/Common/equations))
 (require (prefix-in r: Bazaar/Common/rule-book))
 (require (prefix-in p: Bazaar/Common/player))
+(require (prefix-in q: Bazaar/Common/pebbles))
 (require (prefix-in t: Bazaar/Common/turn-state))
 
 (module+ examples
   (require (submod Bazaar/Common/bags examples))
   (require (submod Bazaar/Common/cards examples))
   (require (submod Bazaar/Common/equations examples))
+  (require (submod Bazaar/Common/player examples))
+  (require (submod Bazaar/Common/pebbles examples))
+  (require (except-in (submod Bazaar/Common/rule-book examples) ForStudents/))
   (require (submod Bazaar/Common/turn-state examples)))
 
 (module+ test
