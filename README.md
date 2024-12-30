@@ -3,11 +3,29 @@
 ### Install
 
 ```
-$ raco pkg install ... 
-$ raco doc Bazaar 
+$ raco pkg install git://github.com/mfelleisen/SwDev.git
+$ git clone git://github.com/mfelleisen/Bazaar.git
+$ cd Bazaar
+$ raco pkg install
+$ raco doc Bazaar
 ```
 
+[ This last command may fail on occasion. If so, try `raco doc universe`. If this command also fails, it is a problem with Racket's document installation. ] 
+
+
 ### Run
+
+```
+$ ./xtest
+```
+
+runs the tests for the _logical_ part of the system.
+
+```
+$ raco test Server/server.rkt
+```
+
+runs the tests for the server/client part of the system. 
 
 See [Run](Run/README.md)
 
@@ -16,8 +34,10 @@ See [Run](Run/README.md)
 To re-generate the README file, run
 
 ```
-$ racket readme.rkt 
+$ ./xreadme --help
 ```
+
+then run as desired. 
 
 The repository is a fully functioning game framework, intended to be uses
 as both an educational and a research project.
@@ -52,11 +72,11 @@ for an explanation of how code files are organized in Racket.
 
 #### The Idea 
 
-Bazaar is a table game. 
+Bazaar is a table game. Run `raco doc Bazaar`. 
 
 This repository is a framework for programming competitive Bazaar players,
 a variant of the original Bazaar game.  Participants design automated
-players that run on their desktops and connect to a (remote) "Q"
+players that run on their desktops and connect to a (remote) Bazaar
 server. This server runs a single game. Any misbehavior of a
 player---non-responsiveness due to bugs or cheating---results in
 immediate termination. So the competition is first about delivering

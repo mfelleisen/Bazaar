@@ -3,11 +3,29 @@
 ### Install
 
 ```
-$ raco pkg install ... 
-$ raco doc Bazaar 
+$ raco pkg install git://github.com/mfelleisen/SwDev.git
+$ git clone git://github.com/mfelleisen/Bazaar.git
+$ cd Bazaar
+$ raco pkg install
+$ raco doc Bazaar
 ```
 
+[ This last command may fail on occasion. If so, try `raco doc universe`. If this command also fails, it is a problem with Racket's document installation. ] 
+
+
 ### Run
+
+```
+$ ./xtest
+```
+
+runs the tests for the _logical_ part of the system.
+
+```
+$ raco test Server/server.rkt
+```
+
+runs the tests for the server/client part of the system. 
 
 See [Run](Run/README.md)
 
