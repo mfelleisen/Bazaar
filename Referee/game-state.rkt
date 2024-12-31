@@ -8,6 +8,7 @@
 
 (provide
  #; {type GameState}
+ random-game
  game?
  ; game-players
  player-count
@@ -80,6 +81,7 @@
 ;                 ;                                                                    
 
 (require Bazaar/scribblings/spec)
+(require (only-in (submod Bazaar/Common/player-interface examples) ALL-CARDS ALL-PEBBLES))
 (require Bazaar/Common/player-interface)
 (require (submod Bazaar/Common/player-interface json))
 (require Bazaar/Lib/configuration)
@@ -204,6 +206,11 @@
  [visibles #:to-jsexpr card*->jsexpr #:from-jsexpr (compose size-check jsexpr->card*) #:is-a "*Cards"]
  [cards    #:to-jsexpr card*->jsexpr #:from-jsexpr (compose card-check jsexpr->card*) #:is-a "*Cards"]
  [players  #:to-jsexpr player+*->jsexpr #:from-jsexpr jsexpr->player+* #:is-a "*Players"])
+
+(define (random-game n)
+  (define visibles (take ALL-CARDS VISIBLE#))
+  (define hiddens  (drop ALL-CARDS VISIBLE#))
+  (game ALL-PEBBLES visibles hiddens (build-list n (λ (i) (player+ (p:plain-player) (~a i))))))
 
 #; {GameState -> Boolean}
 ;; a game state created from JSON may violate validity checks 

@@ -18,7 +18,7 @@ Running `xtest` will create the files
   just in case something goes wrong with the students' TCP port allocation.
   It is safe to delete this file after a run.  
 
-### Generating Tests (TODO) 
+### Generating Tests 
 
 The tests are generated via `xserver`. Just run it in drracket. 
 

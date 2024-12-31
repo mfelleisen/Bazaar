@@ -65,6 +65,7 @@ for an explanation of how code files are organized in Racket.
 | [Client](Client/README.md) | this component directory implements the client code for the Bazaar game. | 
 | [Lib](Lib/README.md) | this library provides functionality that should probably (or may) exist in Racket's libraries | 
 | [Remote](Remote/README.md) | this component support the implementationn of a remote-proxy protocol, | 
+| [Run](Run/README.md) | how to run the system from either the server side or the client side (or both) | 
 
 | file | purpose |
 |--------------------- | ------- |

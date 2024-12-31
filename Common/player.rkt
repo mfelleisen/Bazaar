@@ -6,6 +6,7 @@
 (provide
  #; {type Score = Natural}
  #; {type Player}
+ plain-player
  player?
  player-score
  player-wallet
@@ -168,6 +169,9 @@
     (+ (* 1000 (re-hash (player-wallet x)))
        (* 10 (re-hash (player-score x)))))])
 
+(define (plain-player)
+  (player (b:bag) 0 '()))
+  
 (module+ test
   (define e-wallet (b:bag "blue" "blue" "blue" "blue" "green" "green" "green"))
   (define a-wallet (b:bag "green" "green" "green" "blue" "blue" "blue" "blue"))

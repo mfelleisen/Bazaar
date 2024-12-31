@@ -10,7 +10,7 @@
  #; (get validator tag msg #:eof-okay? Boolean #:empty-okay? Boolean #:dont-exit Boolean)
  #; [validator     :: (JSExpr -> (values X ...))]
  #; [tag           :: the function that actually raises the error]
- #; [msg           ;; the msg when the JSON is INValid or ILLformed ]
+ #; [msg           :: the msg when the JSON is INValid or ILLformed ]
  #; [#:eof-okay?   :: the desired value is optional]
  #; [#:empty-okay? :: the validator may return '()]
  #; [#:dont-exit   :: just signal an exn that the caller is allowed to catch]

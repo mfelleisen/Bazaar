@@ -31,7 +31,8 @@
    ;;   (a production server would have a "wait in line" queue for late comers; and it would restart.)
    ;; 
    ;; runs a referee on the players that signed up properly port# plus the house players (if any) 
-   (->i ([refc     (list/c e:equations? gs:game? any/c #;bonus-function)]
+   (->i ([refc     (or/c (list/c e:equations? gs:game? any/c #;bonus-function)
+                         (list/c any/c #;bonus-function))]
          [confg    server-config/c])
         ([ordering (-> list? list?)]
          [plyrs    list?]
@@ -165,7 +166,9 @@
                          (eprintf "~a\n" (exn-message n))
                          DEFAULT-RESULT)])
         ;; IF AN OBSERVER IS DESIRED -------------------- VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
-        (apply referee/state actor* (append for-referee #; (list (list (new void-observer%)))))))
+        (if (<= (length for-referee) 1)
+            (apply referee actor* (append for-referee #; (list (list (new void-observer%)))))
+            (apply referee/state actor* (append for-referee #; (list (list (new void-observer%))))))))
     (send-message result)
     (optionally-return-result result)))
 

@@ -21,6 +21,14 @@
 
 (provide
  (contract-out
+  [referee
+   (->i ([players (listof player/c)])
+        ((bonus     any/c)
+         [observers (listof any/c)])
+        #:pre/name (players) "players must have distince names"
+        (distinct? (map (λ (p) (send p name)) players))
+        (r [list/c [listof string?] [listof string?]]))]
+
   [referee/state
    (->i ([players (listof player/c)]
          [eqs     (listof e:1eq?)]
@@ -96,11 +104,10 @@
 ;                                                   
 ;                                                   
 
-#;
-(define (referee player*)
-  (define gs0 (gs:create-random-game-state (length players)))
-  (define eq0 (e:create-random-equations))
-  (referee/state player* eq0 gs0))
+(define (referee player* (aw p:player-award-none) (observer* '[]))
+  (define eq0 (e:random-equation*))
+  (define gs0 (gs:random-game (length player*)))
+  (referee/state player* eq0 gs0 aw observer*))
 
 #; {[Listof Actor] Equations GameState
                    ;; optional : [Listof Observer]
