@@ -1,0 +1,35 @@
+#! /bin/sh
+#| -*- racket -*-
+exec racket -W error -tm "$0" -- ${1+"$@"}
+|#
+#lang racket
+
+(provide
+ ;; main is invoked via the command line as follows: 
+ ;; $ ./xserver 12345 < server-referee-specs
+ main)
+
+;; ---------------------------------------------------------------------------------------------------
+(require "get.rkt")
+(require "run-server-client.rkt")
+(require (submod Bazaar/Common/player json))
+(require Bazaar/Lib/xsend)
+(require Bazaar/Common/player)
+(require Bazaar/Server/server)
+
+;; ---------------------------------------------------------------------------------------------------
+(define (main  x)
+  (parameterize ([time-out-limit 5.0])
+    (define tag 'xserver)
+    (define p#    (string->port-number x))
+    (define bonus (get #:eof-okay? #true #:dont-exit #true jsexpr->bonus* tag "Bonus"))
+    (define refc  (list bonus))
+    (define sc    (set-server-config default-server-config QUIET #true PORT p#))
+    (server refc sc descending-by-age #:result void)))
+
+(define (jsexpr->bonus* j)
+  (cond
+    [(eof-object? j) player-award-none]
+    [(jsexpr->bonus j) => identity]
+    [else (error 'xserver "proper bonus spec expected, given ~a" j)]))
+

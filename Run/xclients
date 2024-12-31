@@ -1,0 +1,28 @@
+#! /bin/sh
+#| -*- racket -*-
+exec racket -tm "$0" -- ${1+"$@"}
+|#
+#lang racket
+
+(provide
+ ;; main is invoked via the command line as follows: 
+ ;; $ ./xclient 12345 [ip-address] < client-specs
+ main)
+
+;; ---------------------------------------------------------------------------------------------------
+(require "get.rkt")
+(require "run-server-client.rkt")
+(require Bazaar/Client/client)
+(require (submod Bazaar/Player/mechanism json))
+(require SwDev/Testing/communication)
+
+(define (main x (ip LOCALHOST))
+  (define tag 'xclients)
+  (define p#      (string->port-number x))
+  (define actor*  (get #:dont-exit #true jsexpr->actor** tag "*Actors"))
+  (define cc      (set-client-config default-client-config ACTOR* actor* QUIET #true HOST ip PORT p#))
+  (clients cc #true)
+  (void))
+
+(define jsexpr->actor** (lambda (x) (jsexpr->actor* x #:loops true #:cheating #true)))
+
