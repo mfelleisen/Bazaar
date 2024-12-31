@@ -1,5 +1,8 @@
 ## The Bazaar Project
 
+The repository is a fully functioning game framework, intended to be
+used as an educational as well as a research vehicle.
+
 ### Install
 
 ```
@@ -11,7 +14,6 @@ $ raco doc Bazaar
 ```
 
 [ This last command may fail on occasion. If so, try `raco doc universe`. If this command also fails, it is a problem with Racket's document installation. ] 
-
 
 ### Run
 
@@ -55,19 +57,19 @@ for an explanation of how code files are organized in Racket.
 
 | directory | purpose |
 |--------------------- | ------- |
+| [Server](Server/README.md) | this component implements the Bazaar server. | 
 | [Referee](Referee/README.md) | this component implements the Bazaar referee | 
 | [Common](Common/README.md) | This component represents the common ontology of Bazaar players and the Bazaar gaming framework. | 
+| [Player](Player/README.md) | this component implements a Bazaar player. | 
+| [Integration](Integration/README.md) | ### Files for test fest, like those for 9 | 
 | [Client](Client/README.md) | this component directory implements the client code for the Bazaar game. | 
 | [Lib](Lib/README.md) | this library provides functionality that should probably (or may) exist in Racket's libraries | 
-| [Player](Player/README.md) | this component implements a Bazaar player. | 
 | [Remote](Remote/README.md) | this component support the implementationn of a remote-proxy protocol, | 
-| [Server](Server/README.md) | this component implements the Bazaar server. | 
 
 | file | purpose |
 |--------------------- | ------- |
 | [homework.rkt](homework.rkt) | this file exists to export names for the milestone specifications of the Sw Dev course | 
 | [xreadme](xreadme) | generate the README.md files from README.source files, *.txt files, and purpose statements | 
-| [xtest](xtest) | run `raco test` on all relevant code files | 
 
 
 #### The Idea 

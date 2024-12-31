@@ -1,0 +1,3 @@
+[]
+{"bank":[],"cards":[{"face?":false,"pebbles":["white","green","white","green","white"]}],"players":[{"cards":[{"face?":false,"pebbles":["red","red","blue","red","red"]}],"score":1,"wallet":["white","green","white","green","white","red","green"]},{"cards":[],"score":3,"wallet":["blue","blue","blue","blue"]},{"cards":[{"face?":false,"pebbles":["white","green","white","green","white"]},{"face?":false,"pebbles":["white","green","white","green","white"]}],"score":6,"wallet":["red"]}],"visibles":[{"face?":false,"pebbles":["white","green","white","green","white"]},{"face?":false,"pebbles":["white","green","white","green","white"]},{"face?":false,"pebbles":["white","green","white","green","white"]},{"face?":false,"pebbles":["white","green","white","green","white"]}]}
+"RWB"

@@ -1,0 +1,17 @@
+#! /bin/sh
+#| -*- racket -*-
+exec racket -tm "$0" -- ${1+"$@"}
+|#
+#lang racket
+
+(provide
+ ;; main is invoked via the command line as follows: 
+ ;; $ ./xclient-bonus 12345 < client-specs
+ ;; this one allows dealing with names that are just strings, no matter what
+ main)
+
+;; ---------------------------------------------------------------------------------------------------
+(require "xclients")
+
+(define main (make-main #true))
+

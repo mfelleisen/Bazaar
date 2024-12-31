@@ -1,0 +1,121 @@
+#! /bin/sh
+#| -*- racket -*-
+exec racket -W error -tm "$0" -- ${1+"$@"}
+|#
+#lang racket
+
+(provide
+ ;; main is invoked via the command line as follows: 
+ ;; $ ./xserver 12345 < server-referee-specs
+ main)
+
+;; ---------------------------------------------------------------------------------------------------
+(require "get.rkt")
+(require "run-server-client.rkt")
+(require (submod Bazaar/Common/equations json))
+(require (submod Bazaar/Common/player json))
+(require (submod Bazaar/Referee/game-state json))
+(require (prefix-in gs: Bazaar/Referee/game-state))
+(require Bazaar/Lib/xsend)
+(require Bazaar/Common/player)
+(require Bazaar/Server/server)
+
+(module+ test
+  (require (prefix-in c: Bazaar/Client/client)))
+
+;; ---------------------------------------------------------------------------------------------------
+(define (main  x)
+  (parameterize ([gs:gs-with-player-cards #true]
+                 [time-out-limit 5.0])
+    (define tag 'xserver)
+    (define p#    (string->port-number x))
+    (define eq*   (get #:dont-exit #true jsexpr->equations tag "*Equations"))
+    (define game  (get #:dont-exit #true jsexpr->game tag "Game"))
+    
+    (unless (from-json-game-integrity game)
+      (eprintf "~a: faulty game state configuration: ~a" 'xserver game)
+      (exit))
+
+    (define bonus (get #:eof-okay? #true #:dont-exit #true jsexpr->bonus* tag "Bonus"))
+    (define refc  (list eq* game bonus))
+    (define sc    (set-server-config default-server-config QUIET #true PORT p#))
+    (server refc sc descending-by-age #:result void)))
+
+(define lax? (make-parameter #false))
+
+(define (jsexpr->bonus* j)
+  (cond
+    [(eof-object? j) player-award-none]
+    [else (jsexpr->bonus j)]))
+
+;; ---------------------------------------------------------------------------------------------------
+
+(module+ test
+  (require (submod Bazaar/Server/server examples))
+  (require (submod Bazaar/Player/mechanism json))
+  (require (only-in "xclients" make-main))
+  (require SwDev/Testing/testing)
+
+  (require (prefix-in gs: Bazaar/Referee/game-state))
+
+  (define clients-where (make-parameter "Tests/Clients/"))
+  (define (run-server-client-scenario server-client-scenario)
+    (parameterize ([gs:gs-with-player-cards #true])
+      (match-define [list refc sc cc bad-clients expected msg] server-client-scenario)
+      (match-define [list eq* game aw] refc)
+
+      (define port   (~a (dict-ref sc PORT)))
+    
+      (define j-eq*  (equations->jsexpr eq*))
+      (define j-game (game->jsexpr game))
+      (define j-aw   (bonus->jsexpr aw))
+      (define j-serv (if j-aw (list j-eq* j-game j-aw) (list j-eq* j-game)))
+
+      (define j-actor*   (actor*->jsexpr (dict-ref cc c:ACTOR*)))
+      (define j-special* (map special->jsexpr bad-clients))
+      (define j-clients  (if (empty? bad-clients) (list j-actor* '[]) (list j-actor* j-special*)))
+
+      (define client-main (make-main [lax?]))
+
+      (define client-th
+        (thread
+         (λ ()
+           ;; to create the test files, turn "waiting" off in xclients 
+           (recording [clients-where])
+           (r-check-equal? (λ () (client-main port)) j-clients `["void"] msg))))
+      (r-check-equal? (λ () (main port)) j-serv `[,expected] msg))))
+
+(module+ test
+  (start-at -1)
+  (recording "Tests/Server/")
+  [clients-where "Tests/Clients/"])
+
+(module+ test
+  '---7---
+  (for-each run-server-client-scenario simple-7)
+  (for-each run-server-client-scenario complex-7))
+
+(module+ test
+  '---8---
+  (for-each run-server-client-scenario simple-8)
+  (for-each run-server-client-scenario complex-8))
+
+(module+ test
+  '---9---
+  (for-each run-server-client-scenario simple-9)
+  (for-each run-server-client-scenario complex-9))
+
+(module+ test
+  '---Bonus-Awards---
+  (for-each run-server-client-scenario bonus-sey)
+  (for-each run-server-client-scenario bonus-rwb))
+
+(module+ test
+  '---Bonus---
+  (start-at -1)
+  (lax? #true)
+  (recording "Tests/ServerBonus/")
+  [clients-where "Tests/ClientsBonus/"]
+  (for-each run-server-client-scenario specials)
+  (for-each run-server-client-scenario bonus1)
+  (for-each run-server-client-scenario bonus2))

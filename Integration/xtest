@@ -1,0 +1,85 @@
+#! /bin/sh
+#| -*- racket -*-
+exec racket -W error -tm "$0" -- ${1+"$@"}
+|#
+#lang racket
+
+;; main p:port-number (between 10,000 and 60,000) launches a server on this port
+;; points n clients there 
+
+(provide main)
+
+;; ---------------------------------------------------------------------------------------------------
+(require SwDev/Testing/harness)
+(require json)
+
+;; ---------------------------------------------------------------------------------------------------
+(test-plain-and-pretty-json?             #f)
+(test-fast-and-slow-delivery?            #f)
+(test-with-and-without-trailing-newline? #f)
+(test-with-and-without-escaped-unicode?  #f)
+
+;; Send all inputs first before looking for output
+(test-with-batch-mode?                   #t)
+
+;; Give the server this much time to wait 2 x 20s (see config in `run-server`)
+;; and to play the entire tournament. 
+(unset-time-out #:limit 200) ;; in s
+
+;; TO RUN XTEST, TURN WAITING ON IN XCLIENTS
+
+;; NEEDS clarification concerning write-access to `path-to-test-directory`
+(define (main path-to-test-directory path-to-xclient path-to-xserver (bonus? #false))
+  (define [pc n] (< n 2)) ;; the first N lines go to xserver 
+  (define [ps n] (>= n 2)) ;; the remaining N lines go to xclients
+  (define tester (client-and-server #:check identity #:prepare-client pc #:prepare-server ps))
+  (define-values (Server Clients) (if bonus? (values BServer/ BClients/) (values Server/ Clients/)))
+  (dynamic-wind
+   (λ () (create-inputs-and-expected path-to-test-directory Server Clients))
+   (λ () [tester path-to-test-directory path-to-xclient path-to-xserver])
+   (λ () (delete-inputs-and-expected path-to-test-directory))))
+
+(define Server/ "Server")
+(define Clients/ "Clients")
+(define BServer/ "ServerBonus")
+(define BClients/ "ClientsBonus")
+
+#; {PathString -> Void}
+;; create in path-to-... the *-in for all triples in Server/<i>-{in,out}.json and Client/<i>-in.json
+;; and copy the respectived *-out files 
+(define (create-inputs-and-expected path-to-test-directory Server Clients)
+  (parameterize ([current-directory path-to-test-directory])
+    (for ([i (in-naturals)] [_ (directory-list Server)])
+      (match-define [list in-clients in-server in.json sout.json out.json] (names i Server Clients))
+      (when (and (file-exists? sout.json) (file-exists? in-clients) (file-exists? in-server))
+        (copy-file sout.json out.json)
+        (append-files in-clients in-server in.json #:exists-ok? #true)))))
+
+#; {PathString PathString PathString [#:exists-ok? Boolean] -> Void}
+;; concatenate from-1 from-2 target
+(define (append-files from-1 from-2 target #:exists-ok? [eok? #f])
+  (copy-file from-1 target #:exists-ok? eok?)
+  (define sc (file->lines from-2))
+  (with-output-to-file target #:exists 'append (λ () (display-lines (file->lines from-2)))))
+
+#; {Natural PathStrig PathString -> [List String String]}
+(define (names i Server/ Clients/)
+  (define in-file    (~a i "-in.json"))
+  (define t-expected (~a i "-out.json"))
+  (define s-expected (build-path Server/ t-expected))
+  (define server-in  (build-path Server/ in-file))
+  (define client-in  (build-path Clients/ in-file))
+  [list client-in server-in in-file s-expected t-expected])
+
+#; {PathString -> Void}
+;; create the *-in files for all pairs of n-client-config.json and n-server-config.json files
+(define (delete-inputs-and-expected path-to-test-directory)
+  (parameterize ([current-directory path-to-test-directory])
+    (for* ([f (directory-list)] [g (in-value (path->string f))] #:when (regexp-match #px".json" g))
+      (delete-file g))))
+
+;; ---------------------------------------------------------------------------------------------------
+(module+ test
+  (create-inputs-and-expected "Tmp/" BServer/ BClients/)
+  (directory-list "Tmp/")
+  (delete-inputs-and-expected "Tmp/"))

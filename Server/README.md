@@ -13,8 +13,8 @@ for an explanation of how code files are organized in Racket.
 
 | file | purpose |
 |--------------------- | ------- |
-| [player.rkt](player.rkt) | this remote player implements the same interface as the player but conveys its arguments | 
 | [server.rkt](server.rkt) | a server that signs up players over TCP and runs a game | 
+| [player.rkt](player.rkt) | this remote player implements the same interface as the player but conveys its arguments | 
 
 
 

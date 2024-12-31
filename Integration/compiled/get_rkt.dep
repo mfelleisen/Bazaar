@@ -1,0 +1,1 @@
+("8.15.0.6" tarm64osx ("4069b4a71e41a261c5b3491b297a0681d9907fdc" . "5adad674211f3108292da23d406c09e3da91bbc9") (collects #"SwDev" #"Testing" #"communication.rkt") (collects #"racket" #"main.rkt") (collects #"racket" #"runtime-config.rkt") (collects #"rackunit" #"main.rkt"))

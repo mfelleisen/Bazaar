@@ -1,0 +1,82 @@
+
+# Using Programming Language Concepts to Teach General Thinking Skills  
+
+- DSLs: fewer errors, because there is less of a cognitive effort to
+  translate the problem into code and request a solution
+
+  DSL for finding the shortest path in a graph vs graph search
+
+- different perspectives: math in K-12 should teach the idea that
+  things have multiple denotations and their relationships among them
+  (d/dx vs Integral; f and its inverse; * and /; ...) -- why should PL
+  be better at teaching that than K-12 teachers?
+
+  Martin's first ideas on this topic confuse PL and Programming here.
+  Some of this is of course precisely the premise behind TeachScheme!
+
+  His generalization (3.2) does use PL ideas, except that the way he
+  proposes to teach them is more a Sw Dev course than a PL course.
+
+  Example: My first couple of Sw Devs at Rice assumed PL.  The
+  milestones were specified more liberally -- because I didn't realize
+  that students couldn't architect a system per se -- and they wanted
+  students to discover that they needed a DSL (realized via an
+  interpreter or compiler) to solve them effectively. If I haven't
+  mentioned the DSL-for-tax-forms example to you, it was one of the
+  projects. Students who implemented the DSL did well; others were
+  given a code base with such a DSL after the code-base and partner
+  switch.
+
+  To implement such a course, the prereq chain has to be deep, too
+  deep for the taste of modern-day admins who want students to be able
+  to skip as many programming courses as possible -- because this is
+  the only virtue of a curriculum and because this is the only way to
+  eliminate the downstream problem (quote from a recent NU CCS article).
+  
+- his "automation" topic is so obvious, I started teaching it in the
+  mid 1990s. I taught the interpreter for a core language and then
+  motivated each language feature as moving work from the programmer's
+  overloaded mind to the bookkeeping software. 
+
+  Example: An early example in the course is about type abstraction.
+  Once you introduce types -- say for Lambda+ -- you have nothing but
+  terminating programs. So you add ref cells or explicit recursive
+  types. You also have to write duplicate sort for strings and numbers
+  .. so you introduce type abstraction. 
+
+  Example: garbage collection; no explanation needed
+
+- The abstraction section is an enumeration of platitudes and 1970s
+  thinking.
+
+  Example: "Most programming language features are abstractions of the
+  underlying computing platform." -- I heard this phrase when I
+  started programming, but it is nonsense. Functions? What's in the
+  machine that is a function? Or the browser? Classes.  Even Python's
+  comprehensions come from set theory.
+
+- The near-content free "pragmatics"  subsection shows that he means
+  "practical application", which is not pragmatics (but a common
+  confusion in the English language).
+
+- the header of section 5 contains the most important sentence:
+  "[essays] .. that demonstrate the application of the acquired
+  concepts to a field outside of programming languages."
+
+  Without explicit teaching, students have a really hard time
+  transferring concepts from one domain to another. Our BSL approach
+  to programming is an exception. The Epilogue of HtDP instructs
+  professors to explicitly task students with explain how the design
+  recipe is applicable to photography, surgery, journalism, etc."
+
+  Again, you're correct that programming (not languages) is as good or
+  better to teach almost everything Martin proposes.
+
+- 5.1 is sad. He fails to understand that a DSL _is_ an abstraction.
+
+- 5.2 is in a sense your ICFP paper. And that shows again that his
+  proposal to teach PL doesn't reach the normal professor for whom
+  ACM/IEEE is intended.
+
+
+ 

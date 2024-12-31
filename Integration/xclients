@@ -1,0 +1,49 @@
+#! /bin/sh
+#| -*- racket -*-
+exec racket -tm "$0" -- ${1+"$@"}
+|#
+#lang racket
+
+(provide
+ ;; main is invoked via the command line as follows: 
+ ;; $ ./xclient-bonus 12345 < client-specs
+ main)
+
+(provide
+ (contract-out
+  [make-main
+   ;; the boolean determines whether main can deal with spec violating actor names 
+   (-> boolean? (-> string? any/c))]))
+
+;; ---------------------------------------------------------------------------------------------------
+(require "get.rkt")
+(require "run-server-client.rkt")
+(require Bazaar/Client/client)
+(require (submod Bazaar/Server/server examples))
+(require (submod Bazaar/Player/mechanism json))
+(require SwDev/Testing/communication)
+(require json)
+
+(define ((make-main lax?) x)
+  (parameterize ([lax-names-okay? lax?])
+    (define tag 'xclients)
+    (define p# (string->port-number x))
+    (define actor*  (get #:dont-exit #true jsexpr->actor** tag "*Actors"))
+    (define baddies (get #:dont-exit #true jsexpr->special** tag "Special Clients" #:eof-okay? #true))
+    (define cc      (set-client-config default-client-config ACTOR* actor* QUIET #true PORT p#))
+    (clients cc #true #:baddies (map (λ (b) (b p#)) baddies))
+    (send-message "void")))
+
+(define main (make-main #false))
+
+(define jsexpr->actor** (lambda (x) (jsexpr->actor* x #:loops true #:cheating #true)))
+
+#; {JSexpr -> [Option Client]}
+(define (jsexpr->special** j)
+  (match j
+    [(? eof-object?) '()]
+    [(list (app jsexpr->special (? procedure? xs)) ...) xs]
+    [_
+     (eprintf "~a object does not match special-scenarios scehma; given ~a\n" 's (jsexpr->string j))
+     #false]))
+

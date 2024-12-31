@@ -11,7 +11,7 @@ exec racket -tm "$0" -- ${1+"$@"}
 ;; @@table   -- place the table of content here 
 
 (define EXCEPTIONS
-  '[".git" "compiled" "README.md" "README.source" "info.rkt" "scribblings" ".DS_Store"]) 
+  '[".git" "compiled" "xserver" "xclients" "xclients-bonus" "xtest" "README.md" "README.source" "info.rkt" "scribblings" ".DS_Store"]) 
 
 #; {type Ordering = [Listof [directory:String ∪ [Cons directory:String [Listof file:String]]]]}
 ;; the `file` name is assumed to be a ".rkt" file, mostly except
@@ -19,7 +19,7 @@ exec racket -tm "$0" -- ${1+"$@"}
 
 (define ORDER ; Ordering 
   '[ ; ["Run" "xserver*" "xclients*"]
-     ; ["Server" "server"]
+     ["Server" "server"]
      ["Referee" #; "referee" "game-state"]
      ["Common"
       "player-interface"
@@ -27,8 +27,8 @@ exec racket -tm "$0" -- ${1+"$@"}
       "player"
       ]
      ; "Client"
-     ; ["Player" "mechanics" "strategies"]
-     #; ["Integration" "xtest*" "xserver*" "xclients*"]])
+     ["Player" "mechanism" "strategies"]
+     ["Integration" ]])
 
 ;; ---------------------------------------------------------------------------------------------------
 (define help-string
