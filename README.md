@@ -89,20 +89,18 @@ robust code and second about writing great strategies.
 
 See [Milestones](https://felleisen.org/matthias/4500-f23/index.html) for details.
 
- |              DUE |                on this due date |          TITLE |             PURPOSE |
- |             DATE |                	     	      |		       |	     	     |
- |             DATE |                	     	      |		       |	     	     |
- | ---------------- | ------------------------------- | -------------- | ------------------- | 
-  |1  Thursday,  12 September 2024 | -thb B -hw 2     | The Plan        | question, sprints, memo style    |
-  |2  Wednesday, 25 September 2024 | -hw 3            | Equations       | treaming -- language eval        |
-  |3  Tuesday,   01 October   2024 | -hw 4            | The State       | partner eval                     |
-  |4  Thursday,  10 October   2024 | -hw 5            | The Strategies  | PARTNER SWITCH 1                 |
-  |5  Thursday,  17 October   2024 | -hw 6            | The Rules       |              			   |
-  |6  Thursday,  24 October   2024 | -hw 7            | Games!          |                                  |
-  |7  Thursday,  31 October   2024 | -hw 8            | The Clean Up    | PRTNER SWITCH 2                  |
-  |8  Thursday,  07 November  2024 | -hw 9            | The Observer    | save PNGs, opt. display          |
-  |9  Thursday,  14 November  2024 | -hw 10           | Remote          |                                  |
- |10  Thursday,  28 November  2024 |  all done        | Revised!        | change something `deep`          |
+| #   |   DUE DATE                   |          on this due date       |          TITLE |             PURPOSE           |
+| --- | ---------------------------- | ------------------------------- | -------------- | ----------------------------- |
+| 1   | Thursday,  12 September 2024 | -thb B -hw 2                    | The Plan       | question, sprints, memo style |
+| 2 | Wednesday, 25 September 2024 | -hw 3            | Equations       | treaming -- language eval        |
+|3 | Tuesday,   01 October   2024 | -hw 4            | The State       | partner eval                     |
+|4 | Thursday,  10 October   2024 | -hw 5            | The Strategies  | PARTNER SWITCH 1                 |
+|5 | Thursday,  17 October   2024 | -hw 6            | The Rules       |              			   |
+|6 | Thursday,  24 October   2024 | -hw 7            | Games!          |                                  |
+|7 | Thursday,  31 October   2024 | -hw 8            | The Clean Up    | PRTNER SWITCH 2                  |
+|8 | Thursday,  07 November  2024 | -hw 9            | The Observer    | save PNGs, opt. display          |
+|9 | Thursday,  14 November  2024 | -hw 10           | Remote          |                                  |
+|10 | Thursday,  28 November  2024 |  all done        | Revised!        | change something `deep`          |
 
 The final integration test runs
 
